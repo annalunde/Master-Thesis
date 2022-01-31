@@ -1,0 +1,33 @@
+Only Resetyp = FRI
+
+[RAT - TT]
+Request creation time - Hamt-tid 
+Request ID - legge til senere
+Rider ID - må gjøre noe smart her 
+Wheelchair Accessible - Krav if Wheel - yes 
+Number of passengers - 1
+Requested Pickup Time - Hamt-tid
+Requested Dropoff Time - Lamna-tid
+Origin Lat - H-lat
+Origin Lng - H-lon
+Destination Lat - L-lat
+Destination Lng - L-lon
+Reason for Travel - None 
+
+
+
+
+NOTE:
+Kan inkluderes senere
+Cancellation time
+No show time
+
+
+
+
+
+
+
+QUESTIONS:
+- Hva er Ride ID? Kobling til Request ID og Rider ID?
+
