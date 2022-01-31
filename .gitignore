@@ -4,10 +4,11 @@ __pycache__/
 *$py.class
 
 # Data
-Data/
+data/
 
 # C extensions
 *.so
+.idea/
 
 # Distribution / packaging
 .Python
