@@ -102,6 +102,7 @@ class Preprocessor:
             "Destination Lat",
             "Destination Lng",
             "Reason For Travel",
+            "Original Planned Pickup Time",
         ]
         data = df[chosen_columns]
         print(data.head())
