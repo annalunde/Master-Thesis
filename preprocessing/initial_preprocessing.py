@@ -97,15 +97,15 @@ class Preprocessor:
         ]
         data = df[chosen_columns]
         print(data.head())
-        data.to_csv(
-            "/Users/Anna/Desktop/Master/master/data/Processed/data_RAT.csv")
+        data.to_csv(config("data_processed_path"))
 
 
 def main():
     preprocessor = None
 
     try:
-        preprocessor = Preprocessor(data_path="data/Initial")
+        preprocessor = Preprocessor(
+            data_path=config("data_path"))
         print("Preprocessing data RAT: ")
         preprocessor.process_data_RAT()
         #print("Preprocessing data TT: ")
