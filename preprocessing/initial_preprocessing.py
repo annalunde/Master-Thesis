@@ -86,11 +86,18 @@ class Preprocessor:
             "Wheelchair",
             "Request ID",
             "Rider ID",
+            "Ride ID",
             "Number of Passengers",
             "Requested Pickup Time",
+            "Actual Pickup Time",
             "Requested Dropoff Time",
+            "Actual Dropoff Time",
+            "Cancellation Time",
+            "No Show Time",
+            "Origin Zone",
             "Origin Lat",
             "Origin Lng",
+            "Destination Zone",
             "Destination Lat",
             "Destination Lng",
             "Reason For Travel",
@@ -105,7 +112,7 @@ def main():
 
     try:
         preprocessor = Preprocessor(
-            data_path=config("data_path"))
+            data_path=config("data_initial_path"))
         print("Preprocessing data RAT: ")
         preprocessor.process_data_RAT()
         #print("Preprocessing data TT: ")
