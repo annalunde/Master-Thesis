@@ -81,10 +81,22 @@ class Preprocessor:
         # convert to solely wheelchair and solely passengers
         df["Number of Passengers"] = df["Number of Passengers"] - df["Wheelchair"]
 
+        # convert to correct datetime format
+        time_columns = ["Request Creation Time", "Requested Pickup Time", "Actual Pickup Time",
+                        "Requested Dropoff Time",
+                        "Actual Dropoff Time",
+                        "Cancellation Time",
+                        "No Show Time"]
+        for col in time_columns:
+            df[col] = df[col].astype(str)
+            df[col] = pd.to_datetime(df[col]).dt.strftime(
+                "%Y-%m-%d %H:%M:%S")
+
         chosen_columns = [
             "Request Creation Time",
             "Wheelchair",
             "Request ID",
+            "Request Status",
             "Rider ID",
             "Ride ID",
             "Number of Passengers",
@@ -115,7 +127,7 @@ def main():
             data_path=config("data_initial_path"))
         print("Preprocessing data RAT: ")
         preprocessor.process_data_RAT()
-        #print("Preprocessing data TT: ")
+        # print("Preprocessing data TT: ")
         # preprocessor.process_data_TT()
 
     except Exception as e:
