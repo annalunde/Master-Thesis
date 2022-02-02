@@ -88,7 +88,6 @@ class Preprocessor:
                         "Cancellation Time",
                         "No Show Time"]
         for col in time_columns:
-            df[col] = df[col].astype(str)
             df[col] = pd.to_datetime(df[col]).dt.strftime(
                 "%Y-%m-%d %H:%M:%S")
 
@@ -115,6 +114,12 @@ class Preprocessor:
             "Reason For Travel",
         ]
         data = df[chosen_columns]
+        df['Origin Zone'] = df['Origin Zone'].astype(str)
+        df['Destination Zone'] = df['Destination Zone'].astype(str)
+        data = data.loc[df['Origin Zone'] != "8. Nes"]
+        data = data.loc[df['Origin Zone'] != "Nes"]
+        data = data.loc[df['Destination Zone'] != "8. Nes"]
+        data = data.loc[df['Destination Zone'] != "Nes"]
         print(data.head())
         data.to_csv(config("data_processed_path"))
 
