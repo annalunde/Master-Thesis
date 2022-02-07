@@ -86,7 +86,7 @@ class Preprocessor:
                         "Requested Dropoff Time",
                         "Actual Dropoff Time",
                         "Cancellation Time",
-                        "No Show Time"]
+                        "No Show Time", "Original Planned Pickup Time"]
         for col in time_columns:
             df[col] = pd.to_datetime(df[col]).dt.strftime(
                 "%Y-%m-%d %H:%M:%S")
@@ -112,6 +112,7 @@ class Preprocessor:
             "Destination Lat",
             "Destination Lng",
             "Reason For Travel",
+            "Original Planned Pickup Time",
         ]
         data = df[chosen_columns]
         df['Origin Zone'] = df['Origin Zone'].astype(str)

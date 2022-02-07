@@ -61,7 +61,7 @@ class Analyser:
         df.to_csv(config("data_processed_path_return_timediff"))
 
         mean_diff = df["return_time_diff"].mean()
-        print("Average time between returns: ", mean_diff)
+        print("Average number of seconds between returns: ", mean_diff)
 
 
 def f(x):

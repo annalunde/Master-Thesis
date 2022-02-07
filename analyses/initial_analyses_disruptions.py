@@ -1,0 +1,314 @@
+from datetime import timedelta
+import pandas as pd
+import os
+from decouple import config
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+class AnalyserDisruptions:
+    def __init__(self, data_path):
+        self.data_path = data_path
+
+    # NEW REQUEST
+    # ha ankomstrate per tidsintervall (i minutter)
+    # gjelder for dagens requests - skal fraktes samme dag som requested kommer inn
+    # distribution of how long in advance the new request is revealed
+
+    def new_request(self):
+        df = pd.read_csv(self.data_path)
+        df_request = df[df['Request Status'].isin(["Completed"])]
+        df_request['Request Creation Time'] = pd.to_datetime(df_request['Request Creation Time'], format="%Y-%m-%d %H:%M:%S")
+        df_request['Requested Pickup Time'] = pd.to_datetime(df_request['Requested Pickup Time'], format="%Y-%m-%d %H:%M:%S")
+        df_request['Requested Dropoff Time'] = pd.to_datetime(df_request['Requested Dropoff Time'], format="%Y-%m-%d %H:%M:%S")
+
+        # request arrives at same day as it is requested to be served
+        df_request["Requested Pickup/Dropoff Time"] = (df_request["Requested Pickup Time"]).fillna(df_request["Requested Dropoff Time"])
+        df_request['Date Creation'] = df_request['Request Creation Time'].dt.date
+        df_request['Time Creation'] = df_request['Request Creation Time'].dt.hour
+        df_request['Date Pickup/Dropoff'] = df_request['Requested Pickup/Dropoff Time'].dt.date
+        df_request = df_request[df_request['Date Creation'] == df_request['Date Pickup/Dropoff']]
+
+        # calculating the time interval between new requests
+        df_request = df_request.sort_values(by=['Request Creation Time'])
+        df_request['Diff'] = df_request['Request Creation Time'].diff()
+
+        # number of requested pickups vs requested dropoffs
+        df_pickup = df_request.dropna(subset=['Requested Pickup Time'])
+        df_dropoff = df_request.dropna(subset=['Requested Dropoff Time'])
+        print("Total number of requests to be served on the same day as request is made: ", df_request.shape[0])
+        print("Percentage of requests with requested pickup time: ", (df_pickup.shape[0]*100)/df_request.shape[0])
+        print("Percentage of requests with requested dropoff time: ", (df_dropoff.shape[0] * 100) / df_request.shape[0])
+
+        # number of minutes between the request creation and the requested pickup/dropoff time
+        df_pickup['Diff Creation and Requested Pickup'] = df_pickup['Requested Pickup Time'] - df_pickup['Request Creation Time']
+        df_dropoff['Diff Creation and Requested Dropoff'] = df_dropoff['Requested Dropoff Time'] - df_dropoff['Request Creation Time']
+
+        diff_dict = dict()
+        for index, row in df_request.iterrows():
+            if row['Date Creation'] in diff_dict:
+                diff_dict[row['Date Creation']].append([row['Time Creation'], row['Diff'].total_seconds()/60])
+            else:
+                diff_dict[row['Date Creation']] = []
+
+        time_dict = dict()
+        for value in diff_dict.values():
+            for v in value:
+                if v[0] in time_dict:
+                    time_dict[v[0]].append(v[1])
+                else:
+                    time_dict[v[0]] = [v[1]]
+
+        hour_intervals = []
+        avg_diff = []
+        total_diff = []
+        counts_per_hour = []
+
+        print("Hour interval", '\t', "Average interval")
+        for key, value in time_dict.items():
+            mean = np.mean([c for c in value])
+            hour_intervals.append(key)
+            avg_diff.append(mean)
+            total_diff += value
+            counts_per_hour.append(len(value))
+            print(key, '\t', mean)
+
+        total_mean = np.mean([c for c in total_diff])
+        print("Average number of minutes between requests:",total_mean)
+        plt.bar(hour_intervals,avg_diff)
+        plt.xlabel('Hour of the day')
+        plt.ylabel('Minutes between requests')
+        plt.show()
+
+        plt.bar(hour_intervals, counts_per_hour)
+        plt.xlabel('Hour of the day')
+        plt.ylabel('Number of incoming requests')
+        plt.show()
+
+
+        # probability density function time between request creation time and requested pickup time
+        waiting_times = []
+        for index,row in df_pickup.iterrows():
+            waiting_times.append(row['Diff Creation and Requested Pickup'].total_seconds()/60)
+        sns.displot(data=waiting_times, kind="kde")
+        plt.xlabel('Number of minutes between creation and requested pickup time')
+        plt.show()
+
+        # probability density function time between request creation time and requested dropoff time
+        waiting_times = []
+        for index, row in df_dropoff.iterrows():
+            waiting_times.append(row['Diff Creation and Requested Dropoff'].total_seconds() / 60)
+        sns.displot(data=waiting_times, kind="kde")
+        plt.xlabel('Number of minutes between creation and requested dropoff time')
+        plt.show()
+
+    # DELAY
+    # hva defineres som en delay? legge til at man kan endre hvor mange minutter som defineres som en delay
+    # har kun data på delays mellom original planned pickup time and actual pickup time - ikke får dropoff
+    # antar at delay kun er at man er for sein, ikke for tidlig
+    # ha ankomstrate per tidsintervall
+    # distrubisjon av lengde av hver delay
+
+    def delay(self, minutes):
+        df = pd.read_csv(self.data_path)
+        df_delay = df[df['Request Status'].isin(["Completed"])]
+
+        # define which rows are considered to be delays
+        df_delay['Original Planned Pickup Time'] = pd.to_datetime(df_delay['Original Planned Pickup Time'], format="%Y-%m-%d %H:%M:%S")
+        df_delay['Actual Pickup Time'] = pd.to_datetime(df_delay['Actual Pickup Time'], format="%Y-%m-%d %H:%M:%S")
+        df_delay['Delay'] = df_delay['Actual Pickup Time'] - df_delay['Original Planned Pickup Time']
+        df_delay = df_delay[df_delay['Delay'] >= timedelta(minutes=minutes)]
+
+
+        # calculating the time interval between new delays
+        df_delay['Date Actual Pickup'] = df_delay['Actual Pickup Time'].dt.date
+        df_delay['Time Actual Pickup'] = df_delay['Actual Pickup Time'].dt.hour
+        df_delay = df_delay.sort_values(by=['Actual Pickup Time'])
+        df_delay['Diff'] = df_delay['Actual Pickup Time'].diff()
+
+        diff_dict = dict()
+        for index, row in df_delay.iterrows():
+            if row['Date Actual Pickup'] in diff_dict:
+                diff_dict[row['Date Actual Pickup']].append([row['Time Actual Pickup'], row['Diff'].total_seconds() / 60])
+            else:
+                diff_dict[row['Date Actual Pickup']] = []
+
+        time_dict = dict()
+        for value in diff_dict.values():
+            for v in value:
+                if v[0] in time_dict:
+                    time_dict[v[0]].append(v[1])
+                else:
+                    time_dict[v[0]] = [v[1]]
+
+        hour_intervals = []
+        avg_diff = []
+        total_diff = []
+
+        print("Hour interval", '\t', "Average interval")
+        for key, value in time_dict.items():
+            mean = np.mean([c for c in value])
+            hour_intervals.append(key)
+            avg_diff.append(mean)
+            total_diff += value
+            print(key, '\t', mean)
+
+        total_mean = np.mean([c for c in total_diff])
+        print("Average number of minutes between delays:", total_mean)
+        plt.bar(hour_intervals, avg_diff)
+        plt.xlabel('Hour of the day')
+        plt.ylabel('Minutes between delays')
+        plt.show()
+
+        # probability density function time between planned pickup and cancellation
+        waiting_times = []
+        for index, row in df_delay.iterrows():
+            waiting_times.append(row['Delay'].total_seconds() / 60)
+
+        sns.displot(data=waiting_times, kind="kde")
+        plt.xlabel('Delay (minutes)')
+        plt.show()
+
+
+    # CANCEL
+    # kanselleringen må skje samme dag for at det skal ha en betydelse for oss?
+    # må vi ikke egt også ha de dagene hvor det ikke skjer noe?
+    def cancel(self):
+        df = pd.read_csv(self.data_path)
+        df_cancel = df[df['Request Status'].isin(["Cancel", "Late Cancel"])]
+        df_cancel = df_cancel.dropna(subset=['Original Planned Pickup Time', 'Cancellation Time'])
+        df_cancel['Cancellation Time'] = pd.to_datetime(df_cancel['Cancellation Time'], format="%Y-%m-%d %H:%M:%S")
+        df_cancel['Original Planned Pickup Time'] = pd.to_datetime(df_cancel['Original Planned Pickup Time'], format="%Y-%m-%d %H:%M:%S")
+        df_cancel['Date'] = df_cancel['Cancellation Time'].dt.date
+        df_cancel['Time'] = df_cancel['Cancellation Time'].dt.hour
+        df_cancel['Date Pickup'] = df_cancel['Original Planned Pickup Time'].dt.date
+        df_cancel = df_cancel[(df_cancel['Date'] == df_cancel['Date Pickup']) & (df_cancel['Cancellation Time'] <= df_cancel['Original Planned Pickup Time'])]
+        df_cancel = df_cancel.sort_values(by=['Cancellation Time'])
+        df_cancel['Diff'] = df_cancel['Cancellation Time'].diff()
+        df_cancel['Diff Original and Cancel'] = df_cancel['Original Planned Pickup Time'] - df_cancel['Cancellation Time']
+
+        diff_dict = dict()
+        for index, row in df_cancel.iterrows():
+            if row['Date'] in diff_dict:
+                diff_dict[row['Date']].append([row['Time'], row['Diff'].total_seconds()/60])
+            else:
+                diff_dict[row['Date']] = []
+
+        time_dict = dict()
+        for value in diff_dict.values():
+            for v in value:
+                if v[0] in time_dict:
+                    time_dict[v[0]].append(v[1])
+                else:
+                    time_dict[v[0]] = [v[1]]
+
+        hour_intervals = []
+        avg_diff = []
+        total_diff = []
+
+        print("Hour interval", '\t', "Average interval")
+        for key, value in time_dict.items():
+            mean = np.mean([c for c in value])
+            hour_intervals.append(key)
+            avg_diff.append(mean)
+            total_diff += value
+            print(key, '\t', mean)
+
+        total_mean = np.mean([c for c in total_diff])
+        print("Average number of minutes between cancellations:",total_mean)
+        plt.bar(hour_intervals,avg_diff)
+        plt.xlabel('Hour of the day')
+        plt.ylabel('Minutes between cancellations')
+        plt.show()
+
+        # probability density function time between planned pickup and cancellation
+        waiting_times = []
+        for index,row in df_cancel.iterrows():
+            waiting_times.append(row['Diff Original and Cancel'].total_seconds()/60)
+
+        sns.displot(data=waiting_times, kind="kde")
+        plt.xlabel('Number of minutes before planned pickup')
+        plt.show()
+
+    def event_per_total(self):
+        df = pd.read_csv(self.data_path)
+        counts_normalized = df['Request Status'].value_counts(normalize=True)
+        counts = df['Request Status'].value_counts()
+        print(counts_normalized)
+        print(counts)
+
+    # NO SHOW
+    def no_show(self):
+        df = pd.read_csv(self.data_path)
+        df_no_show = df[df['Request Status']=="No Show"]
+        df_no_show['No Show Time'] = pd.to_datetime(df_no_show['No Show Time'], format="%Y-%m-%d %H:%M:%S")
+        df_no_show['Original Planned Pickup Time'] = pd.to_datetime(df_no_show['Original Planned Pickup Time'], format="%Y-%m-%d %H:%M:%S")
+        df_no_show['Date'] = df_no_show['No Show Time'].dt.date
+        df_no_show['Time'] = df_no_show['No Show Time'].dt.hour
+        df_no_show = df_no_show[df_no_show['No Show Time'] >= df_no_show['Original Planned Pickup Time']]
+        df_no_show = df_no_show.sort_values(by=['No Show Time'])
+        df_no_show['Diff'] = df_no_show['No Show Time'].diff()
+        df_no_show['Wait'] = df_no_show['No Show Time'] - df_no_show['Original Planned Pickup Time']
+
+        diff_dict = dict()
+        for index, row in df_no_show.iterrows():
+            if row['Date'] in diff_dict:
+                diff_dict[row['Date']].append([row['Time'], row['Diff'].total_seconds()/60])
+            else:
+                diff_dict[row['Date']] = []
+
+        time_dict = dict()
+        for value in diff_dict.values():
+            for v in value:
+                if v[0] in time_dict:
+                    time_dict[v[0]].append(v[1])
+                else:
+                    time_dict[v[0]] = [v[1]]
+
+        hour_intervals = []
+        avg_diff = []
+        total_diff = []
+
+        print("Hour interval", '\t', "Average interval")
+        for key, value in time_dict.items():
+            mean = np.mean([c for c in value])
+            hour_intervals.append(key)
+            avg_diff.append(mean)
+            total_diff += value
+            print(key, '\t', mean)
+
+        total_mean = np.mean([c for c in total_diff])
+        print("Average number of minutes between no shows:",total_mean)
+        plt.bar(hour_intervals,avg_diff)
+        plt.xlabel('Hour of the day')
+        plt.ylabel('Minutes between no show')
+        plt.show()
+
+        # probability density function waiting time before no show is known
+        waiting_times = []
+        for index,row in df_no_show.iterrows():
+            waiting_times.append(row['Wait'].total_seconds()/60)
+
+        sns.displot(data=waiting_times, kind="kde")
+        plt.xlabel('Waiting time in minutes')
+        plt.show()
+
+def main():
+    analyser = None
+
+    try:
+        analyser = AnalyserDisruptions(
+            data_path=config("data_processed_path"))
+        #analyser.event_per_total()
+        #analyser.no_show()
+        #analyser.cancel()
+        #analyser.new_request()
+        analyser.delay(10)
+
+    except Exception as e:
+        print("ERROR:", e)
+
+
+if __name__ == "__main__":
+    main()
