@@ -36,10 +36,14 @@ class Analyser:
 
         # probability of return out of total requests
         df["Return T/F"] = np.where(df["Return"] > 0, True, False)
-        print(df["Return T/F"].value_counts(normalize=True) * 100)
-
+        number_of_trips_with_return = df[df["Return T/F"] == True].shape[0]/2
+        number_of_trips = df["Return T/F"].shape[0] - number_of_trips_with_return
+        print("Percentage of trips with return: ",number_of_trips_with_return*100/number_of_trips)
+        
         # per time segment, how possible is it that there is a return?
 
+        # tid mellom forrige retur og neste tur - tid mellom hvert par? (ankomstrate)
+        # gjennomsnittlig tid mellom hvert retur par
 
 def main():
     analyser = None
@@ -49,7 +53,7 @@ def main():
             data_path=config("data_processed_path"),
             data_path_returns=config('data_processed_path_return'))
         print("Creating dataset with returns")
-        analyser.register_returns()
+        #analyser.register_returns()
         print("Analysing return probability distributions")
         analyser.return_probability()
 

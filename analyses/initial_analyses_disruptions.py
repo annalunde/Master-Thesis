@@ -304,7 +304,7 @@ def main():
         #analyser.no_show()
         #analyser.cancel()
         #analyser.new_request()
-        analyser.delay(5)
+        analyser.delay(10)
 
     except Exception as e:
         print("ERROR:", e)
