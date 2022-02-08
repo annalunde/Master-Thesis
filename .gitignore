@@ -134,3 +134,4 @@ dmypy.json
 
 # Jetbrains
 .idea/
+.idea
