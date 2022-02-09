@@ -45,6 +45,7 @@ class AnalyserDisruptions:
         df_pickup['Diff Creation and Requested Pickup'] = df_pickup['Requested Pickup Time'] - df_pickup['Request Creation Time']
         df_dropoff['Diff Creation and Requested Dropoff'] = df_dropoff['Requested Dropoff Time'] - df_dropoff['Request Creation Time']
 
+        '''
         diff_dict = dict()
         for index, row in df_request.iterrows():
             if row['Date Creation'] in diff_dict:
@@ -59,6 +60,7 @@ class AnalyserDisruptions:
                     time_dict[v[0]].append(v[1])
                 else:
                     time_dict[v[0]] = [v[1]]
+        
 
         hour_intervals = []
         avg_diff = []
@@ -73,19 +75,55 @@ class AnalyserDisruptions:
             total_diff += value
             counts_per_hour.append(len(value))
             print(key, '\t', mean)
-
+        
         total_mean = np.mean([c for c in total_diff])
         print("Average number of minutes between requests:",total_mean)
         plt.bar(hour_intervals,avg_diff)
         plt.xlabel('Hour of the day')
         plt.ylabel('Minutes between requests')
         plt.show()
+        '''
 
-        plt.bar(hour_intervals, counts_per_hour)
+        # ARRIVAL RATES
+        # sort on date and time, and count how many requests for each date-time pair
+        date_time_dict = dict()
+        for index, row in df_request.iterrows():
+            if (row['Date Creation'], row['Time Creation']) in date_time_dict:
+                date_time_dict[(row['Date Creation'], row['Time Creation'])] += 1
+            else:
+                date_time_dict[(row['Date Creation'], row['Time Creation'])] = 1
+
+
+        # group by time across all dates and create list of how many requests per date
+        time_interval_dict = dict()
+        for key, value in date_time_dict.items():
+            if key[1] in time_interval_dict:
+                time_interval_dict[key[1]].append(value)
+            else:
+                time_interval_dict[key[1]] = [value]
+
+        # add 0 values for those days that did not have incoming requests for certain time intervals
+        number_of_days = df_request['Date Creation'].nunique()
+        for key, value in time_interval_dict.items():
+            while len(value) < number_of_days:
+                time_interval_dict[key].append(0)
+
+        # calculate average arrival rate for each time interval
+        time_intervals = []
+        arrival_rates = []
+
+        print("Hour interval", '\t', "Arrival rate")
+        for key, value in time_interval_dict.items():
+            if key >= 10:
+                mean = np.mean([c for c in value])
+                time_intervals.append(key)
+                arrival_rates.append(mean)
+                print(key, '\t', mean)
+
+        plt.bar(time_intervals, arrival_rates)
         plt.xlabel('Hour of the day')
-        plt.ylabel('Number of incoming requests')
+        plt.ylabel('Average number of requests in time interval')
         plt.show()
-
 
         # probability density function time between request creation time and requested pickup time
         waiting_times = []
@@ -127,6 +165,7 @@ class AnalyserDisruptions:
         df_delay = df_delay.sort_values(by=['Actual Pickup Time'])
         df_delay['Diff'] = df_delay['Actual Pickup Time'].diff()
 
+        '''
         diff_dict = dict()
         for index, row in df_delay.iterrows():
             if row['Date Actual Pickup'] in diff_dict:
@@ -160,6 +199,47 @@ class AnalyserDisruptions:
         plt.xlabel('Hour of the day')
         plt.ylabel('Minutes between delays')
         plt.show()
+        '''
+
+        # ARRIVAL RATES
+        # sort on date and time, and count how many requests for each date-time pair
+        date_time_dict = dict()
+        for index, row in df_delay.iterrows():
+            if (row['Date Actual Pickup'], row['Time Actual Pickup']) in date_time_dict:
+                date_time_dict[(row['Date Actual Pickup'], row['Time Actual Pickup'])] += 1
+            else:
+                date_time_dict[(row['Date Actual Pickup'], row['Time Actual Pickup'])] = 1
+
+        # group by time across all dates and create list of how many requests per date
+        time_interval_dict = dict()
+        for key, value in date_time_dict.items():
+            if key[1] in time_interval_dict:
+                time_interval_dict[key[1]].append(value)
+            else:
+                time_interval_dict[key[1]] = [value]
+
+        # add 0 values for those days that did not have incoming requests for certain time intervals
+        number_of_days = df_delay['Date Actual Pickup'].nunique()
+        for key, value in time_interval_dict.items():
+            while len(value) < number_of_days:
+                time_interval_dict[key].append(0)
+
+        # calculate average arrival rate for each time interval
+        time_intervals = []
+        arrival_rates = []
+
+        print("Hour interval", '\t', "Arrival rate")
+        for key, value in time_interval_dict.items():
+            if key >= 10:
+                mean = np.mean([c for c in value])
+                time_intervals.append(key)
+                arrival_rates.append(mean)
+                print(key, '\t', mean)
+
+        plt.bar(time_intervals, arrival_rates)
+        plt.xlabel('Hour of the day')
+        plt.ylabel('Average number of delays in time interval')
+        plt.show()
 
         # probability density function time between planned pickup and cancellation
         waiting_times = []
@@ -188,6 +268,7 @@ class AnalyserDisruptions:
         df_cancel['Diff'] = df_cancel['Cancellation Time'].diff()
         df_cancel['Diff Original and Cancel'] = df_cancel['Original Planned Pickup Time'] - df_cancel['Cancellation Time']
 
+        '''
         diff_dict = dict()
         for index, row in df_cancel.iterrows():
             if row['Date'] in diff_dict:
@@ -221,6 +302,47 @@ class AnalyserDisruptions:
         plt.xlabel('Hour of the day')
         plt.ylabel('Minutes between cancellations')
         plt.show()
+        '''
+
+        # ARRIVAL RATES
+        # sort on date and time, and count how many requests for each date-time pair
+        date_time_dict = dict()
+        for index, row in df_cancel.iterrows():
+            if (row['Date'], row['Time']) in date_time_dict:
+                date_time_dict[(row['Date'], row['Time'])] += 1
+            else:
+                date_time_dict[(row['Date'], row['Time'])] = 1
+
+        # group by time across all dates and create list of how many requests per date
+        time_interval_dict = dict()
+        for key, value in date_time_dict.items():
+            if key[1] in time_interval_dict:
+                time_interval_dict[key[1]].append(value)
+            else:
+                time_interval_dict[key[1]] = [value]
+
+        # add 0 values for those days that did not have incoming requests for certain time intervals
+        number_of_days = df_cancel['Date'].nunique()
+        for key, value in time_interval_dict.items():
+            while len(value) < number_of_days:
+                time_interval_dict[key].append(0)
+
+        # calculate average arrival rate for each time interval
+        time_intervals = []
+        arrival_rates = []
+
+        print("Hour interval", '\t', "Arrival rate")
+        for key, value in time_interval_dict.items():
+            if key >= 10:
+                mean = np.mean([c for c in value])
+                time_intervals.append(key)
+                arrival_rates.append(mean)
+                print(key, '\t', mean)
+
+        plt.bar(time_intervals, arrival_rates)
+        plt.xlabel('Hour of the day')
+        plt.ylabel('Average number of cancels in time interval')
+        plt.show()
 
         # probability density function time between planned pickup and cancellation
         waiting_times = []
@@ -251,6 +373,7 @@ class AnalyserDisruptions:
         df_no_show['Diff'] = df_no_show['No Show Time'].diff()
         df_no_show['Wait'] = df_no_show['No Show Time'] - df_no_show['Original Planned Pickup Time']
 
+        '''
         diff_dict = dict()
         for index, row in df_no_show.iterrows():
             if row['Date'] in diff_dict:
@@ -284,6 +407,47 @@ class AnalyserDisruptions:
         plt.xlabel('Hour of the day')
         plt.ylabel('Minutes between no show')
         plt.show()
+        '''
+
+        # ARRIVAL RATES
+        # sort on date and time, and count how many requests for each date-time pair
+        date_time_dict = dict()
+        for index, row in df_no_show.iterrows():
+            if (row['Date'], row['Time']) in date_time_dict:
+                date_time_dict[(row['Date'], row['Time'])] += 1
+            else:
+                date_time_dict[(row['Date'], row['Time'])] = 1
+
+        # group by time across all dates and create list of how many requests per date
+        time_interval_dict = dict()
+        for key, value in date_time_dict.items():
+            if key[1] in time_interval_dict:
+                time_interval_dict[key[1]].append(value)
+            else:
+                time_interval_dict[key[1]] = [value]
+
+        # add 0 values for those days that did not have incoming requests for certain time intervals
+        number_of_days = df_no_show['Date'].nunique()
+        for key, value in time_interval_dict.items():
+            while len(value) < number_of_days:
+                time_interval_dict[key].append(0)
+
+        # calculate average arrival rate for each time interval
+        time_intervals = []
+        arrival_rates = []
+
+        print("Hour interval", '\t', "Arrival rate")
+        for key, value in time_interval_dict.items():
+            if key >= 10:
+                mean = np.mean([c for c in value])
+                time_intervals.append(key)
+                arrival_rates.append(mean)
+                print(key, '\t', mean)
+
+        plt.bar(time_intervals, arrival_rates)
+        plt.xlabel('Hour of the day')
+        plt.ylabel('Average number of no shows in time interval')
+        plt.show()
 
         # probability density function waiting time before no show is known
         waiting_times = []
@@ -301,10 +465,10 @@ def main():
         analyser = AnalyserDisruptions(
             data_path=config("data_processed_path"))
         #analyser.event_per_total()
-        #analyser.no_show()
+        analyser.no_show()
         #analyser.cancel()
         #analyser.new_request()
-        analyser.delay(5)
+        #analyser.delay(5)
 
     except Exception as e:
         print("ERROR:", e)
