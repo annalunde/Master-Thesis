@@ -45,11 +45,11 @@ class Poisson:
                 disruption_time = timestamp
                 break
 
-        return disruption_time
-
         # We plot the resulting inhomogeneous Poisson process with its
         # intensity and its ticks over time
         #plot_point_process(in_poi)
+
+        return disruption_time
 
 
 def main():
