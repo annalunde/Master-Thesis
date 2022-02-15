@@ -1,10 +1,14 @@
 from datetime import timedelta
 import pandas as pd
 import os
+
+import scipy
+from scipy.stats import gamma
 from decouple import config
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from fitter import Fitter
 
 
 class AnalyserDisruptions:
@@ -129,16 +133,44 @@ class AnalyserDisruptions:
         waiting_times = []
         for index,row in df_pickup.iterrows():
             waiting_times.append(row['Diff Creation and Requested Pickup'].total_seconds()/60)
-        sns.displot(data=waiting_times, kind="kde")
+        sns.displot(data=waiting_times, kind="hist", bins=100)
         plt.xlabel('Number of minutes between creation and requested pickup time')
+
+        f = Fitter(waiting_times, distributions=['gamma', 'lognorm', "burr", "norm"])
+        f.fit()
+        print(f.summary())
+        print(f.get_best(method='sumsquare_error'))
+        plt.show()
+
+        # find best parameters for distribution
+        xlin = np.linspace(0, 600, 50)
+
+        fit_shape, fit_loc, fit_scale = gamma.fit(waiting_times)
+        print([fit_shape, fit_loc, fit_scale])
+        plt.hist(waiting_times, bins=50, density=True)
+        plt.plot(xlin, gamma.pdf(xlin, a=fit_shape, loc=fit_loc, scale=fit_scale))
         plt.show()
 
         # probability density function time between request creation time and requested dropoff time
         waiting_times = []
         for index, row in df_dropoff.iterrows():
             waiting_times.append(row['Diff Creation and Requested Dropoff'].total_seconds() / 60)
-        sns.displot(data=waiting_times, kind="kde")
+        sns.displot(data=waiting_times, kind="hist", bins=100)
         plt.xlabel('Number of minutes between creation and requested dropoff time')
+
+        f = Fitter(waiting_times, distributions=['gamma', 'lognorm', "beta", "burr", "norm"])
+        f.fit()
+        print(f.summary())
+        print(f.get_best(method='sumsquare_error'))
+        plt.show()
+
+        # find best parameters for distribution
+        xlin = np.linspace(0, 600, 50)
+
+        fit_shape, fit_loc, fit_scale = gamma.fit(waiting_times)
+        print([fit_shape, fit_loc, fit_scale])
+        plt.hist(waiting_times, bins=50, density=True)
+        plt.plot(xlin, gamma.pdf(xlin, a=fit_shape, loc=fit_loc, scale=fit_scale))
         plt.show()
 
     # DELAY
@@ -246,10 +278,26 @@ class AnalyserDisruptions:
         for index, row in df_delay.iterrows():
             waiting_times.append(row['Delay'].total_seconds() / 60)
 
-        sns.displot(data=waiting_times, kind="kde")
+        sns.displot(data=waiting_times, kind="hist", bins=100)
         plt.xlabel('Delay (minutes)')
         plt.show()
 
+        # find best distribution
+        f = Fitter(waiting_times, distributions=['gamma', 'lognorm', "beta", "burr", "norm"])
+        f.fit()
+        print(f.summary())
+        print(f.get_best(method = 'sumsquare_error'))
+        plt.show()
+
+        # find best parameters for distribution
+        xlin = np.linspace(0, 160, 50)
+
+        fit_shape, fit_loc, fit_scale = gamma.fit(waiting_times)
+        print([fit_shape, fit_loc, fit_scale])
+        plt.hist(waiting_times, bins=50, density=True)
+        plt.plot(xlin, gamma.pdf(xlin, a=fit_shape, loc=fit_loc, scale=fit_scale))
+
+        plt.show()
 
     # CANCEL
     # kanselleringen må skje samme dag for at det skal ha en betydelse for oss?
@@ -267,6 +315,7 @@ class AnalyserDisruptions:
         df_cancel = df_cancel.sort_values(by=['Cancellation Time'])
         df_cancel['Diff'] = df_cancel['Cancellation Time'].diff()
         df_cancel['Diff Original and Cancel'] = df_cancel['Original Planned Pickup Time'] - df_cancel['Cancellation Time']
+        df_cancel.to_csv(config("data_processed_path_analysis"))
 
         '''
         diff_dict = dict()
@@ -350,8 +399,11 @@ class AnalyserDisruptions:
             waiting_times.append(row['Diff Original and Cancel'].total_seconds()/60)
 
         sns.displot(data=waiting_times, kind="kde")
+        sns.displot(data=waiting_times, kind="hist")
         plt.xlabel('Number of minutes before planned pickup')
         plt.show()
+        print(min(waiting_times))
+        print(np.mean(waiting_times))
 
     def event_per_total(self):
         df = pd.read_csv(self.data_path)
@@ -465,10 +517,10 @@ def main():
         analyser = AnalyserDisruptions(
             data_path=config("data_processed_path"))
         #analyser.event_per_total()
-        analyser.no_show()
+        #analyser.no_show()
         #analyser.cancel()
-        #analyser.new_request()
-        #analyser.delay(5)
+        analyser.new_request()
+        #analyser.delay(10)
 
     except Exception as e:
         print("ERROR:", e)
