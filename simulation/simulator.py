@@ -1,17 +1,19 @@
 from datetime import timedelta
 from poisson import *
+from new_requests import *
 from simulation_config import *
 import random
 from scipy.stats import gamma
 
 class Simulator:
-    def __init__(self, sim_clock, current_route_plan):
+    def __init__(self, sim_clock, current_route_plan, data_path):
         self.sim_clock = sim_clock
         self.current_route_plan = current_route_plan
+        self.data_path = data_path
 
     def get_disruption(self):
         # get disruption times for each disruption type
-        #request = Poisson(arrival_rate_request, self.sim_clock).disruption_time()
+        request = Poisson(arrival_rate_request, self.sim_clock).disruption_time()
         initial_delay = Poisson(arrival_rate_delay, self.sim_clock).disruption_time()
         cancel = Poisson(arrival_rate_cancel, self.sim_clock).disruption_time()
         initial_no_show = Poisson(arrival_rate_no_show, self.sim_clock).disruption_time()
@@ -23,10 +25,8 @@ class Simulator:
         no_show_vehicle_index, no_show_pickup_rid_index, no_show_dropoff_rid_index, actual_no_show = self.no_show(initial_no_show)
 
         # identify earliest disruption time and corresponding disruption type
-        #disruption_types = ['request']
-        #disruption_times = [request]
-        disruption_types = []
-        disruption_times = []
+        disruption_types = ['request']
+        disruption_times = [request]
 
         if delay_rid_index > -1:
             disruption_types.append('delay')
@@ -45,7 +45,7 @@ class Simulator:
         # call on function corresponding to disruption type to get disruption type, time/updated sim_clock, data
         # VIKTIG Å HUSKE AT UPDATED SIM CLOCK ER DET SAMME SOM NY DISRUPTION TIME
         if disruption_type == 'request':
-            return disruption_type, disruption_time, self.new_request()
+            return disruption_type, disruption_time, self.new_request(request)
         elif disruption_type == 'delay':
             # disruption_data is tuple with (delayed node rid, which vehicle delayed node on, delay in minutes)
             return disruption_type, disruption_time, (delay_vehicle_index, delay_rid_index, duration_delay)
@@ -57,10 +57,40 @@ class Simulator:
             # disruption data is tuple with (no show pickup rid, no show dropoff rid, which vehicle no show node on)
             return disruption_type, disruption_time, (no_show_vehicle_index, no_show_pickup_rid_index, no_show_dropoff_rid_index)
 
-    def new_request(self):
+    def new_request(self, request):
         # return new request data
         random_number = np.random.rand()
-        return True
+        if random_number > percentage_dropoff:
+            # request has requested pickup time - draw random time
+            requested_pickup_time = request + timedelta(minutes=gamma.rvs(pickup_fit_shape, pickup_fit_loc, pickup_fit_scale))
+
+            # get random request
+            random_request = NewRequests(self.data_path).get_and_drop_random_request()
+
+            # update creation time to request disruption time
+            random_request['Request Creation Time'] = request
+
+            # update requested pickup time and set requested dropoff time to NaN
+            random_request['Requested Pickup Time'] = requested_pickup_time
+            random_request['Requested Dropoff Time'] = None
+
+            return random_request
+
+        else:
+            # request has requested dropoff time - draw random time
+            requested_dropoff_time = request + timedelta(minutes=gamma.rvs(dropoff_fit_shape, dropoff_fit_loc, dropoff_fit_scale))
+
+            # get random request
+            random_request = NewRequests(self.data_path).get_and_drop_random_request()
+
+            # update creation time to request disruption time
+            random_request['Request Creation Time'] = request
+
+            # update requested pickup time and set requested dropoff time to NaN
+            random_request['Requested Pickup Time'] = None
+            random_request['Requested Dropoff Time'] = requested_dropoff_time
+
+            return random_request
 
     def delay(self, initial_delay):
         # draw duration of delay
@@ -152,7 +182,9 @@ def main():
             [(2, datetime.strptime("2021-05-10 13:15:00", "%Y-%m-%d %H:%M:%S")), (2.5, datetime.strptime("2021-05-10 14:12:00", "%Y-%m-%d %H:%M:%S"))]
                       ]
         sim_clock = datetime.strptime("2021-05-10 12:30:00", "%Y-%m-%d %H:%M:%S")
-        simulator = Simulator(sim_clock, current_route_plan)
+        # første runde av simulator må kjøre med new requests fra data_processed_path for å få fullstendig antall
+        # requests første runde, deretter skal rundene kjøre med data_simulator_path for å få updated data
+        simulator = Simulator(sim_clock, current_route_plan, config("data_processed_path"))
         disruption_type, disruption_time, disruption_data = simulator.get_disruption()
         print(disruption_type)
         print(disruption_time)

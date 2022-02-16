@@ -33,6 +33,10 @@ class AnalyserDisruptions:
         df_request['Time Creation'] = df_request['Request Creation Time'].dt.hour
         df_request['Date Pickup/Dropoff'] = df_request['Requested Pickup/Dropoff Time'].dt.date
         df_request = df_request[df_request['Date Creation'] == df_request['Date Pickup/Dropoff']]
+        # requests arrives after 10am
+        df_request = df_request[
+            (df_request['Time Creation'] >= 10)
+        ]
 
         # calculating the time interval between new requests
         df_request = df_request.sort_values(by=['Request Creation Time'])
@@ -135,6 +139,7 @@ class AnalyserDisruptions:
             waiting_times.append(row['Diff Creation and Requested Pickup'].total_seconds()/60)
         sns.displot(data=waiting_times, kind="hist", bins=100)
         plt.xlabel('Number of minutes between creation and requested pickup time')
+        plt.show()
 
         f = Fitter(waiting_times, distributions=['gamma', 'lognorm', "burr", "norm"])
         f.fit()
@@ -157,8 +162,9 @@ class AnalyserDisruptions:
             waiting_times.append(row['Diff Creation and Requested Dropoff'].total_seconds() / 60)
         sns.displot(data=waiting_times, kind="hist", bins=100)
         plt.xlabel('Number of minutes between creation and requested dropoff time')
+        plt.show()
 
-        f = Fitter(waiting_times, distributions=['gamma', 'lognorm', "beta", "burr", "norm"])
+        f = Fitter(waiting_times, distributions=['gamma', 'lognorm', "burr", "norm"])
         f.fit()
         print(f.summary())
         print(f.get_best(method='sumsquare_error'))

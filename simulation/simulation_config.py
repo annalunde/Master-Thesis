@@ -22,17 +22,17 @@ arrival_rate_no_show = np.array([0.719047619047619, 0.8714285714285714, 0.838095
                                  0.01904761904761905], dtype=float)
 
 # percentage of requests with requested pickup time
-percentage_pickup = 98.02995391705069/100
+percentage_dropoff = 1.549186676994578/100
 
 # PARAMETERS FOR GAMMA DISTRIBUTION FOR REQUESTED PICKUP TIME
-pickup_fit_shape = 1.3346334881226953
-pickup_fit_loc = 0.1739661367700434
-pickup_fit_scale = 111.65621692325267
+pickup_fit_shape = 1.155987842566804
+pickup_fit_loc = 0.18057194538803223
+pickup_fit_scale = 99.79981438192749
 
 # PARAMETERS FOR GAMMA DISTRIBUTION FOR REQUESTED DROPOFF TIME
-dropoff_fit_shape = 2.820683965305726
-dropoff_fit_loc = 22.108798213626628
-dropoff_fit_scale = 59.20992852848555
+dropoff_fit_shape = 2.542159349839424
+dropoff_fit_loc = 19.77706537447331
+dropoff_fit_scale = 62.8899508584643
 
 # PARAMETERS FOR GAMMA DISTRIBUTION FOR DELAYS
 delay_fit_shape = 0.9226135117635452
