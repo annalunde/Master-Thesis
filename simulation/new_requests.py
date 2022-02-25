@@ -55,6 +55,7 @@ def main():
 
     try:
         new_request = NewRequests(data_path=config("data_simulator_path"))
+        #new_request = NewRequests(data_path=config("data_processed_path"))
         random_request = new_request.get_and_drop_random_request()
         print(random_request)
 

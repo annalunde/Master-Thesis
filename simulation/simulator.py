@@ -20,14 +20,18 @@ class Simulator:
 
         # calculate actual delay and no show
         # + see if there are remaining nodes that can be delayed, cancelled or no showed
+        add_request, request_info = self.new_request(request)
         delay_vehicle_index, delay_rid_index, duration_delay, actual_delay = self.delay(initial_delay)
         cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index = self.cancel(cancel)
         no_show_vehicle_index, no_show_pickup_rid_index, no_show_dropoff_rid_index, actual_no_show = self.no_show(initial_no_show)
 
         # identify earliest disruption time and corresponding disruption type
-        disruption_types = ['request']
-        disruption_times = [request]
+        disruption_types = []
+        disruption_times = []
 
+        if add_request > -1:
+            disruption_types.append('request')
+            disruption_times.append(request)
         if delay_rid_index > -1:
             disruption_types.append('delay')
             disruption_times.append(actual_delay)
@@ -38,59 +42,76 @@ class Simulator:
             disruption_types.append('no show')
             disruption_times.append(actual_no_show)
 
-        disruption_index = disruption_times.index(min(disruption_times))
-        disruption_type = disruption_types[disruption_index]
-        disruption_time = disruption_times[disruption_index]
+        # check whether a disruption has happened
+        if len(disruption_times) > 0:
+            disruption_index = disruption_times.index(min(disruption_times))
+            disruption_type = disruption_types[disruption_index]
+            disruption_time = disruption_times[disruption_index]
 
-        # call on function corresponding to disruption type to get disruption type, time/updated sim_clock, data
-        # VIKTIG Å HUSKE AT UPDATED SIM CLOCK ER DET SAMME SOM NY DISRUPTION TIME
-        if disruption_type == 'request':
-            return disruption_type, disruption_time, self.new_request(request)
-        elif disruption_type == 'delay':
-            # disruption_data is tuple with (delayed node rid, which vehicle delayed node on, delay in minutes)
-            return disruption_type, disruption_time, (delay_vehicle_index, delay_rid_index, duration_delay)
-        elif disruption_type == 'cancel':
-            # disruption data is tuple with (cancelled pickup rid, cancelled dropoff rid,
-            # which vehicle cancelled node on)
-            return disruption_type, disruption_time, (cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index)
+            # call on function corresponding to disruption type to get disruption type, time/updated sim_clock, data
+            # VIKTIG Å HUSKE AT UPDATED SIM CLOCK ER DET SAMME SOM NY DISRUPTION TIME
+            if disruption_type == 'request':
+                return disruption_type, disruption_time, request_info
+            elif disruption_type == 'delay':
+                # disruption_data is tuple with (delayed node rid, which vehicle delayed node on, delay in minutes)
+                return disruption_type, disruption_time, (delay_vehicle_index, delay_rid_index, duration_delay)
+            elif disruption_type == 'cancel':
+                # disruption data is tuple with (cancelled pickup rid, cancelled dropoff rid,
+                # which vehicle cancelled node on)
+                return disruption_type, disruption_time, (cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index)
+            else:
+                # disruption data is tuple with (no show pickup rid, no show dropoff rid, which vehicle no show node on)
+                return disruption_type, disruption_time, (no_show_vehicle_index, no_show_pickup_rid_index, no_show_dropoff_rid_index)
+
         else:
-            # disruption data is tuple with (no show pickup rid, no show dropoff rid, which vehicle no show node on)
-            return disruption_type, disruption_time, (no_show_vehicle_index, no_show_pickup_rid_index, no_show_dropoff_rid_index)
+            return "No disruption", "No disruption", "No disruption info"
 
-    def new_request(self, request):
+    def new_request(self, request_arrival):
         # return new request data
         random_number = np.random.rand()
         if random_number > percentage_dropoff:
             # request has requested pickup time - draw random time
-            requested_pickup_time = request + timedelta(minutes=gamma.rvs(pickup_fit_shape, pickup_fit_loc, pickup_fit_scale))
+            requested_pickup_time = request_arrival + timedelta(minutes=gamma.rvs(pickup_fit_shape, pickup_fit_loc, pickup_fit_scale))
 
-            # get random request
-            random_request = NewRequests(self.data_path).get_and_drop_random_request()
+            # if request arrival is after 17.45 or the requested pickup time is after 17.45, the request is ignored
+            if request_arrival > datetime(request_arrival.year, request_arrival.month, request_arrival.day, 17, 45, 00) \
+                    or requested_pickup_time > datetime(request_arrival.year, request_arrival.month, request_arrival.day, 17, 45, 00):
+                return -1, -1
 
-            # update creation time to request disruption time
-            random_request['Request Creation Time'] = request
+            else:
+                # get random request
+                random_request = NewRequests(self.data_path).get_and_drop_random_request()
 
-            # update requested pickup time and set requested dropoff time to NaN
-            random_request['Requested Pickup Time'] = requested_pickup_time
-            random_request['Requested Dropoff Time'] = None
+                # update creation time to request disruption time
+                random_request['Request Creation Time'] = request_arrival
 
-            return random_request
+                # update requested pickup time and set requested dropoff time to NaN
+                random_request['Requested Pickup Time'] = requested_pickup_time
+                random_request['Requested Dropoff Time'] = None
+
+                return 1, random_request
 
         else:
             # request has requested dropoff time - draw random time
-            requested_dropoff_time = request + timedelta(minutes=gamma.rvs(dropoff_fit_shape, dropoff_fit_loc, dropoff_fit_scale))
+            requested_dropoff_time = request_arrival + timedelta(minutes=gamma.rvs(dropoff_fit_shape, dropoff_fit_loc, dropoff_fit_scale))
 
-            # get random request
-            random_request = NewRequests(self.data_path).get_and_drop_random_request()
+            # if request arrival is after 17.45 or requested dropoff time is after 18.00, the request is ignored
+            if request_arrival > datetime(request_arrival.year, request_arrival.month, request_arrival.day, 17, 45, 00)\
+                    or requested_dropoff_time > datetime(request_arrival.year, request_arrival.month, request_arrival.day, 18, 00, 00):
+                return -1, -1
 
-            # update creation time to request disruption time
-            random_request['Request Creation Time'] = request
+            else:
+                # get random request
+                random_request = NewRequests(self.data_path).get_and_drop_random_request()
 
-            # update requested pickup time and set requested dropoff time to NaN
-            random_request['Requested Pickup Time'] = None
-            random_request['Requested Dropoff Time'] = requested_dropoff_time
+                # update creation time to request disruption time
+                random_request['Request Creation Time'] = request_arrival
 
-            return random_request
+                # update requested pickup time and set requested dropoff time to NaN
+                random_request['Requested Pickup Time'] = None
+                random_request['Requested Dropoff Time'] = requested_dropoff_time
+
+                return 1, random_request
 
     def delay(self, initial_delay):
         # draw duration of delay
@@ -181,7 +202,7 @@ def main():
              (1.5, datetime.strptime("2021-05-10 13:15:00", "%Y-%m-%d %H:%M:%S")), (3.5, datetime.strptime("2021-05-10 14:12:00", "%Y-%m-%d %H:%M:%S"))],
             [(2, datetime.strptime("2021-05-10 13:15:00", "%Y-%m-%d %H:%M:%S")), (2.5, datetime.strptime("2021-05-10 14:12:00", "%Y-%m-%d %H:%M:%S"))]
                       ]
-        sim_clock = datetime.strptime("2021-05-10 12:30:00", "%Y-%m-%d %H:%M:%S")
+        sim_clock = datetime.strptime("2021-05-10 16:00:00", "%Y-%m-%d %H:%M:%S")
         # første runde av simulator må kjøre med new requests fra data_processed_path for å få fullstendig antall
         # requests første runde, deretter skal rundene kjøre med data_simulator_path for å få updated data
         simulator = Simulator(sim_clock, current_route_plan, config("data_processed_path"))

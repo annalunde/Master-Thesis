@@ -37,7 +37,9 @@ class Poisson:
                                     hours, minutes, seconds)
                 disruption_timestamps.append(date_time)
 
-        disruption_time = self.sim_clock
+        # if no disruptions are found - set sim clock to at the end of the day
+        disruption_time = datetime(self.sim_clock.year, self.sim_clock.month, self.sim_clock.day,
+                                    18, 1, 00)
 
         # find first disruption time, but later than simulation clock
         for timestamp in disruption_timestamps:
@@ -59,7 +61,7 @@ def main():
         arrival_rates = np.array([14.728110599078342, 8.193548387096774, 6.2949308755760365, 5.557603686635945,
                                   5.428571428571429, 4.331797235023042, 2.824884792626728, 0.2350230414746544,
                                   0.0001], dtype=float)
-        sim_clock = datetime.strptime("2021-05-10 10:06:00", "%Y-%m-%d %H:%M:%S")
+        sim_clock = datetime.strptime("2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
         poisson = Poisson(arrival_rates, sim_clock)
         disruption_time = poisson.disruption_time()
         print(disruption_time)
