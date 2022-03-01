@@ -4,6 +4,9 @@ from decouple import config
 # Allowed excess ride time
 F = 1
 
+# Number of vehicles
+V = 16
+
 # Allowed deviaiton from Requested service time (either pickup or dropoff)
 D = 5
 

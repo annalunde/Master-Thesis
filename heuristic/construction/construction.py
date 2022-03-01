@@ -186,10 +186,11 @@ def main():
         df = pd.read_csv(config("test_data_construction"))
         print("Requests", df.head(10))
         print("Pickup", df.head(10)["Requested Pickup Time"])
-        constructor = ConstructionHeuristic(requests=df.head(10), vehicles=5)
+        constructor = ConstructionHeuristic(requests=df.head(10), vehicles=V)
         print("Constructing initial solution")
-        route_plan = constructor.construct_initial()
-        print("Route Plan", route_plan)
+        route_plan, current_objective, infeasible_set = constructor.construct_initial()
+        for i in route_plan:
+            print("Vehicle Route", i)
 
     except Exception as e:
         print("ERROR:", e)

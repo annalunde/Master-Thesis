@@ -76,7 +76,7 @@ class InsertionGenerator:
                                 # update backward
                                 if push_back:
                                     temp_route_plan[introduced_vehicle], activated_checks = self.update_backward(
-                                        vehicle_route=temp_route_plan[introduced_vehicle], start_p=start_p, push_back=push_back, activated_checks=activated_checks)
+                                        vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx, push_back=push_back, activated_checks=activated_checks, rid=rid, request=request)
 
                                 # check max ride time between nodes
                                 activated_checks = self.check_max_ride_time(
@@ -165,19 +165,19 @@ class InsertionGenerator:
                                 # update forward
                                 if push_forward_p:
                                     temp_route_plan[introduced_vehicle], activated_checks = self.update_forward(
-                                        vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx, push_forward=push_forward_p, activated_checks=activated_checks)
+                                        vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx, push_forward=push_forward_p, activated_checks=activated_checks, rid=rid, request=request)
                                 if end_node_d:
                                     if push_forward_d:
                                         temp_route_plan[introduced_vehicle], activated_checks = self.update_forward(
-                                            vehicle_route=temp_route_plan[introduced_vehicle], start_idx=end_idx, push_forward=push_forward_d, activated_checks=activated_checks)
+                                            vehicle_route=temp_route_plan[introduced_vehicle], start_idx=end_idx, push_forward=push_forward_d, activated_checks=activated_checks, rid=rid, request=request)
 
                                 # update backward
                                 if push_back_p:
                                     temp_route_plan[introduced_vehicle], activated_checks = self.update_backward(
-                                        vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx, push_back=push_back_p, activated_checks=activated_checks)
+                                        vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx, push_back=push_back_p, activated_checks=activated_checks, rid=rid, request=request)
                                 if push_back_d:
                                     temp_route_plan[introduced_vehicle], activated_checks = self.update_backward(
-                                        vehicle_route=temp_route_plan[introduced_vehicle], start_idx=end_idx, push_back=push_back_d, activated_checks=activated_checks)
+                                        vehicle_route=temp_route_plan[introduced_vehicle], start_idx=end_idx, push_back=push_back_d, activated_checks=activated_checks, rid=rid, request=request)
 
                                 # check max ride time between nodes
                                 activated_checks = self.check_max_ride_time(
@@ -240,7 +240,7 @@ class InsertionGenerator:
                                 # update backward
                                 if push_back:
                                     temp_route_plan[introduced_vehicle], activated_checks = self.update_backward(
-                                        vehicle_route=temp_route_plan[introduced_vehicle], start_p=start_p, push_back=push_back, activated_checks=activated_checks)
+                                        vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx, push_back=push_back, activated_checks=activated_checks, rid=rid, request=request)
 
                                 # check max ride time between nodes
                                 activated_checks = self.check_max_ride_time(
@@ -331,19 +331,19 @@ class InsertionGenerator:
                                 # update forward
                                 if push_forward_p:
                                     temp_route_plan[introduced_vehicle], activated_checks = self.update_forward(
-                                        vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx, push_forward=push_forward_p, activated_checks=activated_checks)
+                                        vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx, push_forward=push_forward_p, activated_checks=activated_checks, rid=rid, request=request)
                                 if e_d:
                                     if push_forward_d:
                                         temp_route_plan[introduced_vehicle], activated_checks = self.update_forward(
-                                            vehicle_route=temp_route_plan[introduced_vehicle], start_idx=end_idx, push_forward=push_forward_d, activated_checks=activated_checks)
+                                            vehicle_route=temp_route_plan[introduced_vehicle], start_idx=end_idx, push_forward=push_forward_d, activated_checks=activated_checks, rid=rid, request=request)
 
                                 # update backward
                                 if push_back_p:
                                     temp_route_plan[introduced_vehicle], activated_checks = self.update_backward(
-                                        vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx, push_back=push_back_p, activated_checks=activated_checks)
+                                        vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx, push_back=push_back_p, activated_checks=activated_checks, rid=rid, request=request)
                                 if push_back_d:
                                     temp_route_plan[introduced_vehicle], activated_checks = self.update_backward(
-                                        vehicle_route=temp_route_plan[introduced_vehicle], start_idx=end_idx, push_back=push_back_d, activated_checks=activated_checks)
+                                        vehicle_route=temp_route_plan[introduced_vehicle], start_idx=end_idx, push_back=push_back_d, activated_checks=activated_checks, rid=rid, request=request)
 
                                 # check max ride time between nodes
                                 activated_checks = self.check_max_ride_time(
@@ -386,7 +386,7 @@ class InsertionGenerator:
                         request=request, introduced_vehicle=new_vehicle, rid=rid, vehicle_route=temp_route_plan[new_vehicle])
 
                 else:
-                    temp_route_plan[introduced_vehicle] = self.add_initial_nodes_dropoff(
+                    temp_route_plan[new_vehicle] = self.add_initial_nodes_dropoff(
                         request=request, introduced_vehicle=new_vehicle, rid=rid, vehicle_route=temp_route_plan[new_vehicle])
 
                 # calculate change in objective
@@ -404,7 +404,7 @@ class InsertionGenerator:
         if (rid, request) in self.heuristic.infeasible_set:
             self.heuristic.infeasible_set.remove((rid, request))
 
-    def update_backward(self, vehicle_route, start_idx, push_back, activated_checks):
+    def update_backward(self, vehicle_route, start_idx, push_back, activated_checks, rid, request):
         for idx in range(start_idx, -1, -1):
             n, t, d, p, w = vehicle_route[idx]
             if abs(d) + push_back > D:
@@ -417,7 +417,7 @@ class InsertionGenerator:
             vehicle_route[idx] = (n, t, d, p, w)
         return vehicle_route, activated_checks
 
-    def update_forward(self, vehicle_route, start_idx, push_forward, activated_checks):
+    def update_forward(self, vehicle_route, start_idx, push_forward, activated_checks, rid, request):
         for idx, (n, t, d, p, w) in enumerate(vehicle_route[start_idx+1:]):
             if abs(d) + push_forward > D:
                 self.heuristic.infeasible_set.append(
