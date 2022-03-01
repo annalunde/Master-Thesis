@@ -80,7 +80,7 @@ class InsertionGenerator:
 
                                 # check max ride time between nodes
                                 activated_checks = self.check_max_ride_time(
-                                    vehicle_route=temp_route_plan[introduced_vehicle], activated_checks=activated_checks)
+                                    vehicle_route=temp_route_plan[introduced_vehicle], activated_checks=activated_checks, rid=rid, request=request)
 
                                 # check capacities
                                 activated_checks = self.check_capacities(
@@ -181,7 +181,7 @@ class InsertionGenerator:
 
                                 # check max ride time between nodes
                                 activated_checks = self.check_max_ride_time(
-                                    vehicle_route=temp_route_plan[introduced_vehicle], activated_checks=activated_checks)
+                                    vehicle_route=temp_route_plan[introduced_vehicle], activated_checks=activated_checks, rid=rid, request=request)
 
                                 # check capacities
                                 activated_checks = self.check_capacities(
@@ -244,7 +244,7 @@ class InsertionGenerator:
 
                                 # check max ride time between nodes
                                 activated_checks = self.check_max_ride_time(
-                                    vehicle_route=temp_route_plan[introduced_vehicle], activated_checks=activated_checks)
+                                    vehicle_route=temp_route_plan[introduced_vehicle], activated_checks=activated_checks, rid=rid, request=request)
 
                                 # check capacities
                                 activated_checks = self.check_capacities(
@@ -320,11 +320,11 @@ class InsertionGenerator:
                                     time - s_n_travel_time < timedelta(0) else 0
 
                                 if e_d:
-                                    if request["Requested Dropoff Time"] + timedelta(minutes=S) + d_e_travel_time <= end_time + timedelta(minutes=(D-end_deviation)):
+                                    if request["Requested Dropoff Time"] + timedelta(minutes=S) + d_e_travel_time <= end_time_d + timedelta(minutes=(D-end_deviation_d)):
                                         push_forward_d = request["Requested Dropoff Time"] + \
-                                            timedelta(minutes=S) + n_e_travel_time - end_time if end_time - \
+                                            timedelta(minutes=S) + d_e_travel_time - end_time_d if end_time_d - \
                                             request["Requested Dropoff Time"] - \
-                                            timedelta(minutes=S) - n_e_travel_time < timedelta(0) else 0
+                                            timedelta(minutes=S) - d_e_travel_time < timedelta(0) else 0
                                     else:
                                         activated_checks = True
 
@@ -347,7 +347,7 @@ class InsertionGenerator:
 
                                 # check max ride time between nodes
                                 activated_checks = self.check_max_ride_time(
-                                    vehicle_route=temp_route_plan[introduced_vehicle], activated_checks=activated_checks)
+                                    vehicle_route=temp_route_plan[introduced_vehicle], activated_checks=activated_checks, rid=rid, request=request)
 
                                 # check capacities
                                 activated_checks = self.check_capacities(
@@ -429,7 +429,7 @@ class InsertionGenerator:
             vehicle_route[idx] = (n, t, d, p, w)
         return vehicle_route, activated_checks
 
-    def check_max_ride_time(self, vehicle_route, activated_checks):
+    def check_max_ride_time(self, vehicle_route, activated_checks, rid, request):
         nodes = [int(n) for n, t, d, p, w in vehicle_route]
         nodes.remove(0)
         nodes_set = []
