@@ -30,19 +30,3 @@ class SimulatedAnnealing:
 
         return accept
 
-def main():
-    test = SimulatedAnnealing(200, 10, 10)
-
-    accept = test.accept_criterion(rnd.RandomState(), 500, 450)
-    print(accept)
-
-    accept = test.accept_criterion(rnd.RandomState(), 500, 450)
-    print(accept)
-
-    accept = test.accept_criterion(rnd.RandomState(), 500, 450)
-    print(accept)
-
-
-if __name__ == "__main__":
-    main()
-

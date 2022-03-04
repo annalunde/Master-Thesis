@@ -5,9 +5,9 @@ from datetime import datetime
 
 class Operators:
 
-    def __init__(self, destruction_degree, travel_times):
-        self.destruction_degree = destruction_degree
-        self.travel_times = travel_times
+    def __init__(self, alns):
+        self.destruction_degree = alns.destruction_degree
+        self.T_ij = alns.T_ij
 
     # Find number of requests to remove based on degree of destruction
     def nodes_to_remove(self, solution):
@@ -324,13 +324,13 @@ class Operators:
 
     # Function to calculate total travel time differences between requests
     def travel_time_difference(self, request_1, request_2):
-        num_requests = int(len(self.travel_times) / 2)
+        num_requests = int(len(self.T_ij) / 2)
         idx_1 = request_1 - 1
         idx_2 = request_2 - 1
-        return self.travel_times[idx_1][idx_2] + \
-               self.travel_times[idx_1 + num_requests][idx_2 + num_requests] + \
-               self.travel_times[idx_1 + num_requests][idx_2] + \
-               self.travel_times[idx_1][idx_2 + num_requests]
+        return self.T_ij[idx_1][idx_2] + \
+               self.T_ij[idx_1 + num_requests][idx_2 + num_requests] + \
+               self.T_ij[idx_1 + num_requests][idx_2] + \
+               self.T_ij[idx_1][idx_2 + num_requests]
 
     # Function to calculate service time differences between requests
     @staticmethod
@@ -360,44 +360,3 @@ class Operators:
                 if temp[0] == request:
                     return index, pickup
 
-
-def main():
-    try:
-        route_plan_1 = [
-            [(1, datetime.strptime("2021-05-10 12:02:00", "%Y-%m-%d %H:%M:%S"), 2),
-             (1.5, datetime.strptime("2021-05-10 12:10:00", "%Y-%m-%d %H:%M:%S"), 0),
-             (3, datetime.strptime("2021-05-10 16:02:00", "%Y-%m-%d %H:%M:%S"), 0),
-             (3.5, datetime.strptime("2021-05-10 17:02:00", "%Y-%m-%d %H:%M:%S"), 0)],
-            [(2, datetime.strptime("2021-05-10 13:15:00", "%Y-%m-%d %H:%M:%S"), 1),
-             (2.5, datetime.strptime("2021-05-10 14:12:00", "%Y-%m-%d %H:%M:%S"), 2),
-             (4, datetime.strptime("2021-05-10 12:15:00", "%Y-%m-%d %H:%M:%S"), 0),
-             (4.5, datetime.strptime("2021-05-10 12:30:00", "%Y-%m-%d %H:%M:%S"), 0)
-             ]
-        ]
-
-        travel_times = [
-            # 1  2  3  4  1.5  2.5  3.5  4.5
-            [0, 1, 4, 5, 5, 5, 4, 5],  # 1
-            [1, 0, 2, 3, 5, 5, 3, 5],  # 2
-            [4, 2, 0, 5, 5, 5, 5, 5],  # 3
-            [5, 5, 3, 0, 5, 5, 5, 5],  # 4
-            [5, 5, 5, 5, 0, 1, 5, 1],  # 1.5
-            [5, 5, 5, 5, 1, 0, 2, 2],  # 2.5
-            [4, 5, 5, 5, 0, 2, 0, 5],  # 3.5
-            [5, 5, 5, 5, 1, 2, 5, 0]  # 4.5
-        ]
-
-        print("route_plan: " + "\n", route_plan_1)
-        operators = Operators(0.5, travel_times)
-
-        route_plan, removed_requests = operators.distance_related_removal(route_plan_1)
-
-        print("modified:" + "\n", route_plan)
-        print("removed_nodes: ", removed_requests)
-
-    except Exception as e:
-        print("ERROR:", e)
-
-
-if __name__ == "__main__":
-    main()

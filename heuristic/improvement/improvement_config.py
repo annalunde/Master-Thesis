@@ -9,7 +9,7 @@ seed = 9876
 iterations = 1000
 
 # Initial route plan
-initial_solution = [
+current_route_plan = [
     [(1, datetime.strptime("2021-05-10 12:02:00", "%Y-%m-%d %H:%M:%S"), 2),
      (1.5, datetime.strptime("2021-05-10 12:10:00", "%Y-%m-%d %H:%M:%S"), 0),
      (3, datetime.strptime("2021-05-10 16:02:00", "%Y-%m-%d %H:%M:%S"), 0),
@@ -21,12 +21,14 @@ initial_solution = [
      ]
 ]
 
-initial_objective = 10000
+current_objective = 10000
 
 destruction_degree = 0.5
 
+infeasible_set = []
+
 # T_ij, travel time matrix
-travel_times = [
+T_ij = [
     # 1  2  3  4  1.5  2.5  3.5  4.5
     [0, 1, 4, 5, 5, 5, 4, 5],  # 1
     [1, 0, 2, 3, 5, 5, 3, 5],  # 2
