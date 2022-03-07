@@ -1,4 +1,5 @@
 from decouple import config
+from datetime import datetime, timedelta
 
 
 # Allowed excess ride time
@@ -8,7 +9,8 @@ F = 1
 V = 16
 
 # Allowed deviaiton from Requested service time (either pickup or dropoff)
-D = 5
+U_D = timedelta(minutes=5)
+L_D = timedelta(minutes=-5)
 
 # Estimated time to serve a node
 S = 2
