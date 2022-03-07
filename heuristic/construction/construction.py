@@ -141,7 +141,7 @@ class ConstructionHeuristic:
         D_ij = haversine_distances(lat_lon, lat_lon) * 6371
 
         # Travel time matrix
-        speed = 30
+        speed = 20
 
         T_ij = np.empty(
             shape=(self.num_nodes_and_depots,
@@ -206,7 +206,8 @@ def main():
 
     try:
         df = pd.read_csv(config("test_data_construction"))
-        constructor = ConstructionHeuristic(requests=df.head(106), vehicles=V)
+        constructor = ConstructionHeuristic(
+            requests=df.head(len(df.index)), vehicles=V)
         print("Constructing initial solution")
         route_plan, current_objective, infeasible_set = constructor.construct_initial()
 
@@ -219,6 +220,15 @@ def main():
                 print("service time", i[j][1])
                 print("deviation", i[j][2])
                 print("passengers", i[j][3])
+                if j > 1:
+                    to_id_n = i[j][0] % int(i[j][0])
+                    from_id_n = i[j-1][0] % int(i[j-1][0])
+                    to_id = int(i[j][0] - 0.5 - 1 +
+                                constructor.n if to_id_n else i[j][0] - 1)
+                    from_id = int(i[j-1][0] - 0.5 - 1 +
+                                  constructor.n if from_id_n else i[j-1][0] - 1)
+                    print("travel time", constructor.travel_time(
+                        to_id=to_id, from_id=from_id, fraction=True))
             v += 1
 
     except Exception as e:

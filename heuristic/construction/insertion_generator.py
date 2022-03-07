@@ -102,6 +102,11 @@ class InsertionGenerator:
                                         vehicle_route=test_vehicle_route,
                                         activated_checks=activated_checks, rid=rid, request=request)
 
+                                    # check min ride time between nodes on test vehicle route
+                                    activated_checks = self.check_min_ride_time(
+                                        vehicle_route=test_vehicle_route,
+                                        activated_checks=activated_checks, rid=rid, request=request)
+
                                     if not activated_checks:
                                         # can update temp route plan
                                         # update backward
@@ -298,6 +303,11 @@ class InsertionGenerator:
                                                 vehicle_route=test_vehicle_route,
                                                 activated_checks=activated_checks, rid=rid, request=request)
 
+                                            # check min ride time between nodes on test vehicle route
+                                            activated_checks = self.check_min_ride_time(
+                                                vehicle_route=test_vehicle_route,
+                                                activated_checks=activated_checks, rid=rid, request=request)
+
                                             if not activated_checks:
                                                 # add pickup node
                                                 pickup_id, vehicle_route = self.add_node(
@@ -367,6 +377,8 @@ class InsertionGenerator:
         for idx in range(start_idx, -1, -1):
             n, t, d, p, w, r = vehicle_route[idx]
             if d is not None:
+                t = t - push_back
+                d = d - push_back
                 vehicle_route[idx] = (n, t, d, p, w, r)
         return vehicle_route
 
@@ -405,6 +417,27 @@ class InsertionGenerator:
             max_time = self.heuristic.get_max_travel_time(
                 n-1, n-1 + self.heuristic.n)
             if total_time > max_time.total_seconds():
+                activated_checks = True
+                break
+        return activated_checks
+
+    def check_min_ride_time(self, vehicle_route, activated_checks, rid, request):
+        nodes = [n for n, t, d, p, w, _ in vehicle_route]
+        nodes.remove(0)
+        for i in range(2, len(nodes)):
+            s_idx = i
+            e_idx = i-1
+            sn, start_time, sd, sp, sw, _ = vehicle_route[s_idx]
+            en, end_time, ed, ep, ew, _ = vehicle_route[e_idx]
+            total_time = (end_time - start_time).seconds
+            sn_mod = sn % int(sn)
+            en_mod = en % int(en)
+            start_id = int(
+                sn - 0.5 - 1 + self.heuristic.n if sn_mod else sn - 1)
+            end_id = int(en - 0.5 - 1 + self.heuristic.n if en_mod else en - 1)
+            min_time = self.heuristic.travel_time(
+                end_id, start_id, False)
+            if total_time < min_time.total_seconds():
                 activated_checks = True
                 break
         return activated_checks
