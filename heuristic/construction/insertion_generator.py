@@ -380,6 +380,9 @@ class InsertionGenerator:
                 t = t - push_back
                 d = d - push_back
                 vehicle_route[idx] = (n, t, d, p, w, r)
+            else:
+                t = t - push_back
+                vehicle_route[idx] = (n, t, d, p, w, r)
         return vehicle_route
 
     def check_forward(self, vehicle_route, start_idx, push_forward, activated_checks, rid, request):
