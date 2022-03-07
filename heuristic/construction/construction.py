@@ -206,7 +206,7 @@ def main():
 
     try:
         df = pd.read_csv(config("test_data_construction"))
-        constructor = ConstructionHeuristic(requests=df.head(100), vehicles=V)
+        constructor = ConstructionHeuristic(requests=df.head(106), vehicles=V)
         print("Constructing initial solution")
         route_plan, current_objective, infeasible_set = constructor.construct_initial()
 
@@ -218,6 +218,7 @@ def main():
                 print("Node", i[j][0])
                 print("service time", i[j][1])
                 print("deviation", i[j][2])
+                print("passengers", i[j][3])
             v += 1
 
     except Exception as e:

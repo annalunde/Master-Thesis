@@ -411,9 +411,10 @@ class InsertionGenerator:
 
     def update_capacities(self, vehicle_route, start_id, dropoff_id, request, rid):
         idx = start_id+1
-        for n, t, d, p, w, _ in vehicle_route[start_id+1:dropoff_id]:
-            p = p + request["Number of Passengers"]
-            w = w + request["Wheelchair"]
+        end_id = dropoff_id if dropoff_id == start_id + 1 else dropoff_id + 1
+        for n, t, d, p, w, _ in vehicle_route[start_id+1:end_id]:
+            p += request["Number of Passengers"]
+            w += request["Wheelchair"]
             vehicle_route[idx] = (n, t, d, p, w, _)
             idx += 1
         return vehicle_route
