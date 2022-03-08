@@ -1,13 +1,21 @@
 import math
 import numpy.random as rnd
 from datetime import datetime
+from tqdm import tqdm
+from pandas import pd
+from datetime import timedelta
+from heuristic.construction.heuristic_config import *
+from heuristic.improvement.repair_generator import RepairGenerator
 
 
 class Operators:
 
-    def __init__(self, destruction_degree, travel_times):
-        self.destruction_degree = destruction_degree
-        self.travel_times = travel_times
+    def __init__(self, alns):
+        self.destruction_degree = alns.destruction_degree
+        self.T_ij = alns.T_ij
+        self.preprocessed = alns.preprocessed
+        self.repair_generator = RepairGenerator(self)
+        self.infeasible_set = []
 
     # Find number of requests to remove based on degree of destruction
     def nodes_to_remove(self, solution):
@@ -316,21 +324,57 @@ class Operators:
         return destroyed_solution, removed_requests
 
     # Repair operators
-    def greedy_repair(self, destroyed_solution, removed_requests):
-        return new_solution, new_objective
+    def greedy_repair(self, destroyed_solution, destroyed_objective, removed_requests, infeasible_set):
+        unassigned_requests = removed_requests + infeasible_set
+        unassigned_requests.sort(key=lambda x:x[1]["Requested Pickup Time"])
+        route_plan = destroyed_solution.copy()
+        infeasible_set = []
+        for i in tqdm(range(unassigned_requests.shape[0]), colour='#39ff14'):
+            # while not unassigned_requests.empty:
+            rid = unassigned_requests.iloc[i][0]
+            request = unassigned_requests.iloc[i][1]
+
+            route_plan, delta_objective, infeasible_set = self.repair_generator.generate_insertions(
+                route_plan=route_plan, request=request, rid=rid)
+
+            # update current objective
+            destroyed_objective += delta_objective
+
+        return route_plan, destroyed_objective, self.infeasible_set
 
     def regret_repair(self, destroyed_solution, removed_requests):
         return new_solution, new_objective
 
     # Function to calculate total travel time differences between requests
     def travel_time_difference(self, request_1, request_2):
-        num_requests = int(len(self.travel_times) / 2)
+        num_requests = int(len(self.T_ij) / 2)
         idx_1 = request_1 - 1
         idx_2 = request_2 - 1
-        return self.travel_times[idx_1][idx_2] + \
-               self.travel_times[idx_1 + num_requests][idx_2 + num_requests] + \
-               self.travel_times[idx_1 + num_requests][idx_2] + \
-               self.travel_times[idx_1][idx_2 + num_requests]
+        return self.T_ij[idx_1][idx_2] + \
+               self.T_ij[idx_1 + num_requests][idx_2 + num_requests] + \
+               self.T_ij[idx_1 + num_requests][idx_2] + \
+               self.T_ij[idx_1][idx_2 + num_requests]
+
+    def delta_objective(self, new_routeplan):
+        total_deviation = timedelta(minutes=0)
+        total_travel_time = timedelta(minutes=0)
+        for vehicle_route in new_routeplan:
+            diff = (pd.to_datetime(
+                vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
+            total_travel_time += timedelta(minutes=diff)
+            for n, t, d, p, w, _ in vehicle_route:
+                if d is not None:
+                    total_deviation += d
+
+        updated = alpha*total_deviation + \
+            beta*total_travel_time
+        return updated
+
+    def travel_time(self, to_id, from_id, fraction):
+        return timedelta(seconds=(1+F/2) * self.T_ij[to_id, from_id]) if fraction else timedelta(seconds=self.T_ij[to_id, from_id])
+
+    def get_max_travel_time(self, to_id, from_id):
+        return timedelta(seconds=(1+F) * self.T_ij[to_id, from_id])
 
     # Function to calculate service time differences between requests
     @staticmethod
@@ -360,44 +404,3 @@ class Operators:
                 if temp[0] == request:
                     return index, pickup
 
-
-def main():
-    try:
-        route_plan_1 = [
-            [(1, datetime.strptime("2021-05-10 12:02:00", "%Y-%m-%d %H:%M:%S"), 2),
-             (1.5, datetime.strptime("2021-05-10 12:10:00", "%Y-%m-%d %H:%M:%S"), 0),
-             (3, datetime.strptime("2021-05-10 16:02:00", "%Y-%m-%d %H:%M:%S"), 0),
-             (3.5, datetime.strptime("2021-05-10 17:02:00", "%Y-%m-%d %H:%M:%S"), 0)],
-            [(2, datetime.strptime("2021-05-10 13:15:00", "%Y-%m-%d %H:%M:%S"), 1),
-             (2.5, datetime.strptime("2021-05-10 14:12:00", "%Y-%m-%d %H:%M:%S"), 2),
-             (4, datetime.strptime("2021-05-10 12:15:00", "%Y-%m-%d %H:%M:%S"), 0),
-             (4.5, datetime.strptime("2021-05-10 12:30:00", "%Y-%m-%d %H:%M:%S"), 0)
-             ]
-        ]
-
-        travel_times = [
-            # 1  2  3  4  1.5  2.5  3.5  4.5
-            [0, 1, 4, 5, 5, 5, 4, 5],  # 1
-            [1, 0, 2, 3, 5, 5, 3, 5],  # 2
-            [4, 2, 0, 5, 5, 5, 5, 5],  # 3
-            [5, 5, 3, 0, 5, 5, 5, 5],  # 4
-            [5, 5, 5, 5, 0, 1, 5, 1],  # 1.5
-            [5, 5, 5, 5, 1, 0, 2, 2],  # 2.5
-            [4, 5, 5, 5, 0, 2, 0, 5],  # 3.5
-            [5, 5, 5, 5, 1, 2, 5, 0]  # 4.5
-        ]
-
-        print("route_plan: " + "\n", route_plan_1)
-        operators = Operators(0.5, travel_times)
-
-        route_plan, removed_requests = operators.distance_related_removal(route_plan_1)
-
-        print("modified:" + "\n", route_plan)
-        print("removed_nodes: ", removed_requests)
-
-    except Exception as e:
-        print("ERROR:", e)
-
-
-if __name__ == "__main__":
-    main()

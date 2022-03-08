@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import numpy.random as rnd
 from collections import OrderedDict
 
@@ -8,14 +9,21 @@ from heuristic.improvement.improvement_config import *
 
 
 class ALNS:
-    def __init__(self, weights, reaction_factor, rnd_state=rnd.RandomState()):
+    def __init__(self, weights, reaction_factor, current_route_plan, current_objective, infeasible_set, criterion, destruction_degree, T_ij, preprocessed, rnd_state=rnd.RandomState()):
         # Reaction_factor (r) is a parameter that controls how fast weights adjust.
         # Weights is array of four elements, index 0 highest, 3 lowest
         self.destroy_operators = OrderedDict()
         self.repair_operators = OrderedDict()
         self.rnd_state = rnd_state
         self.reaction_factor = reaction_factor
+        self.infeasible_set = infeasible_set
         self.weights = weights
+        self.route_plan = current_route_plan
+        self.destruction_degree = destruction_degree
+        self.objective = current_objective
+        self.criterion = criterion
+        self.T_ij = T_ij
+        self.preprocessed = preprocessed
 
     # Add operator to the heuristic instance
     def add_destroy_operator(self, operator):
@@ -36,7 +44,7 @@ class ALNS:
     # Select destroy/repair operator
     @staticmethod
     def select_operator(operator, weights, rnd_state):
-        return rnd_state.choice(np.arrange(0, len(operator)), p=weights / np.sum(weights))
+        return rnd_state.choice(np.arange(0, len(operator)), p=weights / np.sum(weights))
 
     # Evaluate candidate
     def evaluate_candidate(self, best, best_objective, current, current_objective, candidate, candidate_objective,
@@ -66,11 +74,11 @@ class ALNS:
         return best, best_objective, current, current_objective, weight_score
 
     # Run ALNS algorithm
-    def iterate(self, initial_solution, initial_objective, num_iterations, criterion):
+    def iterate(self, num_iterations):
 
         weights = np.asarray(self.weights, dtype=np.float16)
-        current = best = initial_solution
-        current_objective = best_objective = initial_objective
+        current = best = self.route_plan
+        current_objective = best_objective = self.objective
 
         d_weights = np.ones(len(self.destroy_operators), dtype=np.float16)
         r_weights = np.ones(len(self.repair_operators), dtype=np.float16)
@@ -84,11 +92,11 @@ class ALNS:
 
             # Destroy solution
             d_name, d_operator = self.destroy_operators[destroy]
-            destroyed_sol, removed_nodes = d_operator(current)
+            destroyed_route, destroyed_obj, removed_requests = d_operator(current)
 
             # Fix solution
             r_name, r_operator = self.repair_operators[repair]
-            candidate, candidate_objective = r_operator(destroyed_sol, removed_nodes)
+            candidate, candidate_objective = r_operator(destroyed_route, destroyed_obj, removed_requests, self.infeasible_set)
 
             # Compare solutions
             best, best_objective, current, current_objective, weight_score = self.evaluate_candidate(best,
@@ -97,38 +105,10 @@ class ALNS:
                                                                                                      current_objective,
                                                                                                      candidate,
                                                                                                      candidate_objective,
-                                                                                                     criterion)
+                                                                                                     self.criterion)
 
             # Update weights
             d_weights = d_weights * (1 - self.reaction_factor) + (self.reaction_factor * weights[weight_score])
             r_weights = r_weights * (1 - self.reaction_factor) + (self.reaction_factor * weights[weight_score])
 
         return best, best_objective
-
-def main():
-
-    random_state = rnd.RandomState(seed)
-
-    alns = ALNS(weights, reaction_factor, random_state)
-
-    operators = Operators(destruction_degree, travel_times)
-
-    criterion = SimulatedAnnealing(start_temperature, end_temperature, step)
-
-    # Add destroy operators
-    alns.add_destroy_operator(operators.random_removal)
-    alns.add_destroy_operator(operators.time_related_removal)
-    alns.add_destroy_operator(operators.distance_related_removal)
-    alns.add_destroy_operator(operators.related_removal)
-    alns.add_destroy_operator(operators.worst_deviation_removal)
-
-    # Add repair operators
-    alns.add_repair_operator(operators.greedy_repair)
-    alns.add_repair_operator(operators.regret_repair)
-
-    # Run algorithm
-    result = alns.iterate(initial_solution, initial_objective, iterations, criterion)
-
-
-if __name__ == "__main__":
-    main()
