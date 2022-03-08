@@ -8,10 +8,6 @@ from heuristic_config import *
 from decouple import config
 from datetime import datetime, timedelta
 
-"""
-NOTE: we only try to add it after the first node that is closest in time
-"""
-
 
 class InsertionGenerator:
     def __init__(self, construction_heuristic):
@@ -29,9 +25,9 @@ class InsertionGenerator:
                     temp_route_plan[introduced_vehicle] = self.add_initial_nodes_pickup(request=request, introduced_vehicle=introduced_vehicle, rid=rid, vehicle_route=temp_route_plan[introduced_vehicle]
                                                                                         )
                 # calculate change in objective
-                change_objective = self.heuristic.delta_objective(
+                new_objective = self.heuristic.new_objective(
                     temp_route_plan)
-                possible_insertions[change_objective] = temp_route_plan
+                possible_insertions[new_objective] = temp_route_plan
 
             else:
                 # the vehicle already has other nodes in its route
@@ -132,9 +128,9 @@ class InsertionGenerator:
                                         self.check_remove(rid, request)
 
                                         # calculate change in objective
-                                        change_objective = self.heuristic.delta_objective(
+                                        new_objective = self.heuristic.new_objective(
                                             temp_route_plan)
-                                        possible_insertions[change_objective] = temp_route_plan
+                                        possible_insertions[new_objective] = temp_route_plan
                         else:
                             e_p_node, e_p_time, e_p_d, e_p_p, e_p_w, _ = vehicle_route[start_idx + 1]
                             s_p = s_p_node % int(s_p_node)
@@ -327,9 +323,9 @@ class InsertionGenerator:
                                                 self.check_remove(rid, request)
 
                                                 # calculate change in objective
-                                                change_objective = self.heuristic.delta_objective(
+                                                new_objective = self.heuristic.new_objective(
                                                     temp_route_plan)
-                                                possible_insertions[change_objective] = temp_route_plan
+                                                possible_insertions[new_objective] = temp_route_plan
 
                         # update capacity between pickup and dropoff
                         if feasible_request:
@@ -350,9 +346,9 @@ class InsertionGenerator:
                         request=request, introduced_vehicle=new_vehicle, rid=rid, vehicle_route=temp_route_plan[new_vehicle])
 
                 # calculate change in objective
-                change_objective = self.heuristic.delta_objective(
+                new_objective = self.heuristic.new_objective(
                     temp_route_plan)
-                possible_insertions[change_objective] = temp_route_plan
+                possible_insertions[new_objective] = temp_route_plan
 
             # if no new vehicles available, append the request in an infeasible set
             else:
