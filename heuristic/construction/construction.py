@@ -89,7 +89,7 @@ class ConstructionHeuristic:
                 route_plan=route_plan, request=request, rid=rid)
 
             # update current objective
-            self.current_objective += new_objective
+            self.current_objective = new_objective
 
             rid += 1
         return route_plan, self.current_objective, pd.DataFrame(self.infeasible_set)
@@ -230,6 +230,8 @@ def main():
                     print("travel time", constructor.travel_time(
                         to_id=to_id, from_id=from_id, fraction=True))
             v += 1
+
+        print("Infeasible set", infeasible_set)
 
     except Exception as e:
         print("ERROR:", e)
