@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 from decouple import config
+from datetime import datetime, timedelta
 import numpy as np
 
 
@@ -121,8 +122,44 @@ class Preprocessor:
         data = data.loc[df['Origin Zone'] != "Nes"]
         data = data.loc[df['Destination Zone'] != "8. Nes"]
         data = data.loc[df['Destination Zone'] != "Nes"]
-        print(data.head())
         data.to_csv(config("data_processed_path"))
+
+    def generate_one_day_completed(self, date):
+        df = pd.read_csv(config("data_processed_path"))
+        df = df.loc[df["Request Status"] == "Completed"]
+
+        df["Requested Pickup Time"] = pd.to_datetime(
+            df["Requested Pickup Time"], format="%Y-%m-%d %H:%M:%S"
+        )
+        df["Requested Dropoff Time"] = pd.to_datetime(
+            df["Requested Dropoff Time"], format="%Y-%m-%d %H:%M:%S"
+        )
+        df["Request Creation Time"] = pd.to_datetime(
+            df["Request Creation Time"], format="%Y-%m-%d %H:%M:%S"
+        )
+
+        valid_date = datetime(date[0], date[1], date[2])
+        next_day = valid_date + timedelta(days=1)
+
+        df_filtered = df[
+            (
+                (df["Requested Pickup Time"] > valid_date)
+                & (df["Requested Pickup Time"] < next_day)
+            )
+            | (
+                (df["Requested Dropoff Time"] > valid_date)
+                & (df["Requested Dropoff Time"] < next_day)
+            )
+        ]
+
+        # Filter out the requests that arrived before 10 o'clock of the specific date and return these
+        time = datetime(date[0], date[1], date[2], 10)
+
+        df_filtered_before_10 = df_filtered[
+            (df_filtered["Request Creation Time"] <= time)
+        ]
+
+        df_filtered_before_10.to_csv(config("test_data_construction"))
 
 
 def main():
@@ -132,9 +169,10 @@ def main():
         preprocessor = Preprocessor(
             data_path=config("data_initial_path"))
         print("Preprocessing data RAT: ")
-        preprocessor.process_data_RAT()
+        # preprocessor.process_data_RAT()
         # print("Preprocessing data TT: ")
         # preprocessor.process_data_TT()
+        preprocessor.generate_one_day_completed(date=[2021, 5, 10])
 
     except Exception as e:
         print("ERROR:", e)
