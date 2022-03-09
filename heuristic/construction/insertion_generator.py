@@ -4,7 +4,7 @@ import numpy as np
 import pandas
 import sklearn.metrics
 from math import radians
-from heuristic_config import *
+from heuristic.construction.heuristic_config import *
 from decouple import config
 from datetime import datetime, timedelta
 

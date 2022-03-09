@@ -4,10 +4,9 @@ import numpy as np
 import pandas
 import sklearn.metrics
 from math import radians
-from alns import *
+from heuristic.construction.heuristic_config import *
 from decouple import config
 from datetime import datetime, timedelta
-from heuristic.construction.heuristic_config import *
 
 """
 NOTE: we only try to add it after the first node that is closest in time
@@ -15,13 +14,10 @@ NOTE: we only try to add it after the first node that is closest in time
 
 
 class RepairGenerator:
-    def __init__(self, construction_heuristic, infeasible_set):
+    def __init__(self, construction_heuristic):
         self.heuristic = construction_heuristic
-        self.infeasible_set = infeasible_set
 
-    def generate_insertions(self, route_plan, request, rid):
-        # regne ut introduced vehicles
-
+    def generate_insertions(self, route_plan, request, rid, infeasible_set):
         possible_insertions = {}  # dict: delta objective --> route plan
         for introduced_vehicle in self.heuristic.introduced_vehicles:
             # generate all possible insertions
@@ -78,13 +74,13 @@ class RepairGenerator:
                                 # check backward
                                 if push_back:
                                     activated_checks = self.check_backward(
-                                        vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx, push_back=push_back, activated_checks=activated_checks, rid=rid, request=request)
+                                        vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx, push_back=push_back, activated_checks=activated_checks, rid=rid, request=request, infeasible_set=infeasible_set)
 
                                 # check capacities
                                 activated_checks = self.check_capacities(
                                     vehicle_route=temp_route_plan[introduced_vehicle], request=request, rid=rid,
                                     start_id=start_idx + 1, dropoff_id=start_idx + 2,
-                                    activated_checks=activated_checks)
+                                    activated_checks=activated_checks, infeasible_set=infeasible_set)
 
                                 if not activated_checks:
 
@@ -103,6 +99,11 @@ class RepairGenerator:
 
                                     # check max ride time between nodes on test vehicle route
                                     activated_checks = self.check_max_ride_time(
+                                        vehicle_route=test_vehicle_route,
+                                        activated_checks=activated_checks, rid=rid, request=request)
+
+                                    # check min ride time between nodes on test vehicle route
+                                    activated_checks = self.check_min_ride_time(
                                         vehicle_route=test_vehicle_route,
                                         activated_checks=activated_checks, rid=rid, request=request)
 
@@ -128,7 +129,7 @@ class RepairGenerator:
 
                                         feasible_request = True
 
-                                        self.check_remove(rid, request)
+                                        self.check_remove(rid, request, infeasible_set)
 
                                         # calculate change in objective
                                         change_objective = self.heuristic.delta_objective(
@@ -164,14 +165,14 @@ class RepairGenerator:
                                     activated_checks = self.check_forward(
                                         vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx,
                                         push_forward=push_forward_p, activated_checks=activated_checks, rid=rid,
-                                        request=request)
+                                        request=request, infeasible_set=infeasible_set)
 
                                 # check backward
                                 if push_back_p:
                                     activated_checks = self.check_backward(
                                         vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx,
                                         push_back=push_back_p, activated_checks=activated_checks, rid=rid,
-                                        request=request)
+                                        request=request, infeasible_set=infeasible_set)
 
                                 if not activated_checks:
                                     # update forward
@@ -256,7 +257,8 @@ class RepairGenerator:
                                                 activated_checks = self.check_forward(
                                                     vehicle_route=test_vehicle_route,
                                                     start_idx=end_idx, push_forward=push_forward_d,
-                                                    activated_checks=activated_checks, rid=rid, request=request)
+                                                    activated_checks=activated_checks, rid=rid, request=request,
+                                                    infeasible_set=infeasible_set)
 
                                         # check backward
                                         if push_back_d:
@@ -264,7 +266,7 @@ class RepairGenerator:
                                                 vehicle_route=test_vehicle_route, start_idx=start_idx,
                                                 push_back=push_back_d, activated_checks=activated_checks,
                                                 rid=rid,
-                                                request=request)
+                                                request=request, infeasible_set=infeasible_set)
 
                                         if not activated_checks:
                                             # update forward
@@ -295,10 +297,15 @@ class RepairGenerator:
                                                 vehicle_route=test_vehicle_route, request=request,
                                                 rid=rid,
                                                 start_id=start_idx + 1, dropoff_id=end_idx + 1,
-                                                activated_checks=activated_checks)
+                                                activated_checks=activated_checks, infeasible_set=infeasible_set)
 
                                             # check max ride time between nodes
                                             activated_checks = self.check_max_ride_time(
+                                                vehicle_route=test_vehicle_route,
+                                                activated_checks=activated_checks, rid=rid, request=request)
+
+                                            # check min ride time between nodes on test vehicle route
+                                            activated_checks = self.check_min_ride_time(
                                                 vehicle_route=test_vehicle_route,
                                                 activated_checks=activated_checks, rid=rid, request=request)
 
@@ -318,7 +325,7 @@ class RepairGenerator:
 
                                                 feasible_request = True
 
-                                                self.check_remove(rid, request)
+                                                self.check_remove(rid, request, infeasible_set)
 
                                                 # calculate change in objective
                                                 change_objective = self.heuristic.delta_objective(
@@ -350,19 +357,19 @@ class RepairGenerator:
 
             # if no new vehicles available, append the request in an infeasible set
             else:
-                if (rid, request) not in self.infeasible_set:
-                    self.infeasible_set.append((rid, request))
+                if (rid, request) not in infeasible_set:
+                    infeasible_set.append((rid, request))
 
         return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else timedelta(0)
 
-    def check_remove(self, rid, request):
-        if (rid, request) in self.infeasible_set:
-            self.infeasible_set.remove((rid, request))
+    def check_remove(self, rid, request, infeasible_set):
+        if (rid, request) in infeasible_set:
+            infeasible_set.remove((rid, request))
 
-    def check_backward(self, vehicle_route, start_idx, push_back, activated_checks, rid, request):
+    def check_backward(self, vehicle_route, start_idx, push_back, activated_checks, rid, request, infeasible_set):
         for idx in range(start_idx, -1, -1):
             n, t, d, p, w, _ = vehicle_route[idx]
-            if d is not None and d - push_back < L_D and (rid, request) not in self.infeasible_set:
+            if d is not None and d - push_back < L_D and (rid, request) not in infeasible_set:
                 activated_checks = True
                 break
         return activated_checks
@@ -371,14 +378,19 @@ class RepairGenerator:
         for idx in range(start_idx, -1, -1):
             n, t, d, p, w, r = vehicle_route[idx]
             if d is not None:
+                t = t - push_back
+                d = d - push_back
+                vehicle_route[idx] = (n, t, d, p, w, r)
+            else:
+                t = t - push_back
                 vehicle_route[idx] = (n, t, d, p, w, r)
         return vehicle_route
 
-    def check_forward(self, vehicle_route, start_idx, push_forward, activated_checks, rid, request):
+    def check_forward(self, vehicle_route, start_idx, push_forward, activated_checks, rid, request, infeasible_set):
         idx = start_idx + 1
         for n, t, d, p, w, _ in vehicle_route[start_idx+1:]:
             # since updating happens at start_idx + 1, there is no need to check for depot
-            if d + push_forward > U_D and (rid, request) not in self.infeasible_set:
+            if d + push_forward > U_D and (rid, request) not in infeasible_set:
                 activated_checks = True
                 break
         return activated_checks
@@ -413,18 +425,40 @@ class RepairGenerator:
                 break
         return activated_checks
 
+    def check_min_ride_time(self, vehicle_route, activated_checks, rid, request):
+        nodes = [n for n, t, d, p, w, _ in vehicle_route]
+        nodes.remove(0)
+        for i in range(2, len(nodes)):
+            s_idx = i
+            e_idx = i-1
+            sn, start_time, sd, sp, sw, _ = vehicle_route[s_idx]
+            en, end_time, ed, ep, ew, _ = vehicle_route[e_idx]
+            total_time = (end_time - start_time).seconds
+            sn_mod = sn % int(sn)
+            en_mod = en % int(en)
+            start_id = int(
+                sn - 0.5 - 1 + self.heuristic.n if sn_mod else sn - 1)
+            end_id = int(en - 0.5 - 1 + self.heuristic.n if en_mod else en - 1)
+            min_time = self.heuristic.travel_time(
+                end_id, start_id, False)
+            if total_time < min_time.total_seconds():
+                activated_checks = True
+                break
+        return activated_checks
+
     def update_capacities(self, vehicle_route, start_id, dropoff_id, request, rid):
         idx = start_id+1
-        for n, t, d, p, w, _ in vehicle_route[start_id+1:dropoff_id]:
-            p = p + request["Number of Passengers"]
-            w = w + request["Wheelchair"]
+        end_id = dropoff_id if dropoff_id == start_id + 1 else dropoff_id + 1
+        for n, t, d, p, w, _ in vehicle_route[start_id+1:end_id]:
+            p += request["Number of Passengers"]
+            w += request["Wheelchair"]
             vehicle_route[idx] = (n, t, d, p, w, _)
             idx += 1
         return vehicle_route
 
-    def check_capacities(self, vehicle_route, start_id, dropoff_id, request, rid, activated_checks):
+    def check_capacities(self, vehicle_route, start_id, dropoff_id, request, rid, activated_checks, infeasible_set):
         for n, t, d, p, w, _ in vehicle_route[start_id+1:dropoff_id]:
-            if p + request["Number of Passengers"] > P and (rid, request) not in self.infeasible_set or w + request["Wheelchair"] > W and (rid, request) not in self.infeasible_set:
+            if p + request["Number of Passengers"] > P and (rid, request) not in infeasible_set or w + request["Wheelchair"] > W and (rid, request) not in infeasible_set:
                 activated_checks = True
                 break
         return activated_checks

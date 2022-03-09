@@ -8,8 +8,8 @@ from tqdm import tqdm
 from math import radians
 import sklearn.metrics
 from decouple import config
-from heuristic_config import *
-from insertion_generator import InsertionGenerator
+from heuristic.construction.heuristic_config import *
+from heuristic.construction.insertion_generator import InsertionGenerator
 from datetime import datetime, timedelta
 from sklearn.metrics.pairwise import haversine_distances
 pd.options.mode.chained_assignment = None
@@ -89,10 +89,11 @@ class ConstructionHeuristic:
                 route_plan=route_plan, request=request, rid=rid)
 
             # update current objective
-            self.current_objective += delta_objective
+            self.current_objective = delta_objective
 
             rid += 1
-        return route_plan, self.current_objective, pd.DataFrame(self.infeasible_set)
+        '''NOTE: returnerer self.infeasible_set som liste, ikke dataframe'''
+        return route_plan, self.current_objective, self.infeasible_set
 
     def delta_objective(self, new_routeplan):
         total_deviation = timedelta(minutes=0)

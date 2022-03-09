@@ -2,6 +2,7 @@ import pandas as pd
 from decouple import config
 import sys
 import numpy.random as rnd
+import numpy as np
 from heuristic.construction.construction import ConstructionHeuristic
 from heuristic.construction.heuristic_config import *
 from heuristic.improvement.alns import ALNS
@@ -21,28 +22,30 @@ def main():
         initial_route_plan, initial_objective, infeasible_set = constructor.construct_initial()
 
         # IMPROVEMENT OF INITIAL SOLUTION
-        random_state = rnd.RandomState(seed)
+        random_state = rnd.RandomState()
 
         criterion = SimulatedAnnealing(start_temperature, end_temperature, step)
 
         alns = ALNS(weights, reaction_factor, initial_route_plan, initial_objective, infeasible_set, criterion,
-                    destruction_degree, constructor.T_ij, constructor.preprocessed, random_state)
+                    destruction_degree, constructor, random_state)
 
         operators = Operators(alns)
 
         # Add destroy operators
-        alns.add_destroy_operator(operators.random_removal)
-        alns.add_destroy_operator(operators.time_related_removal)
-        alns.add_destroy_operator(operators.distance_related_removal)
-        alns.add_destroy_operator(operators.related_removal)
+        #alns.add_destroy_operator(operators.random_removal)
+        #alns.add_destroy_operator(operators.time_related_removal)
+        #alns.add_destroy_operator(operators.distance_related_removal)
+        #alns.add_destroy_operator(operators.related_removal)
         alns.add_destroy_operator(operators.worst_deviation_removal)
 
         # Add repair operators
         alns.add_repair_operator(operators.greedy_repair)
-        alns.add_repair_operator(operators.regret_repair)
+        #alns.add_repair_operator(operators.regret_repair)
 
         # Run ALNS
-        result = alns.iterate(iterations)
+        route_plan, objective = alns.iterate(iterations)
+        print(route_plan)
+        print(objective)
 
     except Exception as e:
         print("ERROR:", e)
