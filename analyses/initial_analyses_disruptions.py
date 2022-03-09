@@ -23,16 +23,21 @@ class AnalyserDisruptions:
     def new_request(self):
         df = pd.read_csv(self.data_path)
         df_request = df[df['Request Status'].isin(["Completed"])]
-        df_request['Request Creation Time'] = pd.to_datetime(df_request['Request Creation Time'], format="%Y-%m-%d %H:%M:%S")
-        df_request['Requested Pickup Time'] = pd.to_datetime(df_request['Requested Pickup Time'], format="%Y-%m-%d %H:%M:%S")
-        df_request['Requested Dropoff Time'] = pd.to_datetime(df_request['Requested Dropoff Time'], format="%Y-%m-%d %H:%M:%S")
+        df_request['Request Creation Time'] = pd.to_datetime(
+            df_request['Request Creation Time'], format="%Y-%m-%d %H:%M:%S")
+        df_request['Requested Pickup Time'] = pd.to_datetime(
+            df_request['Requested Pickup Time'], format="%Y-%m-%d %H:%M:%S")
+        df_request['Requested Dropoff Time'] = pd.to_datetime(
+            df_request['Requested Dropoff Time'], format="%Y-%m-%d %H:%M:%S")
 
         # request arrives at same day as it is requested to be served
-        df_request["Requested Pickup/Dropoff Time"] = (df_request["Requested Pickup Time"]).fillna(df_request["Requested Dropoff Time"])
+        df_request["Requested Pickup/Dropoff Time"] = (
+            df_request["Requested Pickup Time"]).fillna(df_request["Requested Dropoff Time"])
         df_request['Date Creation'] = df_request['Request Creation Time'].dt.date
         df_request['Time Creation'] = df_request['Request Creation Time'].dt.hour
         df_request['Date Pickup/Dropoff'] = df_request['Requested Pickup/Dropoff Time'].dt.date
-        df_request = df_request[df_request['Date Creation'] == df_request['Date Pickup/Dropoff']]
+        df_request = df_request[df_request['Date Creation']
+                                == df_request['Date Pickup/Dropoff']]
         # requests arrives after 10am
         df_request = df_request[
             (df_request['Time Creation'] >= 10)
@@ -45,13 +50,18 @@ class AnalyserDisruptions:
         # number of requested pickups vs requested dropoffs
         df_pickup = df_request.dropna(subset=['Requested Pickup Time'])
         df_dropoff = df_request.dropna(subset=['Requested Dropoff Time'])
-        print("Total number of requests to be served on the same day as request is made: ", df_request.shape[0])
-        print("Percentage of requests with requested pickup time: ", (df_pickup.shape[0]*100)/df_request.shape[0])
-        print("Percentage of requests with requested dropoff time: ", (df_dropoff.shape[0] * 100) / df_request.shape[0])
+        print("Total number of requests to be served on the same day as request is made: ",
+              df_request.shape[0])
+        print("Percentage of requests with requested pickup time: ",
+              (df_pickup.shape[0]*100)/df_request.shape[0])
+        print("Percentage of requests with requested dropoff time: ",
+              (df_dropoff.shape[0] * 100) / df_request.shape[0])
 
         # number of minutes between the request creation and the requested pickup/dropoff time
-        df_pickup['Diff Creation and Requested Pickup'] = df_pickup['Requested Pickup Time'] - df_pickup['Request Creation Time']
-        df_dropoff['Diff Creation and Requested Dropoff'] = df_dropoff['Requested Dropoff Time'] - df_dropoff['Request Creation Time']
+        df_pickup['Diff Creation and Requested Pickup'] = df_pickup['Requested Pickup Time'] - \
+            df_pickup['Request Creation Time']
+        df_dropoff['Diff Creation and Requested Dropoff'] = df_dropoff['Requested Dropoff Time'] - \
+            df_dropoff['Request Creation Time']
 
         '''
         diff_dict = dict()
@@ -97,10 +107,11 @@ class AnalyserDisruptions:
         date_time_dict = dict()
         for index, row in df_request.iterrows():
             if (row['Date Creation'], row['Time Creation']) in date_time_dict:
-                date_time_dict[(row['Date Creation'], row['Time Creation'])] += 1
+                date_time_dict[(row['Date Creation'],
+                                row['Time Creation'])] += 1
             else:
-                date_time_dict[(row['Date Creation'], row['Time Creation'])] = 1
-
+                date_time_dict[(row['Date Creation'],
+                                row['Time Creation'])] = 1
 
         # group by time across all dates and create list of how many requests per date
         time_interval_dict = dict()
@@ -135,13 +146,15 @@ class AnalyserDisruptions:
 
         # probability density function time between request creation time and requested pickup time
         waiting_times = []
-        for index,row in df_pickup.iterrows():
-            waiting_times.append(row['Diff Creation and Requested Pickup'].total_seconds()/60)
+        for index, row in df_pickup.iterrows():
+            waiting_times.append(
+                row['Diff Creation and Requested Pickup'].total_seconds()/60)
         sns.displot(data=waiting_times, kind="hist", bins=100)
         plt.xlabel('Number of minutes between creation and requested pickup time')
         plt.show()
 
-        f = Fitter(waiting_times, distributions=['gamma', 'lognorm', "burr", "norm"])
+        f = Fitter(waiting_times, distributions=[
+                   'gamma', 'lognorm', "burr", "norm"])
         f.fit()
         print(f.summary())
         print(f.get_best(method='sumsquare_error'))
@@ -153,18 +166,22 @@ class AnalyserDisruptions:
         fit_shape, fit_loc, fit_scale = gamma.fit(waiting_times)
         print([fit_shape, fit_loc, fit_scale])
         plt.hist(waiting_times, bins=50, density=True)
-        plt.plot(xlin, gamma.pdf(xlin, a=fit_shape, loc=fit_loc, scale=fit_scale))
+        plt.plot(xlin, gamma.pdf(xlin, a=fit_shape,
+                 loc=fit_loc, scale=fit_scale))
         plt.show()
 
         # probability density function time between request creation time and requested dropoff time
         waiting_times = []
         for index, row in df_dropoff.iterrows():
-            waiting_times.append(row['Diff Creation and Requested Dropoff'].total_seconds() / 60)
+            waiting_times.append(
+                row['Diff Creation and Requested Dropoff'].total_seconds() / 60)
         sns.displot(data=waiting_times, kind="hist", bins=100)
-        plt.xlabel('Number of minutes between creation and requested dropoff time')
+        plt.xlabel(
+            'Number of minutes between creation and requested dropoff time')
         plt.show()
 
-        f = Fitter(waiting_times, distributions=['gamma', 'lognorm', "burr", "norm"])
+        f = Fitter(waiting_times, distributions=[
+                   'gamma', 'lognorm', "burr", "norm"])
         f.fit()
         print(f.summary())
         print(f.get_best(method='sumsquare_error'))
@@ -176,7 +193,8 @@ class AnalyserDisruptions:
         fit_shape, fit_loc, fit_scale = gamma.fit(waiting_times)
         print([fit_shape, fit_loc, fit_scale])
         plt.hist(waiting_times, bins=50, density=True)
-        plt.plot(xlin, gamma.pdf(xlin, a=fit_shape, loc=fit_loc, scale=fit_scale))
+        plt.plot(xlin, gamma.pdf(xlin, a=fit_shape,
+                 loc=fit_loc, scale=fit_scale))
         plt.show()
 
     # DELAY
@@ -191,11 +209,13 @@ class AnalyserDisruptions:
         df_delay = df[df['Request Status'].isin(["Completed"])]
 
         # define which rows are considered to be delays
-        df_delay['Original Planned Pickup Time'] = pd.to_datetime(df_delay['Original Planned Pickup Time'], format="%Y-%m-%d %H:%M:%S")
-        df_delay['Actual Pickup Time'] = pd.to_datetime(df_delay['Actual Pickup Time'], format="%Y-%m-%d %H:%M:%S")
-        df_delay['Delay'] = df_delay['Actual Pickup Time'] - df_delay['Original Planned Pickup Time']
+        df_delay['Original Planned Pickup Time'] = pd.to_datetime(
+            df_delay['Original Planned Pickup Time'], format="%Y-%m-%d %H:%M:%S")
+        df_delay['Actual Pickup Time'] = pd.to_datetime(
+            df_delay['Actual Pickup Time'], format="%Y-%m-%d %H:%M:%S")
+        df_delay['Delay'] = df_delay['Actual Pickup Time'] - \
+            df_delay['Original Planned Pickup Time']
         df_delay = df_delay[df_delay['Delay'] >= timedelta(minutes=minutes)]
-
 
         # calculating the time interval between new delays
         df_delay['Date Actual Pickup'] = df_delay['Actual Pickup Time'].dt.date
@@ -244,9 +264,11 @@ class AnalyserDisruptions:
         date_time_dict = dict()
         for index, row in df_delay.iterrows():
             if (row['Date Actual Pickup'], row['Time Actual Pickup']) in date_time_dict:
-                date_time_dict[(row['Date Actual Pickup'], row['Time Actual Pickup'])] += 1
+                date_time_dict[(row['Date Actual Pickup'],
+                                row['Time Actual Pickup'])] += 1
             else:
-                date_time_dict[(row['Date Actual Pickup'], row['Time Actual Pickup'])] = 1
+                date_time_dict[(row['Date Actual Pickup'],
+                                row['Time Actual Pickup'])] = 1
 
         # group by time across all dates and create list of how many requests per date
         time_interval_dict = dict()
@@ -289,10 +311,11 @@ class AnalyserDisruptions:
         plt.show()
 
         # find best distribution
-        f = Fitter(waiting_times, distributions=['gamma', 'lognorm', "beta", "burr", "norm"])
+        f = Fitter(waiting_times, distributions=[
+                   'gamma', 'lognorm', "beta", "burr", "norm"])
         f.fit()
         print(f.summary())
-        print(f.get_best(method = 'sumsquare_error'))
+        print(f.get_best(method='sumsquare_error'))
         plt.show()
 
         # find best parameters for distribution
@@ -301,7 +324,8 @@ class AnalyserDisruptions:
         fit_shape, fit_loc, fit_scale = gamma.fit(waiting_times)
         print([fit_shape, fit_loc, fit_scale])
         plt.hist(waiting_times, bins=50, density=True)
-        plt.plot(xlin, gamma.pdf(xlin, a=fit_shape, loc=fit_loc, scale=fit_scale))
+        plt.plot(xlin, gamma.pdf(xlin, a=fit_shape,
+                 loc=fit_loc, scale=fit_scale))
 
         plt.show()
 
@@ -311,16 +335,21 @@ class AnalyserDisruptions:
     def cancel(self):
         df = pd.read_csv(self.data_path)
         df_cancel = df[df['Request Status'].isin(["Cancel", "Late Cancel"])]
-        df_cancel = df_cancel.dropna(subset=['Original Planned Pickup Time', 'Cancellation Time'])
-        df_cancel['Cancellation Time'] = pd.to_datetime(df_cancel['Cancellation Time'], format="%Y-%m-%d %H:%M:%S")
-        df_cancel['Original Planned Pickup Time'] = pd.to_datetime(df_cancel['Original Planned Pickup Time'], format="%Y-%m-%d %H:%M:%S")
+        df_cancel = df_cancel.dropna(
+            subset=['Original Planned Pickup Time', 'Cancellation Time'])
+        df_cancel['Cancellation Time'] = pd.to_datetime(
+            df_cancel['Cancellation Time'], format="%Y-%m-%d %H:%M:%S")
+        df_cancel['Original Planned Pickup Time'] = pd.to_datetime(
+            df_cancel['Original Planned Pickup Time'], format="%Y-%m-%d %H:%M:%S")
         df_cancel['Date'] = df_cancel['Cancellation Time'].dt.date
         df_cancel['Time'] = df_cancel['Cancellation Time'].dt.hour
         df_cancel['Date Pickup'] = df_cancel['Original Planned Pickup Time'].dt.date
-        df_cancel = df_cancel[(df_cancel['Date'] == df_cancel['Date Pickup']) & (df_cancel['Cancellation Time'] <= df_cancel['Original Planned Pickup Time'])]
+        df_cancel = df_cancel[(df_cancel['Date'] == df_cancel['Date Pickup']) & (
+            df_cancel['Cancellation Time'] <= df_cancel['Original Planned Pickup Time'])]
         df_cancel = df_cancel.sort_values(by=['Cancellation Time'])
         df_cancel['Diff'] = df_cancel['Cancellation Time'].diff()
-        df_cancel['Diff Original and Cancel'] = df_cancel['Original Planned Pickup Time'] - df_cancel['Cancellation Time']
+        df_cancel['Diff Original and Cancel'] = df_cancel['Original Planned Pickup Time'] - \
+            df_cancel['Cancellation Time']
         df_cancel.to_csv(config("data_processed_path_analysis"))
 
         '''
@@ -401,8 +430,9 @@ class AnalyserDisruptions:
 
         # probability density function time between planned pickup and cancellation
         waiting_times = []
-        for index,row in df_cancel.iterrows():
-            waiting_times.append(row['Diff Original and Cancel'].total_seconds()/60)
+        for index, row in df_cancel.iterrows():
+            waiting_times.append(
+                row['Diff Original and Cancel'].total_seconds()/60)
 
         sns.displot(data=waiting_times, kind="kde")
         sns.displot(data=waiting_times, kind="hist")
@@ -421,15 +451,19 @@ class AnalyserDisruptions:
     # NO SHOW
     def no_show(self):
         df = pd.read_csv(self.data_path)
-        df_no_show = df[df['Request Status']=="No Show"]
-        df_no_show['No Show Time'] = pd.to_datetime(df_no_show['No Show Time'], format="%Y-%m-%d %H:%M:%S")
-        df_no_show['Original Planned Pickup Time'] = pd.to_datetime(df_no_show['Original Planned Pickup Time'], format="%Y-%m-%d %H:%M:%S")
+        df_no_show = df[df['Request Status'] == "No Show"]
+        df_no_show['No Show Time'] = pd.to_datetime(
+            df_no_show['No Show Time'], format="%Y-%m-%d %H:%M:%S")
+        df_no_show['Original Planned Pickup Time'] = pd.to_datetime(
+            df_no_show['Original Planned Pickup Time'], format="%Y-%m-%d %H:%M:%S")
         df_no_show['Date'] = df_no_show['No Show Time'].dt.date
         df_no_show['Time'] = df_no_show['No Show Time'].dt.hour
-        df_no_show = df_no_show[df_no_show['No Show Time'] >= df_no_show['Original Planned Pickup Time']]
+        df_no_show = df_no_show[df_no_show['No Show Time']
+                                >= df_no_show['Original Planned Pickup Time']]
         df_no_show = df_no_show.sort_values(by=['No Show Time'])
         df_no_show['Diff'] = df_no_show['No Show Time'].diff()
-        df_no_show['Wait'] = df_no_show['No Show Time'] - df_no_show['Original Planned Pickup Time']
+        df_no_show['Wait'] = df_no_show['No Show Time'] - \
+            df_no_show['Original Planned Pickup Time']
 
         '''
         diff_dict = dict()
@@ -509,12 +543,13 @@ class AnalyserDisruptions:
 
         # probability density function waiting time before no show is known
         waiting_times = []
-        for index,row in df_no_show.iterrows():
+        for index, row in df_no_show.iterrows():
             waiting_times.append(row['Wait'].total_seconds()/60)
 
         sns.displot(data=waiting_times, kind="kde")
         plt.xlabel('Waiting time in minutes')
         plt.show()
+
 
 def main():
     analyser = None
@@ -522,11 +557,11 @@ def main():
     try:
         analyser = AnalyserDisruptions(
             data_path=config("data_processed_path"))
-        #analyser.event_per_total()
-        #analyser.no_show()
-        #analyser.cancel()
+        # analyser.event_per_total()
+        # analyser.no_show()
+        # analyser.cancel()
         analyser.new_request()
-        #analyser.delay(10)
+        # analyser.delay(10)
 
     except Exception as e:
         print("ERROR:", e)

@@ -21,7 +21,8 @@ class Analyser:
         days = pd.to_datetime(df["Requested Pickup Time"]).dt.date.dropna()
         days = days.drop_duplicates()
         for day in days:
-            df_day = df[pd.to_datetime(df["Requested Pickup Time"]).dt.date == day]
+            df_day = df[pd.to_datetime(
+                df["Requested Pickup Time"]).dt.date == day]
             for idx1, r1 in df_day.iterrows():
                 for idx2, r2 in df_day.iterrows():
                     if (
@@ -46,7 +47,8 @@ class Analyser:
         # probability of return out of total requests
         df["Return T/F"] = np.where(df["Return"] > 0, True, False)
         number_of_trips_with_return = df[df["Return T/F"] == True].shape[0] / 2
-        number_of_trips = df["Return T/F"].shape[0] - number_of_trips_with_return
+        number_of_trips = df["Return T/F"].shape[0] - \
+            number_of_trips_with_return
         print(
             "Percentage of trips with return: ",
             number_of_trips_with_return * 100 / number_of_trips,
@@ -89,8 +91,17 @@ class Analyser:
         print("Percentage: ", count_not_ordered_at_same_time/(count_total/2))
 
         # what is the average time between returns?
-        df["Requested Pickup Time"] = pd.to_datetime(df["Requested Pickup Time"])
+        df["Requested Pickup Time"] = pd.to_datetime(
+            df["Requested Pickup Time"])
+        df["Request Creation Time"] = pd.to_datetime(
+            df["Request Creation Time"])
         df = df[(df["Return T/F"] == True)]
+        
+        df["return_time_request_diff"] = (
+            df["Request Creation Time"]
+            .sub(df.groupby("Return")["Request Creation Time"].transform("min"))
+            .apply(f)
+        )
         df["return_time_diff"] = (
             df["Requested Pickup Time"]
             .sub(df.groupby("Return")["Requested Pickup Time"].transform("min"))
@@ -98,8 +109,12 @@ class Analyser:
         )
         df.to_csv(config("data_processed_path_return_timediff"))
 
+        mean_diff_request = df["return_time_request_diff"].mean()
         mean_diff = df["return_time_diff"].mean()
-        print("Average number of seconds between returns: ", mean_diff)
+
+        print("Average number of seconds between returns requests: ",
+              mean_diff_request)
+        print("Average number of seconds between returns pickup: ", mean_diff)
 
 
 def f(x):
