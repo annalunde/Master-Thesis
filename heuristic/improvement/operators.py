@@ -24,6 +24,7 @@ class Operators:
             for col in row:
                 if col[0]:
                     total_requests += 0.5
+        print("total requests", total_requests)
 
         # Calculate number of requests to remove
         num_remove = math.ceil(total_requests * self.destruction_degree)
@@ -146,9 +147,14 @@ class Operators:
         # Number of requests to remove
         num_remove = self.nodes_to_remove(destroyed_route_plan)
 
-        # Pick random node
+        # Pick random node to remove
         row_index = rnd.randint(0, len(destroyed_route_plan))
-        col_index = rnd.randint(1, len(destroyed_route_plan[row_index]) - 1)
+        while len(destroyed_route_plan[row_index]) == 1:
+            row_index = rnd.randint(0, len(destroyed_route_plan))
+        if len(destroyed_route_plan[row_index]) == 3:
+            col_index = 1
+        else:
+            col_index = rnd.randint(1, len(destroyed_route_plan[row_index]) - 1)
         node = destroyed_route_plan[row_index][col_index]
 
         # Find associated node
@@ -223,9 +229,14 @@ class Operators:
         # Number of requests to remove
         num_remove = self.nodes_to_remove(destroyed_route_plan)
 
-        # Pick random node
+        # Pick random node to remove
         row_index = rnd.randint(0, len(destroyed_route_plan))
-        col_index = rnd.randint(1, len(destroyed_route_plan[row_index]) - 1)
+        while len(destroyed_route_plan[row_index]) == 1:
+            row_index = rnd.randint(0, len(destroyed_route_plan))
+        if len(destroyed_route_plan[row_index]) == 3:
+            col_index = 1
+        else:
+            col_index = rnd.randint(1, len(destroyed_route_plan[row_index]) - 1)
         node = destroyed_route_plan[row_index][col_index]
 
         # Find associated node
@@ -292,9 +303,14 @@ class Operators:
         # Number of requests to remove
         num_remove = self.nodes_to_remove(destroyed_route_plan)
 
-        # Pick random node
+        # Pick random node to remove
         row_index = rnd.randint(0, len(destroyed_route_plan))
-        col_index = rnd.randint(1, len(destroyed_route_plan[row_index]) - 1)
+        while len(destroyed_route_plan[row_index]) == 1:
+            row_index = rnd.randint(0, len(destroyed_route_plan))
+        if len(destroyed_route_plan[row_index]) == 3:
+            col_index = 1
+        else:
+            col_index = rnd.randint(1, len(destroyed_route_plan[row_index]) - 1)
         node = destroyed_route_plan[row_index][col_index]
 
         # Find associated node
