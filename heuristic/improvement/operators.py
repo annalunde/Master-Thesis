@@ -50,16 +50,18 @@ class Operators:
             node = destroyed_route_plan[row][col]
 
             # Find col-index of associated pickup/drop-off node
-            index, pickup = self.find_associated_node(row, col, destroyed_route_plan)
+            index, pickup = self.find_associated_node(
+                row, col, destroyed_route_plan)
             associated_node = destroyed_route_plan[row][index]
 
             # Remove both pickup and drop-off node and add request-index to removed_requests
             if pickup:
-                removed_requests.append([node[0], node[5]])
+                removed_requests.append((node[0], node[5]))
                 del destroyed_route_plan[row][index]
                 del destroyed_route_plan[row][col]
             else:
-                removed_requests.append([associated_node[0], associated_node[5]])
+                removed_requests.append(
+                    (associated_node[0], associated_node[5]))
                 del destroyed_route_plan[row][col]
                 del destroyed_route_plan[row][index]
 
@@ -76,6 +78,7 @@ class Operators:
         # Find the requests to remove
         for j in range(num_remove):
             worst_deviation = timedelta(0)
+            worst_node = None
 
             for row in range(len(destroyed_route_plan)):
                 for col in range(1, len(destroyed_route_plan[row])):
@@ -87,17 +90,20 @@ class Operators:
                         continue
 
                     # Find associated drop off/pickup node
-                    index, pickup = self.find_associated_node(row, col, destroyed_route_plan)
+                    index, pickup = self.find_associated_node(
+                        row, col, destroyed_route_plan)
                     associated_temp = destroyed_route_plan[row][index]
 
                     temp_deviation = temp[2]
                     associated_temp_deviation = associated_temp[2]
 
                     if temp_deviation < timedelta(0):
-                        temp_deviation = timedelta(seconds=-temp_deviation.total_seconds())
+                        temp_deviation = timedelta(
+                            seconds=-temp_deviation.total_seconds())
 
                     if associated_temp_deviation < timedelta(0):
-                        associated_temp_deviation = timedelta(seconds=-associated_temp_deviation.total_seconds())
+                        associated_temp_deviation = timedelta(
+                            seconds=-associated_temp_deviation.total_seconds())
 
                     # Calculate total deviation for request
                     deviation = temp_deviation + associated_temp_deviation
@@ -109,12 +115,12 @@ class Operators:
                         worst_associated_node = [associated_temp, row]
 
             # Add node with worst deviation to list of nodes to remove
-            w_n = worst_node
-            dev = deviation
-            if worst_node in to_remove:
+
+            if worst_node is not None and worst_node in to_remove:
                 continue
-            to_remove.append(worst_node)
-            to_remove.append(worst_associated_node)
+            if worst_node is not None:
+                to_remove.append(worst_node)
+                to_remove.append(worst_associated_node)
 
         # Remove nearest nodes from destroyed route plan
         for n in to_remove:
@@ -123,6 +129,13 @@ class Operators:
             # Add request id to removed_requests
             if not n[0][0] % int(n[0][0]):
                 removed_requests.append((n[0][0], n[0][5]))
+
+        # If not enough nodes have deviation > 0, remove the rest randomly
+        num_remove_random = int(num_remove - len(to_remove) / 2)
+        if num_remove_random:
+            destroyed_route_plan, removed_requests = self.worst_deviation_random_removal(destroyed_route_plan,
+                                                                                         num_remove_random,
+                                                                                         removed_requests)
         return destroyed_route_plan, removed_requests
 
     # Related in travel time
@@ -139,7 +152,8 @@ class Operators:
         node = destroyed_route_plan[row_index][col_index]
 
         # Find associated node
-        index, pickup = self.find_associated_node(row_index, col_index, destroyed_route_plan)
+        index, pickup = self.find_associated_node(
+            row_index, col_index, destroyed_route_plan)
         associated_node = destroyed_route_plan[row_index][index]
 
         # List of nodes to remove
@@ -162,7 +176,8 @@ class Operators:
                         continue
 
                     # Find associated drop off/pickup node of request to compare
-                    temp_index, temp_pickup = self.find_associated_node(row, col, destroyed_route_plan)
+                    temp_index, temp_pickup = self.find_associated_node(
+                        row, col, destroyed_route_plan)
                     associated_temp = destroyed_route_plan[row][temp_index]
 
                     # Find difference in distance between pickup and drop-off of requests
@@ -214,7 +229,8 @@ class Operators:
         node = destroyed_route_plan[row_index][col_index]
 
         # Find associated node
-        index, pickup = self.find_associated_node(row_index, col_index, destroyed_route_plan)
+        index, pickup = self.find_associated_node(
+            row_index, col_index, destroyed_route_plan)
         associated_node = destroyed_route_plan[row_index][index]
 
         # List of nodes to remove
@@ -236,15 +252,18 @@ class Operators:
                         continue
 
                     # Find associated drop off/pickup node
-                    temp_index, temp_pickup = self.find_associated_node(row, col, destroyed_route_plan)
+                    temp_index, temp_pickup = self.find_associated_node(
+                        row, col, destroyed_route_plan)
                     associated_temp = destroyed_route_plan[row][temp_index]
 
                     # Find difference between pickup-times and drop off-times of requests
                     if temp_pickup == pickup:
-                        diff = self.time_difference(temp, node, associated_temp, associated_node)
+                        diff = self.time_difference(
+                            temp, node, associated_temp, associated_node)
 
                     else:
-                        diff = self.time_difference(temp, associated_node, associated_temp, node)
+                        diff = self.time_difference(
+                            temp, associated_node, associated_temp, node)
 
                     # Compare with smallest difference in current iteration
                     if diff < best_diff:
@@ -279,7 +298,8 @@ class Operators:
         node = destroyed_route_plan[row_index][col_index]
 
         # Find associated node
-        index, pickup = self.find_associated_node(row_index, col_index, destroyed_route_plan)
+        index, pickup = self.find_associated_node(
+            row_index, col_index, destroyed_route_plan)
         associated_node = destroyed_route_plan[row_index][index]
 
         # List of nodes to remove
@@ -301,25 +321,34 @@ class Operators:
                         continue
 
                     # Find associated drop off/pickup node
-                    temp_index, temp_pickup = self.find_associated_node(row, col, destroyed_route_plan)
+                    temp_index, temp_pickup = self.find_associated_node(
+                        row, col, destroyed_route_plan)
                     associated_temp = destroyed_route_plan[row][temp_index]
 
                     # Find difference between requests
                     if (temp_pickup == pickup) & pickup:
-                        diff_distance = self.travel_time_difference(temp[0], node[0])
-                        diff_time = self.time_difference(temp, node, associated_temp, associated_node)
+                        diff_distance = self.travel_time_difference(
+                            temp[0], node[0])
+                        diff_time = self.time_difference(
+                            temp, node, associated_temp, associated_node)
 
                     elif (temp_pickup == pickup) & (not pickup):
-                        diff_distance = self.travel_time_difference(associated_temp[0], associated_node[0])
-                        diff_time = self.time_difference(temp, node, associated_temp, associated_node)
+                        diff_distance = self.travel_time_difference(
+                            associated_temp[0], associated_node[0])
+                        diff_time = self.time_difference(
+                            temp, node, associated_temp, associated_node)
 
                     elif (temp_pickup != pickup) & pickup:
-                        diff_distance = self.travel_time_difference(associated_temp[0], node[0])
-                        diff_time = self.time_difference(temp, associated_node, associated_temp, node)
+                        diff_distance = self.travel_time_difference(
+                            associated_temp[0], node[0])
+                        diff_time = self.time_difference(
+                            temp, associated_node, associated_temp, node)
 
                     else:
-                        diff_distance = self.travel_time_difference(temp[0], associated_node[0])
-                        diff_time = self.time_difference(temp, associated_node, associated_temp, node)
+                        diff_distance = self.travel_time_difference(
+                            temp[0], associated_node[0])
+                        diff_time = self.time_difference(
+                            temp, associated_node, associated_temp, node)
 
                     diff = diff_distance + diff_time
 
@@ -331,7 +360,6 @@ class Operators:
 
             nodes_to_remove.append(nearest_node)
             nodes_to_remove.append(nearest_associated_node)
-
 
         # Remove nearest nodes from destroyed route plan
         for n in nodes_to_remove:
@@ -345,8 +373,8 @@ class Operators:
 
     # Repair operators
     def greedy_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set):
-        unassigned_requests = removed_requests + initial_infeasible_set
-        unassigned_requests.sort(key=lambda x:x[1]["Requested Pickup Time"])
+        unassigned_requests = removed_requests.copy() + initial_infeasible_set.copy()
+        unassigned_requests.sort(key=lambda x: x[0])
         route_plan = destroyed_route_plan.copy()
         current_objective = timedelta(0)
         infeasible_set = []
@@ -356,13 +384,49 @@ class Operators:
             rid = unassigned_requests.iloc[i][0]
             request = unassigned_requests.iloc[i][1]
 
-            route_plan, delta_objective, infeasible_set = self.repair_generator.generate_insertions(
+            route_plan, new_objective, infeasible_set = self.repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set)
 
             # update current objective
-            current_objective = delta_objective
+            current_objective = new_objective
 
         return route_plan, current_objective, infeasible_set
+
+    # Function to find random requests to remove if worst deviation removal does not remove enough
+    def worst_deviation_random_removal(self, worst_dev_route_plan, num_remove_random, worst_dev_removed_requests):
+        destroyed_route_plan = worst_dev_route_plan.copy()
+        removed_requests = worst_dev_removed_requests.copy()
+
+        # Find the requests to remove
+        for j in range(num_remove_random):
+
+            # Pick random node to remove
+            row = rnd.randint(0, len(destroyed_route_plan))
+            while len(destroyed_route_plan[row]) == 1:
+                row = rnd.randint(0, len(destroyed_route_plan))
+            if len(destroyed_route_plan[row]) == 3:
+                col = 1
+            else:
+                col = rnd.randint(1, len(destroyed_route_plan[row]) - 1)
+            node = destroyed_route_plan[row][col]
+
+            # Find col-index of associated pickup/drop-off node
+            index, pickup = self.find_associated_node(
+                row, col, destroyed_route_plan)
+            associated_node = destroyed_route_plan[row][index]
+
+            # Remove both pickup and drop-off node and add request-index to removed_requests
+            if pickup:
+                removed_requests.append((node[0], node[5]))
+                del destroyed_route_plan[row][index]
+                del destroyed_route_plan[row][col]
+            else:
+                removed_requests.append(
+                    (associated_node[0], associated_node[5]))
+                del destroyed_route_plan[row][col]
+                del destroyed_route_plan[row][index]
+
+        return destroyed_route_plan, removed_requests
 
     # Function to calculate total travel time differences between requests
     def travel_time_difference(self, request_1, request_2):
@@ -370,9 +434,9 @@ class Operators:
         idx_1 = request_1 - 1
         idx_2 = request_2 - 1
         return self.T_ij[idx_1][idx_2] + \
-               self.T_ij[idx_1 + num_requests][idx_2 + num_requests] + \
-               self.T_ij[idx_1 + num_requests][idx_2] + \
-               self.T_ij[idx_1][idx_2 + num_requests]
+            self.T_ij[idx_1 + num_requests][idx_2 + num_requests] + \
+            self.T_ij[idx_1 + num_requests][idx_2] + \
+            self.T_ij[idx_1][idx_2 + num_requests]
 
     # Function to calculate service time differences between requests
     @staticmethod

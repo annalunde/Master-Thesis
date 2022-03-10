@@ -92,10 +92,9 @@ class ConstructionHeuristic:
             self.current_objective = delta_objective
 
             rid += 1
-        '''NOTE: returnerer self.infeasible_set som liste, ikke dataframe'''
         return route_plan, self.current_objective, self.infeasible_set
 
-    def delta_objective(self, new_routeplan):
+    def new_objective(self, new_routeplan):
         total_deviation = timedelta(minutes=0)
         total_travel_time = timedelta(minutes=0)
         for vehicle_route in new_routeplan:
@@ -104,6 +103,7 @@ class ConstructionHeuristic:
             total_travel_time += timedelta(minutes=diff)
             for n, t, d, p, w, _ in vehicle_route:
                 if d is not None:
+                    d = d if d > timedelta(0) else -d
                     total_deviation += d
 
         updated = alpha*total_deviation + \
