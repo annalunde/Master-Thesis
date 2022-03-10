@@ -1,7 +1,7 @@
+import copy
 import math
 import numpy.random as rnd
 from datetime import datetime
-from tqdm import tqdm
 import pandas as pd
 from datetime import timedelta
 from heuristic.construction.heuristic_config import *
@@ -24,14 +24,13 @@ class Operators:
             for col in row:
                 if col[0]:
                     total_requests += 0.5
-        print("total requests", total_requests)
 
         # Calculate number of requests to remove
         num_remove = math.ceil(total_requests * self.destruction_degree)
         return num_remove
 
     def random_removal(self, current_route_plan):
-        destroyed_route_plan = current_route_plan.copy()
+        destroyed_route_plan = copy.deepcopy(current_route_plan)
         removed_requests = []
 
         # Number of requests to remove
@@ -69,7 +68,7 @@ class Operators:
         return destroyed_route_plan, removed_requests
 
     def worst_deviation_removal(self, current_route_plan):
-        destroyed_route_plan = current_route_plan.copy()
+        destroyed_route_plan = copy.deepcopy(current_route_plan)
         to_remove = []
         removed_requests = []
 
@@ -141,7 +140,7 @@ class Operators:
 
     # Related in travel time
     def distance_related_removal(self, current_route_plan):
-        destroyed_route_plan = current_route_plan.copy()
+        destroyed_route_plan = copy.deepcopy(current_route_plan)
         removed_requests = []
 
         # Number of requests to remove
@@ -223,7 +222,7 @@ class Operators:
 
     # Related in service time
     def time_related_removal(self, current_route_plan):
-        destroyed_route_plan = current_route_plan.copy()
+        destroyed_route_plan = copy.deepcopy(current_route_plan)
         removed_requests = []
 
         # Number of requests to remove
@@ -297,7 +296,7 @@ class Operators:
 
     # Related in both service time and travel time
     def related_removal(self, current_route_plan):
-        destroyed_route_plan = current_route_plan.copy()
+        destroyed_route_plan = copy.deepcopy(current_route_plan)
         removed_requests = []
 
         # Number of requests to remove
@@ -391,11 +390,11 @@ class Operators:
     def greedy_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set):
         unassigned_requests = removed_requests.copy() + initial_infeasible_set.copy()
         unassigned_requests.sort(key=lambda x: x[0])
-        route_plan = destroyed_route_plan.copy()
+        route_plan = copy.deepcopy(destroyed_route_plan)
         current_objective = timedelta(0)
         infeasible_set = []
         unassigned_requests = pd.DataFrame(unassigned_requests)
-        for i in tqdm(range(unassigned_requests.shape[0]), colour='#39ff14'):
+        for i in range(unassigned_requests.shape[0]):
             # while not unassigned_requests.empty:
             rid = unassigned_requests.iloc[i][0]
             request = unassigned_requests.iloc[i][1]
@@ -410,8 +409,8 @@ class Operators:
 
     # Function to find random requests to remove if worst deviation removal does not remove enough
     def worst_deviation_random_removal(self, worst_dev_route_plan, num_remove_random, worst_dev_removed_requests):
-        destroyed_route_plan = worst_dev_route_plan.copy()
-        removed_requests = worst_dev_removed_requests.copy()
+        destroyed_route_plan = copy.deepcopy(worst_dev_route_plan)
+        removed_requests = copy.deepcopy(worst_dev_removed_requests)
 
         # Find the requests to remove
         for j in range(num_remove_random):

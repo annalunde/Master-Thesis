@@ -24,8 +24,6 @@ class RepairGenerator:
         possible_insertions = {}  # dict: delta objective --> route plan
         self.introduced_vehicles = set([i for i in range(len(route_plan))])
         self.vehicles = [i for i in range(len(route_plan), V)]
-        print("introduced vehicles", self.introduced_vehicles)
-        print("len plan", len(route_plan))
 
         for introduced_vehicle in self.introduced_vehicles:
             # generate all possible insertions

@@ -20,7 +20,8 @@ def main():
         df = pd.read_csv(config("test_data_construction"))
         constructor = ConstructionHeuristic(requests=df.head(20), vehicles=V)
         print("Constructing initial solution")
-        initial_route_plan, initial_objective, infeasible_set = constructor.construct_initial()
+        initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
+        print(initial_objective)
 
         # IMPROVEMENT OF INITIAL SOLUTION
         random_state = rnd.RandomState()
@@ -28,7 +29,7 @@ def main():
         criterion = SimulatedAnnealing(
             start_temperature, end_temperature, step)
 
-        alns = ALNS(weights, reaction_factor, initial_route_plan, initial_objective, infeasible_set, criterion,
+        alns = ALNS(weights, reaction_factor, initial_route_plan, initial_objective, initial_infeasible_set, criterion,
                     destruction_degree, constructor, random_state)
 
         operators = Operators(alns)
@@ -45,9 +46,10 @@ def main():
         # alns.add_repair_operator(operators.regret_repair)
 
         # Run ALNS
-        route_plan, objective = alns.iterate(iterations)
+        route_plan, objective, infeasible_set = alns.iterate(iterations)
         print(route_plan)
         print(objective)
+        print(infeasible_set)
 
         # When implementing simulator, need to reinitialize simulated annealing temperature
 
