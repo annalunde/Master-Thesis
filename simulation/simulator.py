@@ -1,4 +1,6 @@
 from datetime import timedelta
+from heuristic.construction.heuristic_config import *
+from heuristic.construction.construction import ConstructionHeuristic
 from poisson import *
 from new_requests import *
 from simulation_config import *
@@ -6,67 +8,67 @@ import random
 from scipy.stats import gamma
 
 class Simulator:
-    def __init__(self, sim_clock, current_route_plan, data_path):
+    def __init__(self, sim_clock):
         self.sim_clock = sim_clock
-        self.current_route_plan = current_route_plan
-        self.data_path = data_path
+        self.poisson = Poisson()
+        self.disruptions_stack = self.create_disruption_stack()
 
-    def get_disruption(self):
+    def create_disruption_stack(self):
         # get disruption times for each disruption type
-        request = Poisson(arrival_rate_request, self.sim_clock).disruption_time()
-        initial_delay = Poisson(arrival_rate_delay, self.sim_clock).disruption_time()
-        cancel = Poisson(arrival_rate_cancel, self.sim_clock).disruption_time()
-        initial_no_show = Poisson(arrival_rate_no_show, self.sim_clock).disruption_time()
+        request = self.poisson.disruption_times(arrival_rate_request, self.sim_clock, 'request')
+        print("requests", len(request))
+        delay = self.poisson.disruption_times(arrival_rate_delay, self.sim_clock, 'delay')
+        print("delays", len(delay))
+        cancel = self.poisson.disruption_times(arrival_rate_cancel, self.sim_clock, 'cancel')
+        print("cancels", len(cancel))
+        initial_no_show = self.poisson.disruption_times(arrival_rate_no_show, self.sim_clock, 'no show')
+        print("no shows", len(initial_no_show))
+        disruption_stack = request + delay + cancel + initial_no_show
+        disruption_stack.sort(reverse=True, key=lambda x: x[1])
+        return disruption_stack
 
-        # calculate actual delay and no show
-        # + see if there are remaining nodes that can be delayed, cancelled or no showed
-        add_request, request_info = self.new_request(request)
-        delay_vehicle_index, delay_rid_index, duration_delay, actual_delay = self.delay(initial_delay)
-        cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index = self.cancel(cancel)
-        no_show_vehicle_index, no_show_pickup_rid_index, no_show_dropoff_rid_index, actual_no_show = self.no_show(initial_no_show)
+    def get_disruption(self, current_route_plan, data_path):
+        # get disruption from stack
+        disruption = self.disruptions_stack.pop()
+        disruption_type = disruption[0]
+        disruption_time = disruption[1]
 
-        # identify earliest disruption time and corresponding disruption type
-        disruption_types = []
-        disruption_times = []
+        # find which disruption type it is
+        if disruption_type == 'request':
+            add_request, disruption_info = self.new_request(disruption_time, data_path)
+            if add_request < 0:
+                disruption_type = 'no disruption'
+                disruption_info = None
 
-        if add_request > -1:
-            disruption_types.append('request')
-            disruption_times.append(request)
-        if delay_rid_index > -1:
-            disruption_types.append('delay')
-            disruption_times.append(actual_delay)
-        if cancel_pickup_rid_index > -1:
-            disruption_types.append('cancel')
-            disruption_times.append(cancel)
-        if no_show_pickup_rid_index > -1:
-            disruption_types.append('no show')
-            disruption_times.append(actual_no_show)
+        elif disruption_type == 'delay':
+            delay_vehicle_index, delay_rid_index, duration_delay = self.delay(disruption_time, current_route_plan)
+            disruption_info = (delay_vehicle_index, delay_rid_index, duration_delay)
+            if delay_rid_index < 0:
+                disruption_type = 'no disruption'
+                disruption_info = None
 
-        # check whether a disruption has happened
-        if len(disruption_times) > 0:
-            disruption_index = disruption_times.index(min(disruption_times))
-            disruption_type = disruption_types[disruption_index]
-            disruption_time = disruption_times[disruption_index]
-
-            # call on function corresponding to disruption type to get disruption type, time/updated sim_clock, data
-            # VIKTIG Å HUSKE AT UPDATED SIM CLOCK ER DET SAMME SOM NY DISRUPTION TIME
-            if disruption_type == 'request':
-                return disruption_type, disruption_time, request_info
-            elif disruption_type == 'delay':
-                # disruption_data is tuple with (delayed node rid, which vehicle delayed node on, delay in minutes)
-                return disruption_type, disruption_time, (delay_vehicle_index, delay_rid_index, duration_delay)
-            elif disruption_type == 'cancel':
-                # disruption data is tuple with (cancelled pickup rid, cancelled dropoff rid,
-                # which vehicle cancelled node on)
-                return disruption_type, disruption_time, (cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index)
-            else:
-                # disruption data is tuple with (no show pickup rid, no show dropoff rid, which vehicle no show node on)
-                return disruption_type, disruption_time, (no_show_vehicle_index, no_show_pickup_rid_index, no_show_dropoff_rid_index)
+        elif disruption_type == 'cancel':
+            cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index = self.cancel(disruption_time, current_route_plan)
+            disruption_info = (cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index)
+            if cancel_pickup_rid_index < 0:
+                disruption_type = 'no disruption'
+                disruption_info = None
 
         else:
-            return "No disruption", "No disruption", "No disruption info"
+            no_show_vehicle_index, no_show_pickup_rid_index, no_show_dropoff_rid_index, actual_no_show = self.no_show(disruption_time, current_route_plan)
+            disruption_info = (no_show_vehicle_index, no_show_pickup_rid_index, no_show_dropoff_rid_index)
+            next_disruption_time = self.disruptions_stack[-1][1] if len(self.disruptions_stack) > 0 else datetime.strptime("2021-05-10 19:00:00", "%Y-%m-%d %H:%M:%S")
+            if no_show_pickup_rid_index < 0 or actual_no_show >= next_disruption_time:
+                disruption_type = 'no disruption'
+                disruption_info = None
+            else:
+                disruption_time = actual_no_show
 
-    def new_request(self, request_arrival):
+        # update the sim_clock
+        self.sim_clock = disruption_time
+        return disruption_type, disruption_time, disruption_info
+
+    def new_request(self, request_arrival, data_path):
         # return new request data
         random_number = np.random.rand()
         if random_number > percentage_dropoff:
@@ -80,7 +82,7 @@ class Simulator:
 
             else:
                 # get random request
-                random_request = NewRequests(self.data_path).get_and_drop_random_request()
+                random_request = NewRequests(data_path).get_and_drop_random_request()
 
                 # update creation time to request disruption time
                 random_request['Request Creation Time'] = request_arrival
@@ -102,7 +104,7 @@ class Simulator:
 
             else:
                 # get random request
-                random_request = NewRequests(self.data_path).get_and_drop_random_request()
+                random_request = NewRequests(data_path).get_and_drop_random_request()
 
                 # update creation time to request disruption time
                 random_request['Request Creation Time'] = request_arrival
@@ -113,7 +115,7 @@ class Simulator:
 
                 return 1, random_request
 
-    def delay(self, initial_delay):
+    def delay(self, initial_delay, current_route_plan):
         # draw duration of delay
         delay = timedelta(minutes=gamma.rvs(delay_fit_shape, delay_fit_loc, delay_fit_scale))
 
@@ -121,11 +123,11 @@ class Simulator:
         planned_departure_times = []
         vehicle_indices = []
 
-        # potential delays - nodes with planned departure time after initial_delay
+        # potential delays - nodes with planned pickup time after initial_delay
         vehicle_index = 0
-        for row in self.current_route_plan:
-            for col in range(0, len(row)):
-                temp_planned_time = row[col][1]
+        for row in current_route_plan:
+            for col in range(1, len(row)):
+                temp_planned_time = row[col][1] - timedelta(minutes=S)
                 if temp_planned_time >= initial_delay:
                     rids_indices.append(col)
                     planned_departure_times.append(temp_planned_time)
@@ -138,18 +140,17 @@ class Simulator:
             temp_actual_disruption_time = min(planned_departure_times)
             rid_index = rids_indices[planned_departure_times.index(temp_actual_disruption_time)]
             vehicle_index = vehicle_indices[planned_departure_times.index(temp_actual_disruption_time)]
-            actual_disruption_time = temp_actual_disruption_time + delay
-            return vehicle_index, rid_index, delay, actual_disruption_time
+            return vehicle_index, rid_index, delay
         else:
-            return -1, -1, -1, -1
+            return -1, -1, -1
 
-    def cancel(self, cancel):
+    def cancel(self, cancel, current_route_plan):
         indices = []
 
         # potential cancellations - pickup nodes with planned pickup after disruption time of cancellation
         vehicle_index = 0
-        for row in self.current_route_plan:
-            for col in range(0, len(row)):
+        for row in current_route_plan:
+            for col in range(1, len(row)):
                 temp_rid = row[col][0]
                 temp_planned_time = row[col][1] - timedelta(minutes=S)
                 if not temp_rid % int(temp_rid) and temp_planned_time >= cancel:
@@ -166,14 +167,14 @@ class Simulator:
         else:
             return -1, -1, -1
 
-    def no_show(self, initial_no_show):
+    def no_show(self, initial_no_show, current_route_plan):
         indices = []
         planned_pickup_times = []
 
         # potential no shows - pickup nodes with planned pickup after initial_no_show
         vehicle_index = 0
-        for row in self.current_route_plan:
-            for col in range(0, len(row)):
+        for row in current_route_plan:
+            for col in range(1, len(row)):
                 temp_rid = row[col][0]
                 temp_planned_time = row[col][1] - timedelta(minutes=S)
                 if not temp_rid % int(temp_rid) and temp_planned_time >= initial_no_show:
@@ -197,20 +198,65 @@ def main():
     simulator = None
 
     try:
-        current_route_plan = [
-            [(1, datetime.strptime("2021-05-10 12:02:00", "%Y-%m-%d %H:%M:%S")), (3, datetime.strptime("2021-05-10 12:10:00", "%Y-%m-%d %H:%M:%S")),
-             (1.5, datetime.strptime("2021-05-10 13:15:00", "%Y-%m-%d %H:%M:%S")), (3.5, datetime.strptime("2021-05-10 14:12:00", "%Y-%m-%d %H:%M:%S"))],
-            [(2, datetime.strptime("2021-05-10 13:15:00", "%Y-%m-%d %H:%M:%S")), (2.5, datetime.strptime("2021-05-10 14:12:00", "%Y-%m-%d %H:%M:%S"))]
-                      ]
-        sim_clock = datetime.strptime("2021-05-10 16:00:00", "%Y-%m-%d %H:%M:%S")
+
+        # CONSTRUCTION OF INITIAL SOLUTION
+        df = pd.read_csv(config("test_data_construction"))
+        constructor = ConstructionHeuristic(requests=df.head(106), vehicles=V)
+        print("Constructing initial solution")
+        current_route_plan, initial_objective, infeasible_set = constructor.construct_initial()
+
+        num_new_requests = 0
+        num_delay = 0
+        num_cancel = 0
+        num_no_show = 0
+        num_no_disruption = 0
+
+        # SIMULATION
+        print("Start simulation")
+        sim_clock = datetime.strptime("2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
         # første runde av simulator må kjøre med new requests fra data_processed_path for å få fullstendig antall
         # requests første runde, deretter skal rundene kjøre med data_simulator_path for å få updated data
-        simulator = Simulator(sim_clock, current_route_plan, config("data_processed_path"))
-        disruption_type, disruption_time, disruption_data = simulator.get_disruption()
-        print(disruption_type)
-        print(disruption_time)
-        print(disruption_data)
-        sim_clock = disruption_time
+        simulator = Simulator(sim_clock)
+        disruption_type, disruption_time, disruption_info = simulator.get_disruption(current_route_plan, config("data_processed_path"))
+        #print("Disruption type", disruption_type)
+        #print("Disruption time", disruption_time)
+        #print("Disruption info", disruption_info)
+        #print()
+
+        if disruption_type == "request":
+            num_new_requests += 1
+        elif disruption_type == "delay":
+            num_delay += 1
+        elif disruption_type == 'cancel':
+            num_cancel += 1
+        elif disruption_type == 'no show':
+            num_no_show += 1
+        else:
+            num_no_disruption += 1
+
+        while len(simulator.disruptions_stack) > 0:
+            disruption_type, disruption_time, disruption_info = simulator.get_disruption(current_route_plan, config("data_simulator_path"))
+            #print("Disruption type", disruption_type)
+            #print("Disruption time", disruption_time)
+            #print("Disruption info", disruption_info)
+            #print()
+
+            if disruption_type == "request":
+                num_new_requests += 1
+            elif disruption_type == "delay":
+                num_delay += 1
+            elif disruption_type == 'cancel':
+                num_cancel += 1
+            elif disruption_type == 'no show':
+                num_no_show += 1
+            else:
+                num_no_disruption += 1
+
+        print("New requests", num_new_requests)
+        print("Delay", num_delay)
+        print("Cancel", num_cancel)
+        print("No show", num_no_show)
+        print("No disruption", num_no_disruption)
 
     except Exception as e:
         print("ERROR:", e)

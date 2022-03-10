@@ -85,17 +85,17 @@ class ConstructionHeuristic:
             # while not unassigned_requests.empty:
             request = unassigned_requests.iloc[i]
 
-            route_plan, delta_objective = self.insertion_generator.generate_insertions(
+            route_plan, new_objective = self.insertion_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid)
 
             # update current objective
-            self.current_objective = delta_objective
+            self.current_objective = new_objective
 
             rid += 1
         '''NOTE: returnerer self.infeasible_set som liste, ikke dataframe'''
         return route_plan, self.current_objective, self.infeasible_set
 
-    def delta_objective(self, new_routeplan):
+    def new_objective(self, new_routeplan):
         total_deviation = timedelta(minutes=0)
         total_travel_time = timedelta(minutes=0)
         for vehicle_route in new_routeplan:
