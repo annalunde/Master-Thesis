@@ -21,7 +21,7 @@ def main():
         constructor = ConstructionHeuristic(requests=df.head(20), vehicles=V)
         print("Constructing initial solution")
         initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
-        print(initial_objective)
+
 
         # IMPROVEMENT OF INITIAL SOLUTION
         random_state = rnd.RandomState()
@@ -50,6 +50,8 @@ def main():
         print(route_plan)
         print(objective)
         print(infeasible_set)
+        constructor.print_new_objective(initial_route_plan, initial_infeasible_set)
+        constructor.print_new_objective(route_plan, infeasible_set)
 
         # When implementing simulator, need to reinitialize simulated annealing temperature
 

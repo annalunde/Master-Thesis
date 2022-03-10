@@ -94,9 +94,10 @@ class ConstructionHeuristic:
             rid += 1
         return route_plan, self.current_objective, self.infeasible_set
 
-    def new_objective(self, new_routeplan):
+    def new_objective(self, new_routeplan, new_infeasible_set):
         total_deviation = timedelta(minutes=0)
         total_travel_time = timedelta(minutes=0)
+        total_infeasible = timedelta(minutes=len(new_infeasible_set))
         for vehicle_route in new_routeplan:
             diff = (pd.to_datetime(
                 vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
@@ -106,9 +107,24 @@ class ConstructionHeuristic:
                     d = d if d > timedelta(0) else -d
                     total_deviation += d
 
-        updated = alpha*total_deviation + \
-            beta*total_travel_time
+        updated = alpha*total_travel_time + beta*total_deviation + gamma*total_infeasible
         return updated
+
+    def print_new_objective(self, new_routeplan, new_infeasible_set):
+        total_deviation = timedelta(minutes=0)
+        total_travel_time = timedelta(minutes=0)
+        total_infeasible = timedelta(minutes=len(new_infeasible_set))
+        for vehicle_route in new_routeplan:
+            diff = (pd.to_datetime(
+                vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
+            total_travel_time += timedelta(minutes=diff)
+            for n, t, d, p, w, _ in vehicle_route:
+                if d is not None:
+                    d = d if d > timedelta(0) else -d
+                    total_deviation += d
+        print("Total travel time", total_travel_time)
+        print("Total deviation", total_deviation)
+        print("Total infeasible", total_infeasible)
 
     def travel_matrix(self, df):
         # Lat and lon for each request

@@ -29,11 +29,14 @@ P = 15
 # Vehicle wheelchair seats capacity
 W = 1
 
-# Weight of deviation in objective function
+# Weight of ride time in objective function
 alpha = 1
 
-# Weight of ride time in objective function
-beta = 1
+# Weight of deviation in objective function
+beta = 5
+
+# Weight of infeasible set in objective function
+gamma = 10000
 
 
 # Simulated annealing temperatures -- NOTE: these must be tuned

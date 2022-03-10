@@ -34,7 +34,7 @@ class RepairGenerator:
                                                                                     depot=True)
                 # calculate change in objective
                 change_objective = self.heuristic.new_objective(
-                    temp_route_plan)
+                    temp_route_plan, infeasible_set)
                 possible_insertions[change_objective] = temp_route_plan
 
             else:
@@ -140,7 +140,7 @@ class RepairGenerator:
 
                                     # calculate change in objective
                                     change_objective = self.heuristic.new_objective(
-                                        temp_route_plan)
+                                        temp_route_plan, infeasible_set)
                                     possible_insertions[change_objective] = temp_route_plan
                     else:
                         e_p_node, e_p_time, e_p_d, e_p_p, e_p_w, _ = vehicle_route[start_idx + 1]
@@ -352,7 +352,7 @@ class RepairGenerator:
 
                                             # calculate change in objective
                                             change_objective = self.heuristic.new_objective(
-                                                temp_route_plan)
+                                                temp_route_plan, infeasible_set)
                                             possible_insertions[change_objective] = temp_route_plan
 
                     # update capacity between pickup and dropoff
@@ -375,7 +375,7 @@ class RepairGenerator:
 
                 # calculate change in objective
                 change_objective = self.heuristic.new_objective(
-                    temp_route_plan)
+                    temp_route_plan, infeasible_set)
                 possible_insertions[change_objective] = temp_route_plan
 
             # if no new vehicles available, append the request in an infeasible set
