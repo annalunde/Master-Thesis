@@ -194,7 +194,7 @@ class InsertionGenerator:
                                     s_p_node, s_p_time, s_p_d, s_p_p, s_p_w, _ = test_vehicle_route[
                                         start_idx]
                                     e_p_node, e_p_time, e_p_d, e_p_p, e_p_w, _ = test_vehicle_route[
-                                        start_idx + 1]
+                                        start_idx + 2]
                                     end_idx = 0
                                     for idx, (node, time, deviation, passenger, wheelchair, _) in enumerate(test_vehicle_route):
                                         if time <= dropoff_time:
