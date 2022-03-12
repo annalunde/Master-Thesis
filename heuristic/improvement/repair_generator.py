@@ -383,8 +383,7 @@ class RepairGenerator:
 
         return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else timedelta(0), infeasible_set
 
-
-   def get_bound_dev(self, depot, upper):
+    def get_bound_dev(self, depot, upper):
         if upper:
             dev = U_D_N if not depot else U_D_D
         else:
