@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 reaction_factor = 0.2
 
@@ -6,42 +6,40 @@ weights = [3, 2, 1, 0.5]
 
 iterations = 1000
 
-# Initial route plan
-current_route_plan = [
-    [(1, datetime.strptime("2021-05-10 12:02:00", "%Y-%m-%d %H:%M:%S"), 2),
-     (1.5, datetime.strptime("2021-05-10 12:10:00", "%Y-%m-%d %H:%M:%S"), 0),
-     (3, datetime.strptime("2021-05-10 16:02:00", "%Y-%m-%d %H:%M:%S"), 0),
-     (3.5, datetime.strptime("2021-05-10 17:02:00", "%Y-%m-%d %H:%M:%S"), 0)],
-    [(2, datetime.strptime("2021-05-10 13:15:00", "%Y-%m-%d %H:%M:%S"), 1),
-     (2.5, datetime.strptime("2021-05-10 14:12:00", "%Y-%m-%d %H:%M:%S"), 2),
-     (4, datetime.strptime("2021-05-10 12:15:00", "%Y-%m-%d %H:%M:%S"), 0),
-     (4.5, datetime.strptime("2021-05-10 12:30:00", "%Y-%m-%d %H:%M:%S"), 0)
-     ]
-]
-
-current_objective = 10000
-
 destruction_degree = 0.5
 
-infeasible_set = []
+# Allowed excess ride time
+F = 1
 
-'''
-# T_ij, travel time matrix
-T_ij = [
-    # 1  2  3  4  1.5  2.5  3.5  4.5
-    [0, 1, 4, 5, 5, 5, 4, 5],  # 1
-    [1, 0, 2, 3, 5, 5, 3, 5],  # 2
-    [4, 2, 0, 5, 5, 5, 5, 5],  # 3
-    [5, 5, 3, 0, 5, 5, 5, 5],  # 4
-    [5, 5, 5, 5, 0, 1, 5, 1],  # 1.5
-    [5, 5, 5, 5, 1, 0, 2, 2],  # 2.5
-    [4, 5, 5, 5, 0, 2, 0, 5],  # 3.5
-    [5, 5, 5, 5, 1, 2, 5, 0]  # 4.5
-]
-'''
+# Number of vehicles
+V = 16
 
-# Disse må tunes
+# Allowed deviaiton from Requested service time (either pickup or dropoff)
+U_D_N = timedelta(minutes=5)
+L_D_N = timedelta(minutes=-5)
+U_D_D = timedelta(minutes=30)
+L_D_D = timedelta(minutes=-30)
+
+# Estimated time to serve a node
+S = 2
+
+# Vehicle standard seats capacity
+P = 15
+
+# Vehicle wheelchair seats capacity
+W = 1
+
+# Weight of ride time in objective function
+alpha = 1
+
+# Weight of deviation in objective function
+beta = 5
+
+# Weight of infeasible set in objective function
+gamma = 10000
+
+
+# Simulated annealing temperatures -- NOTE: these must be tuned
 start_temperature = 50
 end_temperature = 10
 step = 5
-

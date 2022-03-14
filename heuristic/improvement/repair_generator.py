@@ -4,7 +4,7 @@ import numpy as np
 import pandas
 import sklearn.metrics
 from math import radians
-from heuristic.construction.heuristic_config import *
+from heuristic.improvement.improvement_config import *
 from decouple import config
 from datetime import datetime, timedelta
 
@@ -16,21 +16,25 @@ NOTE: we only try to add it after the first node that is closest in time
 class RepairGenerator:
     def __init__(self, construction_heuristic):
         self.heuristic = construction_heuristic
+        self.introduced_vehicles = copy.deepcopy(
+            self.heuristic.introduced_vehicles)
+        self.vehicles = copy.deepcopy(self.heuristic.vehicles)
 
     def generate_insertions(self, route_plan, request, rid, infeasible_set):
         possible_insertions = {}  # dict: delta objective --> route plan
-        for introduced_vehicle in self.heuristic.introduced_vehicles:
-            # generate all possible insertions
+        self.introduced_vehicles = set([i for i in range(len(route_plan))])
+        self.vehicles = [i for i in range(len(route_plan), V)]
 
-            if not route_plan[introduced_vehicle]:
+        for introduced_vehicle in self.introduced_vehicles:
+            # generate all possible insertions
+            if len(route_plan[introduced_vehicle]) == 1:
                 # it is trivial to add the new request
                 temp_route_plan = copy.deepcopy(route_plan)
-                if not pandas.isnull(request["Requested Pickup Time"]):
-                    temp_route_plan[introduced_vehicle] = self.add_initial_nodes_pickup(request=request, introduced_vehicle=introduced_vehicle, rid=rid, vehicle_route=temp_route_plan[introduced_vehicle]
-                                                                                        )
+                temp_route_plan[introduced_vehicle] = self.add_initial_nodes_pickup(request=request, introduced_vehicle=introduced_vehicle, rid=rid, vehicle_route=temp_route_plan[introduced_vehicle],
+                                                                                    depot=True)
                 # calculate change in objective
-                change_objective = self.heuristic.delta_objective(
-                    temp_route_plan)
+                change_objective = self.heuristic.new_objective(
+                    temp_route_plan, infeasible_set)
                 possible_insertions[change_objective] = temp_route_plan
 
             else:
@@ -40,319 +44,336 @@ class RepairGenerator:
                 activated_checks = False  # will be set to True if there is a test that fails
                 temp_route_plan = copy.deepcopy(route_plan)
 
-                if not pandas.isnull(request["Requested Pickup Time"]):
-                    vehicle_route = route_plan[introduced_vehicle]
+                vehicle_route = route_plan[introduced_vehicle]
 
-                    # check if there are any infeasible matches with current request
-                    preprocessed_check_activated = self.preprocess_check(
-                        rid=rid, vehicle_route=vehicle_route)
+                # check if there are any infeasible matches with current request
+                preprocessed_check_activated = self.preprocess_check(
+                    rid=rid, vehicle_route=vehicle_route)
 
-                    if not preprocessed_check_activated:
-                        dropoff_time = request["Requested Pickup Time"] + self.heuristic.travel_time(
-                            rid-1, self.heuristic.n + rid-1, True)
+                if not preprocessed_check_activated:
+                    dropoff_time = request["Requested Pickup Time"] + self.heuristic.travel_time(
+                        rid-1, self.heuristic.n + rid-1, True)
 
-                        start_idx = 0
-                        vehicle_route = temp_route_plan[introduced_vehicle]
-                        test_vehicle_route = copy.deepcopy(vehicle_route)
-                        for idx, (node, time, deviation, passenger, wheelchair, _) in enumerate(vehicle_route):
-                            if time <= request["Requested Pickup Time"]:
-                                start_idx = idx
+                    start_idx = 0
+                    vehicle_route = temp_route_plan[introduced_vehicle]
+                    test_vehicle_route = copy.deepcopy(vehicle_route)
+                    for idx, (node, time, deviation, passenger, wheelchair, _) in enumerate(vehicle_route):
+                        if time <= request["Requested Pickup Time"]:
+                            start_idx = idx
 
-                        s_p_node, s_p_time, s_p_d, s_p_p, s_p_w, _ = vehicle_route[start_idx]
-                        if start_idx == len(vehicle_route) - 1:
-                            # there is no other end node, and we only need to check the travel time from start to the node
-                            s_p = s_p_node % int(s_p_node)
-                            start_id = int(
-                                s_p_node - 0.5 - 1 + self.heuristic.n if s_p else s_p_node - 1)
-                            s_p_travel_time = self.heuristic.travel_time(
-                                rid-1, start_id, True)
+                    s_p_node, s_p_time, s_p_d, s_p_p, s_p_w, _ = vehicle_route[start_idx]
+                    if start_idx == len(vehicle_route) - 1:
+                        # there is no other end node, and we only need to check the travel time from start to the node
+                        s_p = s_p_node % int(s_p_node) if s_p_node > 0 else 0
+                        start_id = int(
+                            s_p_node - 0.5 - 1 + self.heuristic.n if s_p else s_p_node - 1)
+                        start_id = 2*self.heuristic.n + introduced_vehicle if s_p_node == 0 else start_id
+                        s_p_travel_time = self.heuristic.travel_time(
+                            rid-1, start_id, True)
 
-                            if s_p_time + (L_D-s_p_d) + s_p_travel_time <= request["Requested Pickup Time"]:
-                                push_back = s_p_time + s_p_travel_time - request["Requested Pickup Time"] if request["Requested Pickup Time"] - \
-                                    s_p_time - s_p_travel_time < timedelta(0) else 0
+                        dev = self.get_bound_dev(
+                            depot=(s_p_node == 0), upper=False) - s_p_d if s_p_d is not None else self.get_bound_dev(depot=(s_p_node == 0), upper=False)
+                        if s_p_time + dev + s_p_travel_time <= request["Requested Pickup Time"]:
+                            push_back = s_p_time + s_p_travel_time - request["Requested Pickup Time"] if request["Requested Pickup Time"] - \
+                                s_p_time - s_p_travel_time < timedelta(0) else 0
 
-                                # check backward
+                            # check backward
+                            if push_back:
+                                activated_checks = self.check_backward(
+                                    vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx, push_back=push_back, activated_checks=activated_checks, rid=rid, request=request, infeasible_set=infeasible_set)
+
+                            # check capacities
+                            activated_checks = self.check_capacities(
+                                vehicle_route=temp_route_plan[introduced_vehicle], request=request, rid=rid,
+                                start_id=start_idx + 1, dropoff_id=start_idx + 2,
+                                activated_checks=activated_checks, infeasible_set=infeasible_set)
+
+                            if not activated_checks:
+
+                                # update backward to test vehicle route
                                 if push_back:
-                                    activated_checks = self.check_backward(
-                                        vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx, push_back=push_back, activated_checks=activated_checks, rid=rid, request=request, infeasible_set=infeasible_set)
+                                    test_vehicle_route = self.update_backward(
+                                        vehicle_route=test_vehicle_route, start_idx=start_idx, push_back=push_back, activated_checks=activated_checks, rid=rid, request=request)
 
-                                # check capacities
-                                activated_checks = self.check_capacities(
-                                    vehicle_route=temp_route_plan[introduced_vehicle], request=request, rid=rid,
-                                    start_id=start_idx + 1, dropoff_id=start_idx + 2,
-                                    activated_checks=activated_checks, infeasible_set=infeasible_set)
+                                # add pickup node to test vehicle route
+                                pickup_id, test_vehicle_route = self.add_node(
+                                    vehicle_route=test_vehicle_route, request=request, time=request["Requested Pickup Time"], pickup=True, rid=rid, node_idx=start_idx)
 
-                                if not activated_checks:
+                                # add dropoff node to test vehicle route
+                                dropoff_id, test_vehicle_route = self.add_node(
+                                    vehicle_route=test_vehicle_route, request=request, time=dropoff_time, pickup=False, rid=rid, node_idx=start_idx+1)
 
-                                    # update backward to test vehicle route
-                                    if push_back:
-                                        test_vehicle_route = self.update_backward(
-                                            vehicle_route=test_vehicle_route, start_idx=start_idx, push_back=push_back, activated_checks=activated_checks, rid=rid, request=request)
+                                # check max ride time between nodes on test vehicle route
+                                activated_checks = self.check_max_ride_time(
+                                    vehicle_route=test_vehicle_route,
+                                    activated_checks=activated_checks, rid=rid, request=request)
 
-                                    # add pickup node to test vehicle route
-                                    pickup_id, test_vehicle_route = self.add_node(
-                                        vehicle_route=test_vehicle_route, request=request, time=request["Requested Pickup Time"], pickup=True, rid=rid, node_idx=start_idx)
-
-                                    # add dropoff node to test vehicle route
-                                    dropoff_id, test_vehicle_route = self.add_node(
-                                        vehicle_route=test_vehicle_route, request=request, time=dropoff_time, pickup=False, rid=rid, node_idx=start_idx+1)
-
-                                    # check max ride time between nodes on test vehicle route
-                                    activated_checks = self.check_max_ride_time(
-                                        vehicle_route=test_vehicle_route,
-                                        activated_checks=activated_checks, rid=rid, request=request)
-
-                                    # check min ride time between nodes on test vehicle route
-                                    activated_checks = self.check_min_ride_time(
-                                        vehicle_route=test_vehicle_route,
-                                        activated_checks=activated_checks, rid=rid, request=request)
-
-                                    if not activated_checks:
-                                        # can update temp route plan
-                                        # update backward
-                                        if push_back:
-                                            temp_route_plan[introduced_vehicle] = self.update_backward(
-                                                vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx,
-                                                push_back=push_back, activated_checks=activated_checks, rid=rid,
-                                                request=request)
-
-                                        # add pickup node
-                                        pickup_id, vehicle_route = self.add_node(
-                                            vehicle_route=temp_route_plan[introduced_vehicle], request=request,
-                                            time=request["Requested Pickup Time"], pickup=True, rid=rid,
-                                            node_idx=start_idx)
-
-                                        # add dropoff node
-                                        dropoff_id, vehicle_route = self.add_node(
-                                            vehicle_route=temp_route_plan[introduced_vehicle], request=request, time=dropoff_time,
-                                            pickup=False, rid=rid, node_idx=start_idx + 1)
-
-                                        feasible_request = True
-
-                                        self.check_remove(rid, request, infeasible_set)
-
-                                        # calculate change in objective
-                                        change_objective = self.heuristic.delta_objective(
-                                            temp_route_plan)
-                                        possible_insertions[change_objective] = temp_route_plan
-                        else:
-                            e_p_node, e_p_time, e_p_d, e_p_p, e_p_w, _ = vehicle_route[start_idx + 1]
-                            s_p = s_p_node % int(s_p_node)
-                            e_p = e_p_node % int(e_p_node)
-                            start_id_p = int(
-                                s_p_node - 0.5 - 1 + self.heuristic.n if s_p else s_p_node - 1)
-                            end_id_p = int(
-                                e_p_node - 0.5 - 1 + self.heuristic.n if e_p else e_p_node - 1)
-
-                            s_p_travel_time = self.heuristic.travel_time(
-                                rid - 1, start_id_p, True)
-                            p_e_travel_time = self.heuristic.travel_time(
-                                rid - 1, end_id_p, True)
-
-                            if s_p_time + (L_D - s_p_d) + s_p_travel_time <= request["Requested Pickup Time"] and \
-                                request["Requested Pickup Time"] + timedelta(
-                                    minutes=S) + p_e_travel_time <= e_p_time + (U_D - e_p_d):
-                                push_forward_p = request["Requested Pickup Time"] + timedelta(
-                                    minutes=S) + p_e_travel_time - e_p_time if e_p_time - request["Requested Pickup Time"] - \
-                                    timedelta(
-                                    minutes=S) - p_e_travel_time < timedelta(
-                                    0) else 0
-                                push_back_p = s_p_time + s_p_travel_time - request["Requested Pickup Time"] if request["Requested Pickup Time"] - s_p_time - s_p_travel_time < timedelta(
-                                    0) else 0
-
-                                # check forward
-                                if push_forward_p:
-                                    activated_checks = self.check_forward(
-                                        vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx,
-                                        push_forward=push_forward_p, activated_checks=activated_checks, rid=rid,
-                                        request=request, infeasible_set=infeasible_set)
-
-                                # check backward
-                                if push_back_p:
-                                    activated_checks = self.check_backward(
-                                        vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx,
-                                        push_back=push_back_p, activated_checks=activated_checks, rid=rid,
-                                        request=request, infeasible_set=infeasible_set)
+                                # check min ride time between nodes on test vehicle route
+                                activated_checks = self.check_min_ride_time(
+                                    vehicle_route=test_vehicle_route,
+                                    activated_checks=activated_checks, rid=rid, request=request)
 
                                 if not activated_checks:
-                                    # update forward
-                                    if push_forward_p:
-                                        test_vehicle_route = self.update_forward(
-                                            vehicle_route=test_vehicle_route, start_idx=start_idx,
-                                            push_forward=push_forward_p, activated_checks=activated_checks, rid=rid,
-                                            request=request)
-
+                                    # can update temp route plan
                                     # update backward
-                                    if push_back_p:
-                                        test_vehicle_route = self.update_backward(
-                                            vehicle_route=test_vehicle_route, start_idx=start_idx,
-                                            push_back=push_back_p, activated_checks=activated_checks, rid=rid,
+                                    if push_back:
+                                        temp_route_plan[introduced_vehicle] = self.update_backward(
+                                            vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx,
+                                            push_back=push_back, activated_checks=activated_checks, rid=rid,
                                             request=request)
 
-                                    # add pickup node to test vehicle route
-                                    pickup_id, test_vehicle_route = self.add_node(
-                                        vehicle_route=test_vehicle_route, request=request,
+                                    # add pickup node
+                                    pickup_id, vehicle_route = self.add_node(
+                                        vehicle_route=temp_route_plan[introduced_vehicle], request=request,
                                         time=request["Requested Pickup Time"], pickup=True, rid=rid,
                                         node_idx=start_idx)
 
-                                    s_p_node, s_p_time, s_p_d, s_p_p, s_p_w, _ = test_vehicle_route[
-                                        start_idx]
-                                    e_p_node, e_p_time, e_p_d, e_p_p, e_p_w, _ = test_vehicle_route[
-                                        start_idx + 1]
-                                    end_idx = 0
-                                    for idx, (node, time, deviation, passenger, wheelchair, _) in enumerate(test_vehicle_route):
-                                        if time <= dropoff_time:
-                                            end_idx = idx
+                                    # add dropoff node
+                                    dropoff_id, vehicle_route = self.add_node(
+                                        vehicle_route=temp_route_plan[introduced_vehicle], request=request, time=dropoff_time,
+                                        pickup=False, rid=rid, node_idx=start_idx + 1)
 
-                                    s_d_node, s_d_time, s_d_d, s_d_p, s_d_w, _ = test_vehicle_route[
-                                        end_idx]
+                                    feasible_request = True
 
-                                    if end_idx == len(test_vehicle_route) - 1:
-                                        # there is no other end node, and we only need to check the travel time from start to the node
-                                        e_d_node = None
-                                    else:
-                                        e_d_node, e_d_time, e_d_d, e_d_p, e_d_w, _ = test_vehicle_route[
-                                            end_idx + 1]
+                                    self.check_remove(
+                                        rid, request, infeasible_set)
 
-                                    s_d = s_d_node % int(s_d_node)
-                                    e_d = e_d_node % int(
-                                        e_d_node) if e_d_node else None
+                                    # calculate change in objective
+                                    change_objective = self.heuristic.new_objective(
+                                        temp_route_plan, infeasible_set)
+                                    possible_insertions[change_objective] = temp_route_plan
+                    else:
+                        e_p_node, e_p_time, e_p_d, e_p_p, e_p_w, _ = vehicle_route[start_idx + 1]
+                        s_p = s_p_node % int(s_p_node) if s_p_node > 0 else 0
+                        e_p = e_p_node % int(e_p_node)
+                        start_id_p = int(
+                            s_p_node - 0.5 - 1 + self.heuristic.n if s_p else s_p_node - 1)
+                        start_id_p = 2*self.heuristic.n + \
+                            introduced_vehicle if s_p_node == 0 else start_id_p
 
-                                    start_id_d = int(
-                                        s_d_node - 0.5 - 1 + self.heuristic.n if s_d else s_d_node - 1)
+                        end_id_p = int(
+                            e_p_node - 0.5 - 1 + self.heuristic.n if e_p else e_p_node - 1)
+
+                        s_p_travel_time = self.heuristic.travel_time(
+                            rid - 1, start_id_p, True)
+                        p_e_travel_time = self.heuristic.travel_time(
+                            rid - 1, end_id_p, True)
+
+                        lower_dev = self.get_bound_dev(
+                            depot=(s_p_node == 0), upper=False) - s_p_d if s_p_d is not None else self.get_bound_dev(depot=(s_p_node == 0), upper=False)
+                        upper_dev = self.get_bound_dev(
+                            depot=False, upper=True) - e_p_d
+                        if s_p_time + lower_dev + s_p_travel_time <= request["Requested Pickup Time"] and request["Requested Pickup Time"] + timedelta(minutes=S) + p_e_travel_time <= e_p_time + upper_dev:
+                            push_back_p = s_p_time + s_p_travel_time - request["Requested Pickup Time"] if request["Requested Pickup Time"] - s_p_time - s_p_travel_time < timedelta(
+                                0) else 0
+                            push_forward_p = request["Requested Pickup Time"] + timedelta(
+                                minutes=S) + p_e_travel_time - e_p_time if e_p_time - request["Requested Pickup Time"] - \
+                                timedelta(
+                                minutes=S) - p_e_travel_time < timedelta(
+                                0) else 0
+
+                            # check forward
+                            if push_forward_p:
+                                activated_checks = self.check_forward(
+                                    vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx,
+                                    push_forward=push_forward_p, activated_checks=activated_checks, rid=rid,
+                                    request=request, infeasible_set=infeasible_set)
+
+                            # check backward
+                            if push_back_p:
+                                activated_checks = self.check_backward(
+                                    vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx,
+                                    push_back=push_back_p, activated_checks=activated_checks, rid=rid,
+                                    request=request, infeasible_set=infeasible_set)
+
+                            if not activated_checks:
+                                # update forward
+                                if push_forward_p:
+                                    test_vehicle_route = self.update_forward(
+                                        vehicle_route=test_vehicle_route, start_idx=start_idx,
+                                        push_forward=push_forward_p, activated_checks=activated_checks, rid=rid,
+                                        request=request)
+
+                                # update backward
+                                if push_back_p:
+                                    test_vehicle_route = self.update_backward(
+                                        vehicle_route=test_vehicle_route, start_idx=start_idx,
+                                        push_back=push_back_p, activated_checks=activated_checks, rid=rid,
+                                        request=request)
+
+                                # add pickup node to test vehicle route
+                                pickup_id, test_vehicle_route = self.add_node(
+                                    vehicle_route=test_vehicle_route, request=request,
+                                    time=request["Requested Pickup Time"], pickup=True, rid=rid,
+                                    node_idx=start_idx)
+
+                                s_p_node, s_p_time, s_p_d, s_p_p, s_p_w, _ = test_vehicle_route[
+                                    start_idx]
+                                e_p_node, e_p_time, e_p_d, e_p_p, e_p_w, _ = test_vehicle_route[
+                                    start_idx + 2]
+                                end_idx = 0
+                                for idx, (node, time, deviation, passenger, wheelchair, _) in enumerate(test_vehicle_route):
+                                    if time <= dropoff_time:
+                                        end_idx = idx
+
+                                s_d_node, s_d_time, s_d_d, s_d_p, s_d_w, _ = test_vehicle_route[
+                                    end_idx]
+
+                                if end_idx == len(test_vehicle_route) - 1:
+                                    # there is no other end node, and we only need to check the travel time from start to the node
+                                    e_d_node = None
+                                else:
+                                    e_d_node, e_d_time, e_d_d, e_d_p, e_d_w, _ = test_vehicle_route[
+                                        end_idx + 1]
+
+                                s_d = s_d_node % int(
+                                    s_d_node) if s_d_node > 0 else 0
+                                e_d = e_d_node % int(
+                                    e_d_node) if e_d_node else None
+
+                                start_id_d = int(
+                                    s_d_node - 0.5 - 1 + self.heuristic.n if s_d else s_d_node - 1)
+                                start_id_d = 2*self.heuristic.n + \
+                                    introduced_vehicle if s_d_node == 0 else start_id_d
+
+                                if e_d_node:
+                                    end_id_d = int(
+                                        e_d_node - 0.5 - 1 + self.heuristic.n if e_d else e_d_node - 1)
+
+                                s_d_travel_time = self.heuristic.travel_time(
+                                    rid - 1 + self.heuristic.n, start_id_d, True)
+                                d_e_travel_time = self.heuristic.travel_time(
+                                    rid - 1 + self.heuristic.n, end_id_d, True) if e_d_node else None
+
+                                lower_dev_p = self.get_bound_dev(
+                                    depot=(s_p_node == 0), upper=False) - s_p_d if s_p_d is not None else self.get_bound_dev(depot=(s_p_node == 0), upper=False)
+                                upper_dev_p = self.get_bound_dev(
+                                    depot=False, upper=True) - e_p_d
+                                lower_dev_d = self.get_bound_dev(
+                                    depot=(s_d_node == 0), upper=False) - s_d_d if s_d_d is not None else self.get_bound_dev(depot=(s_d_node == 0), upper=False)
+
+                                if s_p_time + lower_dev_p + s_p_travel_time <= request["Requested Pickup Time"] and request["Requested Pickup Time"] + timedelta(
+                                        minutes=S) + p_e_travel_time <= e_p_time + upper_dev_p and s_d_time + lower_dev_d + s_d_travel_time <= dropoff_time:
+                                    push_back_d = s_d_time + s_d_travel_time - dropoff_time if \
+                                        dropoff_time - \
+                                        s_d_time - s_d_travel_time < timedelta(
+                                            0) else 0
                                     if e_d_node:
-                                        end_id_d = int(
-                                            e_d_node - 0.5 - 1 + self.heuristic.n if e_d else e_d_node - 1)
+                                        upper_dev_d = self.get_bound_dev(
+                                            depot=False, upper=True) - e_d_d
+                                        if dropoff_time + timedelta(
+                                                minutes=S) + d_e_travel_time <= e_d_time + upper_dev_d:
+                                            push_forward_d = dropoff_time + \
+                                                timedelta(
+                                                    minutes=S) + d_e_travel_time - e_d_time if e_d_time - \
+                                                dropoff_time - \
+                                                timedelta(
+                                                    minutes=S) - d_e_travel_time < timedelta(
+                                                    0) else 0
+                                        else:
+                                            activated_checks = True
+                                            push_forward_d = None
 
-                                    s_d_travel_time = self.heuristic.travel_time(
-                                        rid - 1 + self.heuristic.n, start_id_d, True)
-                                    d_e_travel_time = self.heuristic.travel_time(
-                                        rid - 1 + self.heuristic.n, end_id_d, True) if e_d_node else None
+                                    if e_d_node:
+                                        if push_forward_d:
+                                            activated_checks = self.check_forward(
+                                                vehicle_route=test_vehicle_route,
+                                                start_idx=end_idx, push_forward=push_forward_d,
+                                                activated_checks=activated_checks, rid=rid, request=request,
+                                                infeasible_set=infeasible_set)
 
-                                    if s_p_time + (
-                                            L_D - s_p_d) + s_p_travel_time <= request["Requested Pickup Time"] and request["Requested Pickup Time"] + timedelta(
-                                            minutes=S) + p_e_travel_time <= e_p_time + (U_D - e_p_d) and s_d_time + (
-                                            L_D - s_d_d) + s_d_travel_time <= dropoff_time:
-                                        push_back_d = s_d_time + s_d_travel_time - dropoff_time if \
-                                            dropoff_time - \
-                                            s_d_time - s_d_travel_time < timedelta(
-                                                0) else 0
-                                        if e_d_node:
-                                            if dropoff_time + timedelta(
-                                                    minutes=S) + d_e_travel_time <= e_d_time + (
-                                                    U_D - e_d_d):
-                                                push_forward_d = dropoff_time + \
-                                                    timedelta(
-                                                        minutes=S) + d_e_travel_time - e_d_time if e_d_time - \
-                                                    dropoff_time - \
-                                                    timedelta(
-                                                        minutes=S) - d_e_travel_time < timedelta(
-                                                        0) else 0
-                                            else:
-                                                activated_checks = True
-                                                push_forward_d = None
+                                    # check backward
+                                    if push_back_d:
+                                        activated_checks = self.check_backward(
+                                            vehicle_route=test_vehicle_route, start_idx=start_idx,
+                                            push_back=push_back_d, activated_checks=activated_checks,
+                                            rid=rid,
+                                            request=request, infeasible_set=infeasible_set)
 
+                                    if not activated_checks:
+                                        # update forward
                                         if e_d_node:
                                             if push_forward_d:
-                                                activated_checks = self.check_forward(
-                                                    vehicle_route=test_vehicle_route,
-                                                    start_idx=end_idx, push_forward=push_forward_d,
-                                                    activated_checks=activated_checks, rid=rid, request=request,
-                                                    infeasible_set=infeasible_set)
-
-                                        # check backward
-                                        if push_back_d:
-                                            activated_checks = self.check_backward(
-                                                vehicle_route=test_vehicle_route, start_idx=start_idx,
-                                                push_back=push_back_d, activated_checks=activated_checks,
-                                                rid=rid,
-                                                request=request, infeasible_set=infeasible_set)
-
-                                        if not activated_checks:
-                                            # update forward
-                                            if e_d_node:
-                                                if push_forward_d:
-                                                    test_vehicle_route = self.update_forward(
-                                                        vehicle_route=test_vehicle_route, start_idx=start_idx,
-                                                        push_forward=push_forward_d, activated_checks=activated_checks,
-                                                        rid=rid,
-                                                        request=request)
-
-                                            # update backward
-                                            if push_back_d:
-                                                test_vehicle_route = self.update_backward(
+                                                test_vehicle_route = self.update_forward(
                                                     vehicle_route=test_vehicle_route, start_idx=start_idx,
-                                                    push_back=push_back_d, activated_checks=activated_checks,
+                                                    push_forward=push_forward_d, activated_checks=activated_checks,
                                                     rid=rid,
                                                     request=request)
 
-                                            # add dropoff node to test vehicle route
-                                            dropoff_id, test_vehicle_route = self.add_node(
-                                                vehicle_route=test_vehicle_route, request=request,
+                                        # update backward
+                                        if push_back_d:
+                                            test_vehicle_route = self.update_backward(
+                                                vehicle_route=test_vehicle_route, start_idx=start_idx,
+                                                push_back=push_back_d, activated_checks=activated_checks,
+                                                rid=rid,
+                                                request=request)
+
+                                        # add dropoff node to test vehicle route
+                                        dropoff_id, test_vehicle_route = self.add_node(
+                                            vehicle_route=test_vehicle_route, request=request,
+                                            time=dropoff_time, pickup=False, rid=rid,
+                                            node_idx=end_idx)
+
+                                        # check capacities
+                                        activated_checks = self.check_capacities(
+                                            vehicle_route=test_vehicle_route, request=request,
+                                            rid=rid,
+                                            start_id=start_idx + 1, dropoff_id=end_idx + 1,
+                                            activated_checks=activated_checks, infeasible_set=infeasible_set)
+
+                                        # check max ride time between nodes
+                                        activated_checks = self.check_max_ride_time(
+                                            vehicle_route=test_vehicle_route,
+                                            activated_checks=activated_checks, rid=rid, request=request)
+
+                                        # check min ride time between nodes on test vehicle route
+                                        activated_checks = self.check_min_ride_time(
+                                            vehicle_route=test_vehicle_route,
+                                            activated_checks=activated_checks, rid=rid, request=request)
+
+                                        if not activated_checks:
+                                            # add pickup node
+                                            pickup_id, vehicle_route = self.add_node(
+                                                vehicle_route=temp_route_plan[introduced_vehicle], request=request,
+                                                time=request["Requested Pickup Time"], pickup=True, rid=rid,
+                                                node_idx=start_idx)
+
+                                            # add dropoff node
+                                            dropoff_id, vehicle_route = self.add_node(
+                                                vehicle_route=temp_route_plan[introduced_vehicle],
+                                                request=request,
                                                 time=dropoff_time, pickup=False, rid=rid,
                                                 node_idx=end_idx)
 
-                                            # check capacities
-                                            activated_checks = self.check_capacities(
-                                                vehicle_route=test_vehicle_route, request=request,
-                                                rid=rid,
-                                                start_id=start_idx + 1, dropoff_id=end_idx + 1,
-                                                activated_checks=activated_checks, infeasible_set=infeasible_set)
+                                            feasible_request = True
 
-                                            # check max ride time between nodes
-                                            activated_checks = self.check_max_ride_time(
-                                                vehicle_route=test_vehicle_route,
-                                                activated_checks=activated_checks, rid=rid, request=request)
+                                            self.check_remove(
+                                                rid, request, infeasible_set)
 
-                                            # check min ride time between nodes on test vehicle route
-                                            activated_checks = self.check_min_ride_time(
-                                                vehicle_route=test_vehicle_route,
-                                                activated_checks=activated_checks, rid=rid, request=request)
+                                            # calculate change in objective
+                                            change_objective = self.heuristic.new_objective(
+                                                temp_route_plan, infeasible_set)
+                                            possible_insertions[change_objective] = temp_route_plan
 
-                                            if not activated_checks:
-                                                # add pickup node
-                                                pickup_id, vehicle_route = self.add_node(
-                                                    vehicle_route=temp_route_plan[introduced_vehicle], request=request,
-                                                    time=request["Requested Pickup Time"], pickup=True, rid=rid,
-                                                    node_idx=start_idx)
-
-                                                # add dropoff node
-                                                dropoff_id, vehicle_route = self.add_node(
-                                                    vehicle_route=temp_route_plan[introduced_vehicle],
-                                                    request=request,
-                                                    time=dropoff_time, pickup=False, rid=rid,
-                                                    node_idx=end_idx)
-
-                                                feasible_request = True
-
-                                                self.check_remove(rid, request, infeasible_set)
-
-                                                # calculate change in objective
-                                                change_objective = self.heuristic.delta_objective(
-                                                    temp_route_plan)
-                                                possible_insertions[change_objective] = temp_route_plan
-
-                        # update capacity between pickup and dropoff
-                        if feasible_request:
-                            temp_route_plan[introduced_vehicle] = self.update_capacities(
-                                vehicle_route=temp_route_plan[introduced_vehicle], request=request, rid=rid,
-                                start_id=pickup_id, dropoff_id=dropoff_id)
+                    # update capacity between pickup and dropoff
+                    if feasible_request:
+                        temp_route_plan[introduced_vehicle] = self.update_capacities(
+                            vehicle_route=temp_route_plan[introduced_vehicle], request=request, rid=rid,
+                            start_id=pickup_id, dropoff_id=dropoff_id)
 
         # check if no possible insertions have been made and introduce a new vehicle
-
         if not len(possible_insertions):
-            if self.heuristic.vehicles:
+            if self.vehicles:
                 temp_route_plan = copy.deepcopy(route_plan)
-                new_vehicle = self.heuristic.vehicles.pop(0)
+                new_vehicle = self.vehicles.pop(0)
                 temp_route_plan.append([])
-                self.heuristic.introduced_vehicles.add(new_vehicle)
-                if not pandas.isnull(request["Requested Pickup Time"]):
-                    temp_route_plan[new_vehicle] = self.add_initial_nodes_pickup(
-                        request=request, introduced_vehicle=new_vehicle, rid=rid, vehicle_route=temp_route_plan[new_vehicle])
+                self.introduced_vehicles.add(new_vehicle)
+                temp_route_plan[new_vehicle] = self.add_initial_nodes_pickup(
+                    request=request, introduced_vehicle=new_vehicle, rid=rid, vehicle_route=temp_route_plan[new_vehicle], depot=False)
 
                 # calculate change in objective
-                change_objective = self.heuristic.delta_objective(
-                    temp_route_plan)
+                change_objective = self.heuristic.new_objective(
+                    temp_route_plan, infeasible_set)
                 possible_insertions[change_objective] = temp_route_plan
 
             # if no new vehicles available, append the request in an infeasible set
@@ -360,7 +381,14 @@ class RepairGenerator:
                 if (rid, request) not in infeasible_set:
                     infeasible_set.append((rid, request))
 
-        return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else timedelta(0)
+        return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else timedelta(0), infeasible_set
+
+    def get_bound_dev(self, depot, upper):
+        if upper:
+            dev = U_D_N if not depot else U_D_D
+        else:
+            dev = L_D_N if not depot else L_D_D
+        return dev
 
     def check_remove(self, rid, request, infeasible_set):
         if (rid, request) in infeasible_set:
@@ -369,7 +397,7 @@ class RepairGenerator:
     def check_backward(self, vehicle_route, start_idx, push_back, activated_checks, rid, request, infeasible_set):
         for idx in range(start_idx, -1, -1):
             n, t, d, p, w, _ = vehicle_route[idx]
-            if d is not None and d - push_back < L_D and (rid, request) not in infeasible_set:
+            if d is not None and d - push_back < L_D_N and (rid, request) not in infeasible_set:
                 activated_checks = True
                 break
         return activated_checks
@@ -390,7 +418,7 @@ class RepairGenerator:
         idx = start_idx + 1
         for n, t, d, p, w, _ in vehicle_route[start_idx+1:]:
             # since updating happens at start_idx + 1, there is no need to check for depot
-            if d + push_forward > U_D and (rid, request) not in infeasible_set:
+            if d + push_forward > U_D_N and (rid, request) not in infeasible_set:
                 activated_checks = True
                 break
         return activated_checks
@@ -463,21 +491,37 @@ class RepairGenerator:
                 break
         return activated_checks
 
-    def add_initial_nodes_pickup(self, request, introduced_vehicle, rid, vehicle_route):
-        service_time = request["Requested Pickup Time"] - self.heuristic.travel_time(
-            rid-1, 2*self.heuristic.n + introduced_vehicle, True)
-        vehicle_route.append(
-            (0, service_time, None, 0, 0, None))
-        vehicle_route.append(
-            (rid,
-                request["Requested Pickup Time"], timedelta(0), request["Number of Passengers"], request["Wheelchair"], request)
-        )
-        travel_time = self.heuristic.travel_time(
-            rid-1, self.heuristic.n + rid - 1, True)
-        vehicle_route.append(
-            (rid + 0.5,
-                request["Requested Pickup Time"]+travel_time, timedelta(0), 0, 0, request)
-        )
+    def add_initial_nodes_pickup(self, request, introduced_vehicle, rid, vehicle_route, depot):
+        if not depot:
+            service_time = request["Requested Pickup Time"] - self.heuristic.travel_time(
+                rid-1, 2*self.heuristic.n + introduced_vehicle, True)
+            vehicle_route.append(
+                (0, service_time, None, 0, 0, None))
+            vehicle_route.append(
+                (rid,
+                    request["Requested Pickup Time"], timedelta(0), request["Number of Passengers"], request["Wheelchair"], request)
+            )
+            travel_time = self.heuristic.travel_time(
+                rid-1, self.heuristic.n + rid - 1, True)
+            vehicle_route.append(
+                (rid + 0.5,
+                    request["Requested Pickup Time"]+travel_time, timedelta(0), 0, 0, request)
+            )
+        else:
+            service_time = request["Requested Pickup Time"] - self.heuristic.travel_time(
+                rid-1, 2*self.heuristic.n + introduced_vehicle, True)
+            vehicle_route[0] = (0, service_time, None, 0, 0, None)
+            vehicle_route.insert(1,
+                                 (rid,
+                                  request["Requested Pickup Time"], timedelta(0), request["Number of Passengers"], request["Wheelchair"], request)
+                                 )
+            travel_time = self.heuristic.travel_time(
+                rid-1, self.heuristic.n + rid - 1, True)
+            vehicle_route.insert(2,
+                                 (rid + 0.5,
+                                  request["Requested Pickup Time"]+travel_time, timedelta(0), 0, 0, request)
+                                 )
+
         return vehicle_route
 
     def preprocess_check(self, rid, vehicle_route):

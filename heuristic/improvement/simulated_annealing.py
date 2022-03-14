@@ -1,5 +1,7 @@
+import math
 import numpy as np
 import numpy.random as rnd
+from datetime import datetime, timedelta
 
 
 class SimulatedAnnealing:
@@ -14,19 +16,24 @@ class SimulatedAnnealing:
     def accept_criterion(self, random_state, current_objective, candidate_objective):
 
         # Always accept better solution
-        if candidate_objective > current_objective:
-            print("better")
+        if candidate_objective <= current_objective:
+            #print("Found better solution")
             accept = True
 
         # Sometimes accept worse
         else:
-            print(" not better")
-            probability = np.exp(-(current_objective - candidate_objective) / self.temperature)
-            print("probability ", probability)
+            #print("Did not find better solution")
+
+            diff = (candidate_objective.total_seconds() -
+                    current_objective.total_seconds())/60
+            #print("DIFF", diff)
+            probability = np.exp(-diff / self.temperature)
+            #print("Probability ", probability)
             accept = (probability >= random_state.random())
+            #print("Did we still go with worse solution: ", accept)
 
         # Should not set a temperature that is lower than the end temperature.
-        self.temperature = max(self.end_temperature, self.temperature - self.step)
+        self.temperature = max(self.end_temperature,
+                               self.temperature - self.step)
 
         return accept
-

@@ -26,7 +26,7 @@ class InsertionGenerator:
                                                                                         )
                 # calculate change in objective
                 new_objective = self.heuristic.new_objective(
-                    temp_route_plan)
+                    temp_route_plan, self.heuristic.infeasible_set)
                 possible_insertions[new_objective] = temp_route_plan
 
             else:
@@ -129,7 +129,7 @@ class InsertionGenerator:
 
                                         # calculate change in objective
                                         new_objective = self.heuristic.new_objective(
-                                            temp_route_plan)
+                                            temp_route_plan, self.heuristic.infeasible_set)
                                         possible_insertions[new_objective] = temp_route_plan
                         else:
                             e_p_node, e_p_time, e_p_d, e_p_p, e_p_w, _ = vehicle_route[start_idx + 1]
@@ -194,7 +194,7 @@ class InsertionGenerator:
                                     s_p_node, s_p_time, s_p_d, s_p_p, s_p_w, _ = test_vehicle_route[
                                         start_idx]
                                     e_p_node, e_p_time, e_p_d, e_p_p, e_p_w, _ = test_vehicle_route[
-                                        start_idx + 1]
+                                        start_idx + 2]
                                     end_idx = 0
                                     for idx, (node, time, deviation, passenger, wheelchair, _) in enumerate(test_vehicle_route):
                                         if time <= dropoff_time:
@@ -324,7 +324,7 @@ class InsertionGenerator:
 
                                                 # calculate change in objective
                                                 new_objective = self.heuristic.new_objective(
-                                                    temp_route_plan)
+                                                    temp_route_plan, self.heuristic.infeasible_set)
                                                 possible_insertions[new_objective] = temp_route_plan
 
                         # update capacity between pickup and dropoff
@@ -347,7 +347,7 @@ class InsertionGenerator:
 
                 # calculate change in objective
                 new_objective = self.heuristic.new_objective(
-                    temp_route_plan)
+                    temp_route_plan, self.heuristic.infeasible_set)
                 possible_insertions[new_objective] = temp_route_plan
 
             # if no new vehicles available, append the request in an infeasible set
