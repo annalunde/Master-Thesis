@@ -83,7 +83,20 @@ class ALNS:
 
         return best, best_objective, best_infeasible_set
 
+    def set_operators(self, operators):
+        # Add destroy operators
+        self.add_destroy_operator(operators.random_removal)
+        self.add_destroy_operator(operators.time_related_removal)
+        self.add_destroy_operator(operators.distance_related_removal)
+        self.add_destroy_operator(operators.related_removal)
+        self.add_destroy_operator(operators.worst_deviation_removal)
+
+        # Add repair operators
+        self.add_repair_operator(operators.greedy_repair)
+        # alns.add_repair_operator(operators.regret_repair)
+
     # Add operator to the heuristic instance
+
     def add_destroy_operator(self, operator):
         self.destroy_operators.append(operator)
 
