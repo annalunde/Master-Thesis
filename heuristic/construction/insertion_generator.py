@@ -170,70 +170,70 @@ class InsertionGenerator:
                                     time=request["Requested Pickup Time"], pickup=True, rid=rid,
                                     node_idx=start_idx)
 
-                                    s_p_node, s_p_time, s_p_d, s_p_p, s_p_w, _ = test_vehicle_route[
-                                        start_idx]
-                                    e_p_node, e_p_time, e_p_d, e_p_p, e_p_w, _ = test_vehicle_route[
-                                        start_idx + 1]
+                                s_p_node, s_p_time, s_p_d, s_p_p, s_p_w, _ = test_vehicle_route[
+                                    start_idx]
+                                e_p_node, e_p_time, e_p_d, e_p_p, e_p_w, _ = test_vehicle_route[
+                                    start_idx + 1]
 
-                                    before_depot_test = copy.deepcopy(
-                                        test_vehicle_route)
-                                    before_depot_temp = copy.deepcopy(
-                                        temp_route_plan)
-                                    possible_dropoff_nodes = self.generate_possible_nodes(
-                                        request, vehicle_route, dropoff_time)
+                                before_depot_test = copy.deepcopy(
+                                    test_vehicle_route)
+                                before_depot_temp = copy.deepcopy(
+                                    temp_route_plan)
+                                possible_dropoff_nodes = self.generate_possible_nodes(
+                                    request, vehicle_route, dropoff_time)
 
-                                    for end_idx in possible_dropoff_nodes:
-                                        temp_route_plan = copy.deepcopy(
-                                            before_depot_temp)
-                                        test_vehicle_route = copy.deepcopy(
-                                            before_depot_test)
-                                        s_d_node, s_d_time, s_d_d, s_d_p, s_d_w, _ = test_vehicle_route[
-                                            end_idx]
+                                for end_idx in possible_dropoff_nodes:
+                                    temp_route_plan = copy.deepcopy(
+                                        before_depot_temp)
+                                    test_vehicle_route = copy.deepcopy(
+                                        before_depot_test)
+                                    s_d_node, s_d_time, s_d_d, s_d_p, s_d_w, _ = test_vehicle_route[
+                                        end_idx]
 
-                                        if end_idx == len(test_vehicle_route) - 1:
-                                            # there is no other end node, and we only need to check the travel time from start to the node
-                                            e_d_node = None
-                                        else:
-                                            e_d_node, e_d_time, e_d_d, e_d_p, e_d_w, _ = test_vehicle_route[
-                                                end_idx + 1]
+                                    if end_idx == len(test_vehicle_route) - 1:
+                                        # there is no other end node, and we only need to check the travel time from start to the node
+                                        e_d_node = None
+                                    else:
+                                        e_d_node, e_d_time, e_d_d, e_d_p, e_d_w, _ = test_vehicle_route[
+                                            end_idx + 1]
 
-                                        s_d = s_d_node % int(s_d_node)
-                                        e_d = e_d_node % int(
-                                            e_d_node) if e_d_node else None
+                                    s_d = s_d_node % int(s_d_node)
+                                    e_d = e_d_node % int(
+                                        e_d_node) if e_d_node else None
 
-                                        start_id_d = int(
-                                            s_d_node - 0.5 - 1 + self.heuristic.n if s_d else s_d_node - 1)
+                                    start_id_d = int(
+                                        s_d_node - 0.5 - 1 + self.heuristic.n if s_d else s_d_node - 1)
+                                    if e_d_node:
+                                        end_id_d = int(
+                                            e_d_node - 0.5 - 1 + self.heuristic.n if e_d else e_d_node - 1)
+
+                                    s_d_travel_time = self.heuristic.travel_time(
+                                        rid - 1 + self.heuristic.n, start_id_d, True)
+                                    d_e_travel_time = self.heuristic.travel_time(
+                                        rid - 1 + self.heuristic.n, end_id_d, True) if e_d_node else None
+
+                                    if s_p_time + (
+                                            L_D - s_p_d) + s_p_travel_time <= request["Requested Pickup Time"] and request["Requested Pickup Time"] + timedelta(
+                                            minutes=S) + p_e_travel_time <= e_p_time + (U_D - e_p_d) and s_d_time + (
+                                            L_D - s_d_d) + s_d_travel_time <= dropoff_time:
+                                        push_back_d = s_d_time + s_d_travel_time - dropoff_time if \
+                                            dropoff_time - \
+                                            s_d_time - s_d_travel_time < timedelta(
+                                                0) else 0
                                         if e_d_node:
-                                            end_id_d = int(
-                                                e_d_node - 0.5 - 1 + self.heuristic.n if e_d else e_d_node - 1)
-
-                                        s_d_travel_time = self.heuristic.travel_time(
-                                            rid - 1 + self.heuristic.n, start_id_d, True)
-                                        d_e_travel_time = self.heuristic.travel_time(
-                                            rid - 1 + self.heuristic.n, end_id_d, True) if e_d_node else None
-
-                                        if s_p_time + (
-                                                L_D - s_p_d) + s_p_travel_time <= request["Requested Pickup Time"] and request["Requested Pickup Time"] + timedelta(
-                                                minutes=S) + p_e_travel_time <= e_p_time + (U_D - e_p_d) and s_d_time + (
-                                                L_D - s_d_d) + s_d_travel_time <= dropoff_time:
-                                            push_back_d = s_d_time + s_d_travel_time - dropoff_time if \
-                                                dropoff_time - \
-                                                s_d_time - s_d_travel_time < timedelta(
-                                                    0) else 0
-                                            if e_d_node:
-                                                if dropoff_time + timedelta(
-                                                        minutes=S) + d_e_travel_time <= e_d_time + (
-                                                        U_D - e_d_d):
-                                                    push_forward_d = dropoff_time + \
-                                                        timedelta(
-                                                            minutes=S) + d_e_travel_time - e_d_time if e_d_time - \
-                                                        dropoff_time - \
-                                                        timedelta(
-                                                            minutes=S) - d_e_travel_time < timedelta(
-                                                            0) else 0
-                                                else:
-                                                    activated_checks = True
-                                                    push_forward_d = None
+                                            if dropoff_time + timedelta(
+                                                    minutes=S) + d_e_travel_time <= e_d_time + (
+                                                    U_D - e_d_d):
+                                                push_forward_d = dropoff_time + \
+                                                    timedelta(
+                                                        minutes=S) + d_e_travel_time - e_d_time if e_d_time - \
+                                                    dropoff_time - \
+                                                    timedelta(
+                                                        minutes=S) - d_e_travel_time < timedelta(
+                                                        0) else 0
+                                            else:
+                                                activated_checks = True
+                                                push_forward_d = None
 
                                     # update forward
                                     if e_d_node:
@@ -252,47 +252,47 @@ class InsertionGenerator:
                                             rid=rid,
                                             request=request, introduced_vehicle=introduced_vehicle)
 
-                                                # add dropoff node to test vehicle route
-                                                dropoff_id, test_vehicle_route = self.add_node(
-                                                    vehicle_route=test_vehicle_route, request=request,
-                                                    time=dropoff_time, pickup=False, rid=rid,
-                                                    node_idx=end_idx)
+                                    # add dropoff node to test vehicle route
+                                    dropoff_id, test_vehicle_route = self.add_node(
+                                        vehicle_route=test_vehicle_route, request=request,
+                                        time=dropoff_time, pickup=False, rid=rid,
+                                        node_idx=end_idx)
 
-                                                # check capacities
-                                                activated_checks = self.check_capacities(
-                                                    vehicle_route=test_vehicle_route, request=request,
-                                                    rid=rid,
-                                                    start_id=start_idx + 1, dropoff_id=end_idx + 1,
-                                                    activated_checks=activated_checks)
+                                    # check capacities
+                                    activated_checks = self.check_capacities(
+                                        vehicle_route=test_vehicle_route, request=request,
+                                        rid=rid,
+                                        start_id=start_idx + 1, dropoff_id=end_idx + 1,
+                                        activated_checks=activated_checks)
 
-                                                # check max ride time between nodes
-                                                activated_checks = self.check_max_ride_time(
-                                                    vehicle_route=test_vehicle_route,
-                                                    activated_checks=activated_checks, rid=rid, request=request)
+                                    # check max ride time between nodes
+                                    activated_checks = self.check_max_ride_time(
+                                        vehicle_route=test_vehicle_route,
+                                        activated_checks=activated_checks, rid=rid, request=request)
 
-                                                # check min ride time between nodes on test vehicle route
-                                                activated_checks = self.check_min_ride_time(
-                                                    vehicle_route=test_vehicle_route,
-                                                    activated_checks=activated_checks, rid=rid, request=request)
+                                    # check min ride time between nodes on test vehicle route
+                                    activated_checks = self.check_min_ride_time(
+                                        vehicle_route=test_vehicle_route,
+                                        activated_checks=activated_checks, rid=rid, request=request)
 
-                                                if not activated_checks:
-                                                    # add pickup node
-                                                    pickup_id, vehicle_route = self.add_node(
-                                                        vehicle_route=temp_route_plan[introduced_vehicle], request=request,
-                                                        time=request["Requested Pickup Time"], pickup=True, rid=rid,
-                                                        node_idx=start_idx)
+                                    if not activated_checks:
+                                        # add pickup node
+                                        pickup_id, vehicle_route = self.add_node(
+                                            vehicle_route=temp_route_plan[introduced_vehicle], request=request,
+                                            time=request["Requested Pickup Time"], pickup=True, rid=rid,
+                                            node_idx=start_idx)
 
-                                                    # add dropoff node
-                                                    dropoff_id, vehicle_route = self.add_node(
-                                                        vehicle_route=temp_route_plan[introduced_vehicle],
-                                                        request=request,
-                                                        time=dropoff_time, pickup=False, rid=rid,
-                                                        node_idx=end_idx)
+                                        # add dropoff node
+                                        dropoff_id, vehicle_route = self.add_node(
+                                            vehicle_route=temp_route_plan[introduced_vehicle],
+                                            request=request,
+                                            time=dropoff_time, pickup=False, rid=rid,
+                                            node_idx=end_idx)
 
-                                                    feasible_request = True
+                                        feasible_request = True
 
-                                                    self.check_remove(
-                                                        rid, request)
+                                        self.check_remove(
+                                            rid, request)
 
                                         # calculate change in objective
                                         new_objective = self.heuristic.new_objective(

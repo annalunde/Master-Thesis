@@ -4,7 +4,7 @@ import numpy as np
 from tick.base import TimeFunction
 from tick.plot import plot_point_process
 from tick.hawkes import SimuInhomogeneousPoisson
-from simulation_config import *
+from simulation.simulation_config import *
 
 class Poisson:
     def __init__(self):
@@ -39,7 +39,7 @@ class Poisson:
 
         # We plot the resulting inhomogeneous Poisson process with its
         # intensity and its ticks over time
-        #plot_point_process(in_poi)
+        plot_point_process(in_poi)
 
         return disruption_timestamps
 

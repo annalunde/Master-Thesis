@@ -1,9 +1,9 @@
 from datetime import timedelta
 from heuristic.construction.heuristic_config import *
 from heuristic.construction.construction import ConstructionHeuristic
-from poisson import *
-from new_requests import *
-from simulation_config import *
+from simulation.poisson import *
+from simulation.new_requests import *
+from simulation.simulation_config import *
 import random
 from scipy.stats import gamma
 
@@ -16,13 +16,9 @@ class Simulator:
     def create_disruption_stack(self):
         # get disruption times for each disruption type
         request = self.poisson.disruption_times(arrival_rate_request, self.sim_clock, 'request')
-        print("requests", len(request))
         delay = self.poisson.disruption_times(arrival_rate_delay, self.sim_clock, 'delay')
-        print("delays", len(delay))
         cancel = self.poisson.disruption_times(arrival_rate_cancel, self.sim_clock, 'cancel')
-        print("cancels", len(cancel))
         initial_no_show = self.poisson.disruption_times(arrival_rate_no_show, self.sim_clock, 'no show')
-        print("no shows", len(initial_no_show))
         disruption_stack = request + delay + cancel + initial_no_show
         disruption_stack.sort(reverse=True, key=lambda x: x[1])
         return disruption_stack
@@ -201,7 +197,7 @@ def main():
 
         # CONSTRUCTION OF INITIAL SOLUTION
         df = pd.read_csv(config("test_data_construction"))
-        constructor = ConstructionHeuristic(requests=df.head(106), vehicles=V)
+        constructor = ConstructionHeuristic(requests=df.head(20), vehicles=V)
         print("Constructing initial solution")
         current_route_plan, initial_objective, infeasible_set = constructor.construct_initial()
 
@@ -212,30 +208,21 @@ def main():
         num_no_disruption = 0
 
         # SIMULATION
-        print("Start simulation")
-        sim_clock = datetime.strptime("2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
         # første runde av simulator må kjøre med new requests fra data_processed_path for å få fullstendig antall
         # requests første runde, deretter skal rundene kjøre med data_simulator_path for å få updated data
+        print("Start simulation")
+        sim_clock = datetime.strptime("2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
         simulator = Simulator(sim_clock)
-        disruption_type, disruption_time, disruption_info = simulator.get_disruption(current_route_plan, config("data_processed_path"))
-        #print("Disruption type", disruption_type)
-        #print("Disruption time", disruption_time)
-        #print("Disruption info", disruption_info)
-        #print()
-
-        if disruption_type == "request":
-            num_new_requests += 1
-        elif disruption_type == "delay":
-            num_delay += 1
-        elif disruption_type == 'cancel':
-            num_cancel += 1
-        elif disruption_type == 'no show':
-            num_no_show += 1
-        else:
-            num_no_disruption += 1
+        first_iteration = True
 
         while len(simulator.disruptions_stack) > 0:
-            disruption_type, disruption_time, disruption_info = simulator.get_disruption(current_route_plan, config("data_simulator_path"))
+            if not first_iteration:
+                disruption_type, disruption_time, disruption_info = simulator.get_disruption(current_route_plan, config(
+                    "data_simulator_path"))
+            else:
+                disruption_type, disruption_time, disruption_info = simulator.get_disruption(current_route_plan, config(
+                    "data_processed_path"))
+                first_iteration = False
             #print("Disruption type", disruption_type)
             #print("Disruption time", disruption_time)
             #print("Disruption info", disruption_info)
