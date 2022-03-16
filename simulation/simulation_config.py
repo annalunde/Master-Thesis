@@ -21,6 +21,10 @@ arrival_rate_no_show = np.array([0.719047619047619, 0.8714285714285714, 0.838095
                                  1.061904761904762, 0.9761904761904762, 0.5428571428571428, 0.34285714285714286,
                                  0.01904761904761905], dtype=float)
 
+# start and end time of Poisson - 0 is 10.00 and 9 is 18.00
+start_poisson = 0
+end_poisson = 9
+
 # percentage of requests with requested pickup time
 percentage_dropoff = 1.549186676994578/100
 

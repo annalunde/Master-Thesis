@@ -235,69 +235,69 @@ class InsertionGenerator:
                                                 activated_checks = True
                                                 push_forward_d = None
 
-                                    # update forward
-                                    if e_d_node:
-                                        if push_forward_d:
-                                            test_vehicle_route, activated_checks = self.update_check_forward(
+                                        # update forward
+                                        if e_d_node:
+                                            if push_forward_d:
+                                                test_vehicle_route, activated_checks = self.update_check_forward(
+                                                    vehicle_route=test_vehicle_route, start_idx=start_idx,
+                                                    push_forward=push_forward_d, activated_checks=activated_checks,
+                                                    rid=rid,
+                                                    request=request)
+
+                                        # update backward
+                                        if push_back_d:
+                                            test_vehicle_route, activated_checks = self.update_check_backward(
                                                 vehicle_route=test_vehicle_route, start_idx=start_idx,
-                                                push_forward=push_forward_d, activated_checks=activated_checks,
+                                                push_back=push_back_d, activated_checks=activated_checks,
                                                 rid=rid,
-                                                request=request)
+                                                request=request, introduced_vehicle=introduced_vehicle)
 
-                                    # update backward
-                                    if push_back_d:
-                                        test_vehicle_route, activated_checks = self.update_check_backward(
-                                            vehicle_route=test_vehicle_route, start_idx=start_idx,
-                                            push_back=push_back_d, activated_checks=activated_checks,
-                                            rid=rid,
-                                            request=request, introduced_vehicle=introduced_vehicle)
-
-                                    # add dropoff node to test vehicle route
-                                    dropoff_id, test_vehicle_route = self.add_node(
-                                        vehicle_route=test_vehicle_route, request=request,
-                                        time=dropoff_time, pickup=False, rid=rid,
-                                        node_idx=end_idx)
-
-                                    # check capacities
-                                    activated_checks = self.check_capacities(
-                                        vehicle_route=test_vehicle_route, request=request,
-                                        rid=rid,
-                                        start_id=start_idx + 1, dropoff_id=end_idx + 1,
-                                        activated_checks=activated_checks)
-
-                                    # check max ride time between nodes
-                                    activated_checks = self.check_max_ride_time(
-                                        vehicle_route=test_vehicle_route,
-                                        activated_checks=activated_checks, rid=rid, request=request)
-
-                                    # check min ride time between nodes on test vehicle route
-                                    activated_checks = self.check_min_ride_time(
-                                        vehicle_route=test_vehicle_route,
-                                        activated_checks=activated_checks, rid=rid, request=request)
-
-                                    if not activated_checks:
-                                        # add pickup node
-                                        pickup_id, vehicle_route = self.add_node(
-                                            vehicle_route=temp_route_plan[introduced_vehicle], request=request,
-                                            time=request["Requested Pickup Time"], pickup=True, rid=rid,
-                                            node_idx=start_idx)
-
-                                        # add dropoff node
-                                        dropoff_id, vehicle_route = self.add_node(
-                                            vehicle_route=temp_route_plan[introduced_vehicle],
-                                            request=request,
+                                        # add dropoff node to test vehicle route
+                                        dropoff_id, test_vehicle_route = self.add_node(
+                                            vehicle_route=test_vehicle_route, request=request,
                                             time=dropoff_time, pickup=False, rid=rid,
                                             node_idx=end_idx)
 
-                                        feasible_request = True
+                                        # check capacities
+                                        activated_checks = self.check_capacities(
+                                            vehicle_route=test_vehicle_route, request=request,
+                                            rid=rid,
+                                            start_id=start_idx + 1, dropoff_id=end_idx + 1,
+                                            activated_checks=activated_checks)
 
-                                        self.check_remove(
-                                            rid, request)
+                                        # check max ride time between nodes
+                                        activated_checks = self.check_max_ride_time(
+                                            vehicle_route=test_vehicle_route,
+                                            activated_checks=activated_checks, rid=rid, request=request)
 
-                                        # calculate change in objective
-                                        new_objective = self.heuristic.new_objective(
-                                            temp_route_plan, self.heuristic.infeasible_set)
-                                        possible_insertions[new_objective] = temp_route_plan
+                                        # check min ride time between nodes on test vehicle route
+                                        activated_checks = self.check_min_ride_time(
+                                            vehicle_route=test_vehicle_route,
+                                            activated_checks=activated_checks, rid=rid, request=request)
+
+                                        if not activated_checks:
+                                            # add pickup node
+                                            pickup_id, vehicle_route = self.add_node(
+                                                vehicle_route=temp_route_plan[introduced_vehicle], request=request,
+                                                time=request["Requested Pickup Time"], pickup=True, rid=rid,
+                                                node_idx=start_idx)
+
+                                            # add dropoff node
+                                            dropoff_id, vehicle_route = self.add_node(
+                                                vehicle_route=temp_route_plan[introduced_vehicle],
+                                                request=request,
+                                                time=dropoff_time, pickup=False, rid=rid,
+                                                node_idx=end_idx)
+
+                                            feasible_request = True
+    
+                                            self.check_remove(
+                                                rid, request)
+
+                                            # calculate change in objective
+                                            new_objective = self.heuristic.new_objective(
+                                                temp_route_plan, self.heuristic.infeasible_set)
+                                            possible_insertions[new_objective] = temp_route_plan
 
                         # update capacity between pickup and dropoff
                         if feasible_request:
