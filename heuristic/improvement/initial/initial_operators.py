@@ -6,8 +6,8 @@ import pandas as pd
 from datetime import timedelta
 
 from heuristic.construction.construction import ConstructionHeuristic
-from heuristic.construction.heuristic_config import *
-from heuristic.improvement.repair_generator import RepairGenerator
+from config.construction_config import *
+from heuristic.improvement.initial.initial_repair_generator import RepairGenerator
 
 
 class Operators:
@@ -55,7 +55,7 @@ class Operators:
                     break
                 else:
                     col = rnd.randint(
-                        1, len(destroyed_route_plan[row]) - 1)
+                        1, len(destroyed_route_plan[row]))
                     break
             node = destroyed_route_plan[row][col]
 
@@ -169,7 +169,7 @@ class Operators:
 
         if len(current_infeasible_set) != 0:
             # Pick random node in infeasible_set to compare other nodes to - always pickup nodes
-            initial_node = current_infeasible_set[rnd.randint(0, len(current_infeasible_set) - 1)]
+            initial_node = current_infeasible_set[rnd.randint(0, len(current_infeasible_set))]
             node = self.get_pickup(initial_node)
             pickup = True
 
@@ -191,7 +191,7 @@ class Operators:
                     break
                 else:
                     col_index = rnd.randint(
-                        1, len(destroyed_route_plan[row_index]) - 1)
+                        1, len(destroyed_route_plan[row_index]))
                     break
             node = destroyed_route_plan[row_index][col_index]
 
@@ -276,7 +276,7 @@ class Operators:
 
         if len(current_infeasible_set) != 0:
             # Pick random node in infeasible_set to compare other nodes to - always pickup nodes
-            initial_node = current_infeasible_set[rnd.randint(0, len(current_infeasible_set) - 1)]
+            initial_node = current_infeasible_set[rnd.randint(0, len(current_infeasible_set))]
             node = self.get_pickup(initial_node)
             pickup = True
 
@@ -298,7 +298,7 @@ class Operators:
                     break
                 else:
                     col_index = rnd.randint(
-                        1, len(destroyed_route_plan[row_index]) - 1)
+                        1, len(destroyed_route_plan[row_index]))
                     break
             node = destroyed_route_plan[row_index][col_index]
 
@@ -375,7 +375,7 @@ class Operators:
 
         if len(current_infeasible_set) != 0:
             # Pick random node in infeasible_set to compare other nodes to - always pickup nodes
-            initial_node = current_infeasible_set[rnd.randint(0, len(current_infeasible_set) - 1)]
+            initial_node = current_infeasible_set[rnd.randint(0, len(current_infeasible_set))]
             node = self.get_pickup(initial_node)
             pickup = True
 
@@ -397,7 +397,7 @@ class Operators:
                     break
                 else:
                     col_index = rnd.randint(
-                        1, len(destroyed_route_plan[row_index]) - 1)
+                        1, len(destroyed_route_plan[row_index]))
                     break
             node = destroyed_route_plan[row_index][col_index]
 
@@ -520,7 +520,7 @@ class Operators:
                     break
                 else:
                     col = rnd.randint(
-                        1, len(destroyed_route_plan[row]) - 1)
+                        1, len(destroyed_route_plan[row]))
                     break
             node = destroyed_route_plan[row][col]
 

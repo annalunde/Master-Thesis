@@ -10,10 +10,10 @@ import sklearn.metrics
 from decouple import config
 
 from heuristic.construction.construction import ConstructionHeuristic
-from heuristic.construction.heuristic_config import *
+from config.construction_config import *
 from datetime import datetime, timedelta
 from sklearn.metrics.pairwise import haversine_distances
-from heuristic.improvement.re_opt_repair_generator import ReOptRepairGenerator
+from heuristic.improvement.reopt.reopt_repair_generator import ReOptRepairGenerator
 from simulation.simulator import Simulator
 
 pd.options.mode.chained_assignment = None
@@ -136,6 +136,7 @@ class NewRequestUpdater:
         for vehicle_route in new_routeplan:
             diff = (pd.to_datetime(
                 vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
+            print("diff", diff)
             total_travel_time += timedelta(minutes=diff)
             for n, t, d, p, w, _ in vehicle_route:
                 if d is not None:

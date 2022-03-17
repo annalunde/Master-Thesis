@@ -8,7 +8,7 @@ from tqdm import tqdm
 from math import radians
 import sklearn.metrics
 from decouple import config
-from heuristic.construction.heuristic_config import *
+from config.construction_config import *
 from heuristic.construction.insertion_generator import InsertionGenerator
 from datetime import datetime, timedelta
 from sklearn.metrics.pairwise import haversine_distances

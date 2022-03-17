@@ -4,9 +4,8 @@ import numpy.random as rnd
 from tqdm import tqdm
 from collections import OrderedDict
 from heuristic.improvement.destroy_repair_updater import Destroy_Repair_Updater
-from heuristic.improvement.operators import Operators
 from heuristic.improvement.simulated_annealing import SimulatedAnnealing
-from heuristic.improvement.improvement_config import *
+from config.initial_improvement_config import *
 
 
 class ALNS:
@@ -73,9 +72,9 @@ class ALNS:
             r_count[repair] += 1
 
             # Compare solutions
-            best, best_objective, best_infeasible_set, current, current_objective, current_infeasible_set, weight_score = self.evaluate_candidate(
+            best, best_objective, best_infeasible_set, current_route_plan, current_objective, current_infeasible_set, weight_score = self.evaluate_candidate(
                 best, best_objective, best_infeasible_set,
-                current, current_objective, current_infeasible_set,
+                current_route_plan, current_objective, current_infeasible_set,
                 candidate, candidate_objective, candidate_infeasible_set, self.criterion)
 
             # Update weights

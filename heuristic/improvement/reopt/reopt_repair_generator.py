@@ -4,7 +4,7 @@ import numpy as np
 import pandas
 import sklearn.metrics
 from math import radians
-from heuristic.improvement.improvement_config import *
+from config.reopt_improvement_config import *
 from decouple import config
 from datetime import datetime, timedelta
 
@@ -13,7 +13,7 @@ NOTE: we only try to add it after the first node that is closest in time
 """
 
 
-class RepairGenerator:
+class ReOptRepairGenerator:
     def __init__(self, heuristic):
         self.heuristic = heuristic
         self.introduced_vehicles = copy.deepcopy(
@@ -375,7 +375,7 @@ class RepairGenerator:
                     n_next - 0.5 - 1 + self.heuristic.n if n_next_node else n_next - 1)
                 travel_time = self.heuristic.travel_time(
                     n_node_id, n_next_node_id, True)
-                push_back = t + timedelta(minutes=S) + travel_time - t_next if t_next - timedelta(minutes=S) - \
+                push_back = t + travel_time - t_next if t_next - \
                     t - travel_time < timedelta(0) else timedelta(0)
 
             if d is not None and d - push_back < L_D_N and (rid, request) not in self.heuristic.infeasible_set:

@@ -1,9 +1,9 @@
 from datetime import timedelta
-from heuristic.construction.heuristic_config import *
+from config.construction_config import *
 from heuristic.construction.construction import ConstructionHeuristic
 from simulation.poisson import *
 from simulation.new_requests import *
-from simulation.simulation_config import *
+from config.simulation_config import *
 import random
 from scipy.stats import gamma
 

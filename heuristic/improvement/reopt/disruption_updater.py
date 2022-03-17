@@ -2,10 +2,9 @@ import copy
 import pandas as pd
 from decouple import config
 from heuristic.construction.construction import ConstructionHeuristic
-from heuristic.construction.heuristic_config import *
+from config.construction_config import *
 from simulation.simulator import Simulator
-from updater.new_request_updater import NewRequestUpdater
-
+from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
 
 class DisruptionUpdater:
     def __init__(self, new_request_updater):

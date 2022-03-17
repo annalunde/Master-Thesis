@@ -1,7 +1,7 @@
 from datetime import timedelta
 from poisson import *
 from new_requests import *
-from simulation_config import *
+from config.simulation_config import *
 import random
 from scipy.stats import gamma
 

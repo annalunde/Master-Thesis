@@ -5,7 +5,7 @@ import numpy.random as rnd
 from itertools import groupby
 from operator import itemgetter
 from datetime import datetime, timedelta
-from heuristic.improvement.improvement_config import *
+from config.initial_improvement_config import *
 
 
 class Destroy_Repair_Updater:

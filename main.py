@@ -7,14 +7,14 @@ import numpy.random as rnd
 import numpy as np
 import traceback
 from heuristic.construction.construction import ConstructionHeuristic
-from heuristic.construction.heuristic_config import *
+from config.construction_config import *
 from heuristic.improvement.alns import ALNS
-from heuristic.improvement.improvement_config import *
-from heuristic.improvement.operators import Operators
+from config.initial_improvement_config import *
+from heuristic.improvement.initial.initial_operators import Operators
 from heuristic.improvement.simulated_annealing import SimulatedAnnealing
 from simulation.simulator import Simulator
-from updater.disruption_updater import DisruptionUpdater
-from updater.new_request_updater import NewRequestUpdater
+from heuristic.improvement.reopt.disruption_updater import DisruptionUpdater
+from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
 
 
 def main():

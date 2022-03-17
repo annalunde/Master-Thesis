@@ -1,7 +1,7 @@
 from datetime import datetime
 
 import numpy as np
-from simulation.simulation_config import *
+from config.simulation_config import *
 
 class Poisson:
     def __init__(self):
