@@ -32,6 +32,7 @@ class Operators:
     def random_removal(self, current_route_plan):
         destroyed_route_plan = copy.deepcopy(current_route_plan)
         removed_requests = []
+        index_removed_requests = []
 
         # Number of requests to remove
         num_remove = self.nodes_to_remove(destroyed_route_plan)
@@ -57,20 +58,30 @@ class Operators:
             # Remove both pickup and drop-off node and add request-index to removed_requests
             if pickup:
                 removed_requests.append((node[0], node[5]))
+                index_removed_requests.append(
+                    (node[0], row, current_route_plan[row].index(node)))
+                index_removed_requests.append(
+                    (associated_node[0], row, current_route_plan[row].index(associated_node)))
                 del destroyed_route_plan[row][index]
                 del destroyed_route_plan[row][col]
+
             else:
                 removed_requests.append(
                     (associated_node[0], associated_node[5]))
+                index_removed_requests.append(
+                    (associated_node[0], row, current_route_plan[row].index(associated_node)))
+                index_removed_requests.append(
+                    (node[0], row, current_route_plan[row].index(node)))
                 del destroyed_route_plan[row][col]
                 del destroyed_route_plan[row][index]
 
-        return destroyed_route_plan, removed_requests
+        return destroyed_route_plan, removed_requests, index_removed_requests
 
     def worst_deviation_removal(self, current_route_plan):
         destroyed_route_plan = copy.deepcopy(current_route_plan)
         to_remove = []
         removed_requests = []
+        index_removed_requests = []
 
         # Number of requests to remove
         num_remove = self.nodes_to_remove(destroyed_route_plan)
@@ -124,6 +135,9 @@ class Operators:
 
         # Remove nearest nodes from destroyed route plan
         for n in to_remove:
+            index_removed_requests.append(
+                (n[0][0], n[1], destroyed_route_plan[n[1]].index(n[0])))
+        for n in to_remove:
             destroyed_route_plan[n[1]].remove(n[0])
 
             # Add request id to removed_requests
@@ -133,15 +147,16 @@ class Operators:
         # If not enough nodes have deviation > 0, remove the rest randomly
         num_remove_random = int(num_remove - len(to_remove) / 2)
         if num_remove_random:
-            destroyed_route_plan, removed_requests = self.worst_deviation_random_removal(destroyed_route_plan,
-                                                                                         num_remove_random,
-                                                                                         removed_requests)
-        return destroyed_route_plan, removed_requests
+            destroyed_route_plan, removed_requests, index_removed_requests = self.worst_deviation_random_removal(destroyed_route_plan,
+                                                                                                                 num_remove_random,
+                                                                                                                 removed_requests, index_removed_requests)
+        return destroyed_route_plan, removed_requests, index_removed_requests
 
     # Related in travel time
     def distance_related_removal(self, current_route_plan):
         destroyed_route_plan = copy.deepcopy(current_route_plan)
         removed_requests = []
+        index_removed_requests = []
 
         # Number of requests to remove
         num_remove = self.nodes_to_remove(destroyed_route_plan)
@@ -153,7 +168,8 @@ class Operators:
         if len(destroyed_route_plan[row_index]) == 3:
             col_index = 1
         else:
-            col_index = rnd.randint(1, len(destroyed_route_plan[row_index]) - 1)
+            col_index = rnd.randint(
+                1, len(destroyed_route_plan[row_index]) - 1)
         node = destroyed_route_plan[row_index][col_index]
 
         # Find associated node
@@ -212,18 +228,22 @@ class Operators:
 
         # Remove nearest nodes from destroyed route plan
         for n in to_remove:
+            index_removed_requests.append(
+                (n[0][0], n[1], destroyed_route_plan[n[1]].index(n[0])))
+        for n in to_remove:
             destroyed_route_plan[n[1]].remove(n[0])
 
             # Add request id to removed_requests
             if not n[0][0] % int(n[0][0]):
                 removed_requests.append((n[0][0], n[0][5]))
 
-        return destroyed_route_plan, removed_requests
+        return destroyed_route_plan, removed_requests, index_removed_requests
 
     # Related in service time
     def time_related_removal(self, current_route_plan):
         destroyed_route_plan = copy.deepcopy(current_route_plan)
         removed_requests = []
+        index_removed_requests = []
 
         # Number of requests to remove
         num_remove = self.nodes_to_remove(destroyed_route_plan)
@@ -235,7 +255,8 @@ class Operators:
         if len(destroyed_route_plan[row_index]) == 3:
             col_index = 1
         else:
-            col_index = rnd.randint(1, len(destroyed_route_plan[row_index]) - 1)
+            col_index = rnd.randint(
+                1, len(destroyed_route_plan[row_index]) - 1)
         node = destroyed_route_plan[row_index][col_index]
 
         # Find associated node
@@ -286,18 +307,22 @@ class Operators:
 
         # Remove nearest nodes from destroyed route plan
         for n in nodes_to_remove:
+            index_removed_requests.append(
+                (n[0][0], n[1], destroyed_route_plan[n[1]].index(n[0])))
+        for n in nodes_to_remove:
             destroyed_route_plan[n[1]].remove(n[0])
 
             # Add request id to removed_requests
             if not n[0][0] % int(n[0][0]):
                 removed_requests.append((n[0][0], n[0][5]))
 
-        return destroyed_route_plan, removed_requests
+        return destroyed_route_plan, removed_requests, index_removed_requests
 
     # Related in both service time and travel time
     def related_removal(self, current_route_plan):
         destroyed_route_plan = copy.deepcopy(current_route_plan)
         removed_requests = []
+        index_removed_requests = []
 
         # Number of requests to remove
         num_remove = self.nodes_to_remove(destroyed_route_plan)
@@ -309,7 +334,8 @@ class Operators:
         if len(destroyed_route_plan[row_index]) == 3:
             col_index = 1
         else:
-            col_index = rnd.randint(1, len(destroyed_route_plan[row_index]) - 1)
+            col_index = rnd.randint(
+                1, len(destroyed_route_plan[row_index]) - 1)
         node = destroyed_route_plan[row_index][col_index]
 
         # Find associated node
@@ -378,13 +404,16 @@ class Operators:
 
         # Remove nearest nodes from destroyed route plan
         for n in nodes_to_remove:
+            index_removed_requests.append(
+                (n[0][0], n[1], destroyed_route_plan[n[1]].index(n[0])))
+        for n in nodes_to_remove:
             destroyed_route_plan[n[1]].remove(n[0])
 
             # Add request id to removed_requests
             if not n[0][0] % int(n[0][0]):
                 removed_requests.append((n[0][0], n[0][5]))
 
-        return destroyed_route_plan, removed_requests
+        return destroyed_route_plan, removed_requests, index_removed_requests
 
     # Repair operators
     def greedy_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set):
@@ -408,9 +437,10 @@ class Operators:
         return route_plan, current_objective, infeasible_set
 
     # Function to find random requests to remove if worst deviation removal does not remove enough
-    def worst_deviation_random_removal(self, worst_dev_route_plan, num_remove_random, worst_dev_removed_requests):
+    def worst_deviation_random_removal(self, worst_dev_route_plan, num_remove_random, worst_dev_removed_requests, index_removed_requests):
         destroyed_route_plan = copy.deepcopy(worst_dev_route_plan)
         removed_requests = copy.deepcopy(worst_dev_removed_requests)
+        index_removed_requests = copy.deepcopy(index_removed_requests)
 
         # Find the requests to remove
         for j in range(num_remove_random):
@@ -433,15 +463,20 @@ class Operators:
             # Remove both pickup and drop-off node and add request-index to removed_requests
             if pickup:
                 removed_requests.append((node[0], node[5]))
+                index_removed_requests.append((associated_node[0], row, index))
+                index_removed_requests.append((node[0], row, col))
                 del destroyed_route_plan[row][index]
                 del destroyed_route_plan[row][col]
+
             else:
                 removed_requests.append(
                     (associated_node[0], associated_node[5]))
+                index_removed_requests.append((associated_node[0], row, index))
+                index_removed_requests.append((node[0], row, col))
                 del destroyed_route_plan[row][col]
                 del destroyed_route_plan[row][index]
 
-        return destroyed_route_plan, removed_requests
+        return destroyed_route_plan, removed_requests, index_removed_requests
 
     # Function to calculate total travel time differences between requests
     def travel_time_difference(self, request_1, request_2):
@@ -454,12 +489,12 @@ class Operators:
             self.T_ij[idx_1][idx_2 + num_requests]
 
     # Function to calculate service time differences between requests
-    @staticmethod
+    @ staticmethod
     def time_difference(pickup_1, pickup_2, dropoff_1, dropoff_2):
         return abs((pickup_1[1] - pickup_2[1]).total_seconds()) + abs((dropoff_1[1] - dropoff_2[1]).total_seconds())
 
     # Function to find associated pickup/drop-off of a node.
-    @staticmethod
+    @ staticmethod
     def find_associated_node(row, col, route_plan):
         node = route_plan[row][col]
 
