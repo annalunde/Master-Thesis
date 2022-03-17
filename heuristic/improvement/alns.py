@@ -64,7 +64,7 @@ class ALNS:
             # Fix solution
             r_operator = self.repair_operators[repair]
             candidate, candidate_objective, candidate_infeasible_set = r_operator(
-                updated_route, removed_requests, current_infeasible_set)
+                updated_route, removed_requests, current_infeasible_set, current, index_removed)
             if current_infeasible_set:
                 print(
                     "ERROR: You cannot serve all obligatory requests with current fleet.")

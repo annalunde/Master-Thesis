@@ -422,7 +422,7 @@ class Operators:
         return destroyed_route_plan, removed_requests, index_removed_requests
 
     # Repair operators
-    def greedy_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set):
+    def greedy_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set, current_route_plan, index_removed_requests):
         unassigned_requests = removed_requests.copy() + initial_infeasible_set.copy()
         unassigned_requests.sort(key=lambda x: x[0])
         route_plan = copy.deepcopy(destroyed_route_plan)
@@ -433,9 +433,11 @@ class Operators:
             # while not unassigned_requests.empty:
             rid = unassigned_requests.iloc[i][0]
             request = unassigned_requests.iloc[i][1]
+            index_removal = [
+                i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
             route_plan, new_objective, infeasible_set = self.repair_generator.generate_insertions(
-                route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set)
+                route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=current_route_plan, index_removed=index_removal)
 
             # update current objective
             current_objective = new_objective
