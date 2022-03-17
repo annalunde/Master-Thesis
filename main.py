@@ -13,7 +13,8 @@ from heuristic.improvement.improvement_config import *
 from heuristic.improvement.operators import Operators
 from heuristic.improvement.simulated_annealing import SimulatedAnnealing
 from simulation.simulator import Simulator
-from updater.updater import Updater
+from updater.disruption_updater import DisruptionUpdater
+from updater.new_request_updater import NewRequestUpdater
 
 
 def main():
@@ -23,7 +24,7 @@ def main():
     try:
         # CONSTRUCTION OF INITIAL SOLUTION
         df = pd.read_csv(config("test_data_construction"))
-        constructor = ConstructionHeuristic(requests=df.head(20), vehicles=V) # husk å oppdatere counter_rid også
+        constructor = ConstructionHeuristic(requests=df.head(20), vehicles=V)
         print("Constructing initial solution")
         initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
         print("Initial objective: ", initial_objective)
@@ -55,9 +56,9 @@ def main():
         print("Start simulation")
         sim_clock = datetime.strptime("2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
         simulator = Simulator(sim_clock)
-        updater = Updater()
+        new_request_updater = NewRequestUpdater(df.head(20), V, initial_infeasible_set)
+        disruption_updater = DisruptionUpdater(new_request_updater)
         first_iteration = True
-        counter_rid = 20
 
         while len(simulator.disruptions_stack) > 0:
             # use correct data path
@@ -69,22 +70,26 @@ def main():
                     "data_processed_path"))
                 first_iteration = False
 
+            print(disruption_type)
+
             # updates before heuristic
             if disruption_type == 'request':
-                # add new request to infeasible set - diskutere om dette skal gjøres
-                # evt greedy insertion her
-                counter_rid += 1
-                #(counter_rid, disruption_info)
+                disruption_updater.update_new_request(disruption_info)
+                current_route_plan, current_objective, current_infeasible_set = new_request_updater.\
+                    greedy_insertion_new_request(current_route_plan, current_infeasible_set, disruption_info)
+                if len(current_infeasible_set) == 0:
+                    print("New request inserted")
             elif disruption_type == 'no disruption':
                 continue
             else:
-                current_route_plan = updater.update_route_plan(current_route_plan, disruption_type, disruption_info)
-                current_objective = constructor.new_objective(current_route_plan, current_infeasible_set) # update objective?
+                current_route_plan = disruption_updater.update_route_plan(
+                    current_route_plan, disruption_type, disruption_info)
+                current_objective = new_request_updater.new_objective(current_route_plan, current_infeasible_set) # update objective?
 
             # heuristic
             alns = ALNS(weights, reaction_factor, current_route_plan, current_objective, current_infeasible_set,
                         criterion,
-                        destruction_degree, constructor, random_state)
+                        destruction_degree, new_request_updater, random_state)
 
             operators = Operators(alns)
 
@@ -92,6 +97,8 @@ def main():
 
             # Run ALNS
             current_route_plan, current_objective, current_infeasible_set = alns.iterate(iterations)
+            if disruption_type=='request' and len(current_infeasible_set) == 0:
+                print("New request inserted")
 
     except Exception as e:
         print("ERROR:", e)

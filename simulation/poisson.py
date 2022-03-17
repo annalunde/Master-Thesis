@@ -15,9 +15,8 @@ class Poisson:
 
         for time_step in range(start_poisson, end_poisson):
             time_step_arrivals = np.random.poisson(arrival_rates[time_step])
-            print(time_intervals[time_step], "   ",time_step_arrivals)
             for t in range(0, time_step_arrivals):
-                timestamps.append(np.random.uniform(time_intervals[time_step], time_intervals[time_step]+0.9999999999))
+                timestamps.append(np.random.uniform(time_intervals[time_step], time_intervals[time_step]+1))
 
         timestamps.sort()
 
@@ -44,7 +43,7 @@ def main():
     try:
         sim_clock = datetime.strptime("2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
         poisson = Poisson()
-        disruption_time = poisson.disruption_times(arrival_rate_request, sim_clock, 'cancel')
+        disruption_time = poisson.disruption_times(arrival_rate_cancel, sim_clock, 'cancel')
         print(disruption_time)
         print(len(disruption_time))
 

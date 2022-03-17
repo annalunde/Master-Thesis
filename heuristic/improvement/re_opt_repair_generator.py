@@ -13,7 +13,7 @@ NOTE: we only try to add it after the first node that is closest in time
 """
 
 
-class RepairGenerator:
+class ReOptRepairGenerator:
     def __init__(self, heuristic):
         self.heuristic = heuristic
         self.introduced_vehicles = copy.deepcopy(

@@ -4,7 +4,7 @@ reaction_factor = 0.2
 
 weights = [3, 2, 1, 0.5]
 
-iterations = 1000
+iterations = 10
 
 destruction_degree = 0.5
 

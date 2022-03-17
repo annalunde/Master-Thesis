@@ -1,14 +1,15 @@
+import copy
 import math
 import numpy as np
 import numpy.random as rnd
 from datetime import datetime, timedelta
-
+from heuristic.improvement.improvement_config import *
 
 class Destroy_Repair_Updater:
     def __init__(self, heuristic):
         self.heuristic = heuristic
 
-    def update_solution(self, route_plan, index_removed_requests, removed_requests, n):
+    def update_solution(self, route_plan, index_removed_requests, removed_requests):
         updated_solution = copy.deepcopy(route_plan)
 
         for node, col, row in index_removed_requests:
@@ -31,7 +32,7 @@ class Destroy_Repair_Updater:
                     continue
 
                 l_node = left_node[0] % int(left_node[0])
-                r_node[0] = right_node[0] % int(right_node[0])
+                r_node = right_node[0] % int(right_node[0])
                 left_node_id = int(
                     left_node[0] - 0.5 - 1 + self.heuristic.n if l_node else left_node[0] - 1)
                 right_node_id = int(
@@ -41,7 +42,7 @@ class Destroy_Repair_Updater:
 
                 reduction_dev = right_node[1] - timedelta(minutes=S) - \
                     left_node[1] - travel_time if right_node[1] - timedelta(minutes=S) - \
-                    left_node[1] - travel_time > timedelta(0)
+                    left_node[1] - travel_time > timedelta(0) else timedelta(0)
 
                 if left_dev and not right_dev:
                     push_forward = reduction_dev if reduction_dev < -left_dev else -left_dev
@@ -50,14 +51,11 @@ class Destroy_Repair_Updater:
                     push_backward = reduction_dev if reduction_dev < right_dev else right_dev
 
                 else:
-                    push_forward = left_dev.total_seconds()/(left_dev.total_seconds() - right_dev.total_seconds()) * reduction_dev if left_dev.total_seconds() / \
-                        (left_dev.total_seconds() - right_dev.total_seconds()) * reduction_dev < -left_dev else -left_dev
-                    push_backward = right_dev.total_seconds()/(left_dev.total_seconds() - right_dev.total_seconds())) * reduction_dev if right_dev.total_seconds()/(
-                        left_dev.total_seconds() - right_dev.total_seconds()) * reduction_dev < right_dev else right_dev
+                    push_forward = left_dev.total_seconds()/(left_dev.total_seconds() - right_dev.total_seconds()) * reduction_dev if left_dev.total_seconds()/(left_dev.total_seconds() - right_dev.total_seconds()) * reduction_dev < -left_dev else -left_dev
+                    push_backward = right_dev.total_seconds()/(left_dev.total_seconds() - right_dev.total_seconds())) * reduction_dev if right_dev.total_seconds()/(left_dev.total_seconds() - right_dev.total_seconds()) * reduction_dev < right_dev else right_dev
 
                 if push_backward:
-                    vehicle_route=self.update_backward(
-                        vehicle_route, left_idx, push_backward)
+                    vehicle_route=self.update_backward(vehicle_route, left_idx, push_backward)
                 if push_forward:
                     vehicle_route=self.update_forward(
                         vehicle_route, right_idx, push_forward)

@@ -3,6 +3,7 @@ import numpy as np
 import numpy.random as rnd
 from tqdm import tqdm
 from collections import OrderedDict
+from heuristic.improvement.destroy_repair_updater import Destroy_Repair_Updater
 from heuristic.improvement.operators import Operators
 from heuristic.improvement.simulated_annealing import SimulatedAnnealing
 from heuristic.improvement.improvement_config import *
@@ -23,12 +24,13 @@ class ALNS:
         self.objective = current_objective
         self.criterion = criterion
         self.constructor = constructor
+        self.destroy_repair_updater = Destroy_Repair_Updater(constructor)
 
     # Run ALNS algorithm
 
     def iterate(self, num_iterations):
         weights = np.asarray(self.weights, dtype=np.float16)
-        current = copy.deepcopy(self.route_plan)
+        current_route_plan = copy.deepcopy(self.route_plan)
         best = copy.deepcopy(self.route_plan)
         current_objective = copy.deepcopy(self.objective)
         best_objective = copy.deepcopy(self.objective)
@@ -51,15 +53,18 @@ class ALNS:
 
             # Destroy solution
             d_operator = self.destroy_operators[destroy]
-
-            destroyed_route, removed_requests = d_operator(
-                current)
+            destroyed_route_plan, removed_requests, index_removed = d_operator(
+                current_route_plan, current_infeasible_set)
             d_count[destroy] += 1
+
+            # Update solution
+            updated_route = self.destroy_repair_updater.update_solution(
+                destroyed_route_plan, index_removed, removed_requests)
 
             # Fix solution
             r_operator = self.repair_operators[repair]
             candidate, candidate_objective, candidate_infeasible_set = r_operator(
-                destroyed_route, removed_requests, current_infeasible_set)
+                updated_route, removed_requests, current_infeasible_set)
             if current_infeasible_set:
                 print(
                     "ERROR: You cannot serve all obligatory requests with current fleet.")
