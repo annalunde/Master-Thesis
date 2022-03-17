@@ -58,13 +58,13 @@ class ALNS:
             d_count[destroy] += 1
 
             # Update solution
-            updated_route = self.destroy_repair_updater.update_solution(
+            updated_route_plan = self.destroy_repair_updater.update_solution(
                 destroyed_route_plan, index_removed, removed_requests)
 
             # Fix solution
             r_operator = self.repair_operators[repair]
             candidate, candidate_objective, candidate_infeasible_set = r_operator(
-                updated_route, removed_requests, current_infeasible_set)
+                updated_route_plan, removed_requests, current_infeasible_set)
             if current_infeasible_set:
                 print(
                     "ERROR: You cannot serve all obligatory requests with current fleet.")

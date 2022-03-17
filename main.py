@@ -43,18 +43,21 @@ def main():
         alns.set_operators(operators)
 
         # Run ALNS
-        current_route_plan, current_objective, current_infeasible_set = alns.iterate(iterations)
-        #print(current_route_plan)
+        current_route_plan, current_objective, current_infeasible_set = alns.iterate(
+            iterations)
+        # print(current_route_plan)
         print("Objective", current_objective)
         print("Num vehicles:", len(current_route_plan))
         print(current_infeasible_set)
         constructor.print_new_objective(
             initial_route_plan, initial_infeasible_set)
-        constructor.print_new_objective(current_route_plan, current_infeasible_set)
+        constructor.print_new_objective(
+            current_route_plan, current_infeasible_set)
 
         # SIMULATION
         print("Start simulation")
-        sim_clock = datetime.strptime("2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
+        sim_clock = datetime.strptime(
+            "2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
         simulator = Simulator(sim_clock)
         new_request_updater = NewRequestUpdater(df.head(20), V, initial_infeasible_set)
         disruption_updater = DisruptionUpdater(new_request_updater)
