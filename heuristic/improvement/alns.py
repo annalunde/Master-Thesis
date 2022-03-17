@@ -4,9 +4,8 @@ import numpy.random as rnd
 from tqdm import tqdm
 from collections import OrderedDict
 from heuristic.improvement.destroy_repair_updater import Destroy_Repair_Updater
-from heuristic.improvement.operators import Operators
 from heuristic.improvement.simulated_annealing import SimulatedAnnealing
-from heuristic.improvement.improvement_config import *
+from config.initial_improvement_config import *
 
 
 class ALNS:
@@ -30,7 +29,7 @@ class ALNS:
 
     def iterate(self, num_iterations):
         weights = np.asarray(self.weights, dtype=np.float16)
-        current = copy.deepcopy(self.route_plan)
+        current_route_plan = copy.deepcopy(self.route_plan)
         best = copy.deepcopy(self.route_plan)
         current_objective = copy.deepcopy(self.objective)
         best_objective = copy.deepcopy(self.objective)
@@ -53,13 +52,13 @@ class ALNS:
 
             # Destroy solution
             d_operator = self.destroy_operators[destroy]
-            destroyed_route, removed_requests, index_removed = d_operator(
-                current)
+            destroyed_route_plan, removed_requests, index_removed = d_operator(
+                current_route_plan, current_infeasible_set)
             d_count[destroy] += 1
 
             # Update solution
-            updated_route = self.destroy_repair_updater.update_solution(
-                destroyed_route, index_removed, removed_requests)
+            updated_route_plan = self.destroy_repair_updater.update_solution(
+                destroyed_route_plan, index_removed, removed_requests)
 
             # Fix solution
             r_operator = self.repair_operators[repair]
@@ -73,9 +72,9 @@ class ALNS:
             r_count[repair] += 1
 
             # Compare solutions
-            best, best_objective, best_infeasible_set, current, current_objective, current_infeasible_set, weight_score = self.evaluate_candidate(
+            best, best_objective, best_infeasible_set, current_route_plan, current_objective, current_infeasible_set, weight_score = self.evaluate_candidate(
                 best, best_objective, best_infeasible_set,
-                current, current_objective, current_infeasible_set,
+                current_route_plan, current_objective, current_infeasible_set,
                 candidate, candidate_objective, candidate_infeasible_set, self.criterion)
 
             # Update weights

@@ -4,7 +4,7 @@ import numpy as np
 import pandas
 import sklearn.metrics
 from math import radians
-from heuristic.improvement.improvement_config import *
+from config.initial_improvement_config import *
 from decouple import config
 from datetime import datetime, timedelta
 
@@ -14,8 +14,8 @@ NOTE: we only try to add it after the first node that is closest in time
 
 
 class RepairGenerator:
-    def __init__(self, construction_heuristic):
-        self.heuristic = construction_heuristic
+    def __init__(self, heuristic):
+        self.heuristic = heuristic
         self.introduced_vehicles = copy.deepcopy(
             self.heuristic.introduced_vehicles)
         self.vehicles = copy.deepcopy(self.heuristic.vehicles)

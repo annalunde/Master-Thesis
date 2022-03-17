@@ -2,13 +2,13 @@ import copy
 import pandas as pd
 from decouple import config
 from heuristic.construction.construction import ConstructionHeuristic
-from heuristic.construction.heuristic_config import *
+from config.construction_config import *
 from simulation.simulator import Simulator
+from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
 
-
-class Updater:
-    def __init__(self):
-        pass
+class DisruptionUpdater:
+    def __init__(self, new_request_updater):
+        self.new_request_updater = new_request_updater
 
     def update_route_plan(self, current_route_plan, disruption_type, disruption_info):
         updated_route_plan = copy.deepcopy(current_route_plan)
@@ -24,8 +24,11 @@ class Updater:
             # remove dropoff node
             del updated_route_plan[disruption_info[0]][disruption_info[2]]
 
+        # kalle på kode for å oppdatere tider - lik den mellom destroy og repair
         return updated_route_plan
 
+    def update_new_request(self, new_request):
+        self.new_request_updater.set_parameters(new_request)
 
 def main():
     updater = None
@@ -48,8 +51,14 @@ def main():
         print(disruption_type)
         print(disruption_info)
         # UPDATE ROUTE PLAN
-        updater = Updater()
-        updated_route_plan = updater.update_route_plan(current_route_plan, disruption_type, disruption_info)
+        new_request_updater = NewRequestUpdater(df.head(20), V, [])
+        disruption_updater = DisruptionUpdater(new_request_updater)
+        if disruption_type == 'request':
+            disruption_updater.update_new_request(disruption_info)
+        elif disruption_type == 'no disruption':
+            pass
+        else:
+            updated_route_plan = disruption_updater.update_route_plan(current_route_plan, disruption_type, disruption_info)
 
     except Exception as e:
         print("ERROR:", e)

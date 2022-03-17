@@ -31,15 +31,24 @@ class NewRequests:
         # get random request
         random_request = df_same_day_after_10.sample()
         random_request.drop(columns=['Request Creation Time',
-                                    'Requested Pickup Time',
-                                    'Actual Pickup Time',
-                                    'Requested Dropoff Time',
-                                    'Actual Dropoff Time',
-                                    'Original Planned Pickup Time',
-                                    'Requested Pickup/Dropoff Time',
-                                    'Date Creation',
-                                    'Time Creation',
-                                    'Date Pickup/Dropoff'], inplace=True)
+                                     'Requested Pickup Time',
+                                     'Actual Pickup Time',
+                                     'Requested Dropoff Time',
+                                     'Actual Dropoff Time',
+                                     'Original Planned Pickup Time',
+                                     'Requested Pickup/Dropoff Time',
+                                     'Date Creation',
+                                     'Time Creation',
+                                     'Date Pickup/Dropoff',
+                                     'Request ID',
+                                     'Request Status',
+                                     'Rider ID',
+                                     'Ride ID',
+                                     'Cancellation Time',
+                                     'No Show Time',
+                                     'Origin Zone',
+                                     'Destination Zone',
+                                     'Reason For Travel'], inplace=True)
 
         # drop the request
         df_same_day_after_10_updated = df_same_day_after_10.drop(random_request.index)

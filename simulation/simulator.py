@@ -1,9 +1,9 @@
 from datetime import timedelta
-from heuristic.construction.heuristic_config import *
+from config.construction_config import *
 from heuristic.construction.construction import ConstructionHeuristic
 from simulation.poisson import *
 from simulation.new_requests import *
-from simulation.simulation_config import *
+from config.simulation_config import *
 import random
 from scipy.stats import gamma
 
@@ -85,7 +85,7 @@ class Simulator:
 
                 # update requested pickup time and set requested dropoff time to NaN
                 random_request['Requested Pickup Time'] = requested_pickup_time
-                random_request['Requested Dropoff Time'] = None
+                random_request['Requested Dropoff Time'] = pd.NaT
 
                 return 1, random_request
 
@@ -106,7 +106,7 @@ class Simulator:
                 random_request['Request Creation Time'] = request_arrival
 
                 # update requested pickup time and set requested dropoff time to NaN
-                random_request['Requested Pickup Time'] = None
+                random_request['Requested Pickup Time'] = pd.NaT
                 random_request['Requested Dropoff Time'] = requested_dropoff_time
 
                 return 1, random_request
