@@ -23,7 +23,8 @@ def main():
     try:
         # CONSTRUCTION OF INITIAL SOLUTION
         df = pd.read_csv(config("test_data_construction"))
-        constructor = ConstructionHeuristic(requests=df.head(20), vehicles=V) # husk å oppdatere counter_rid også
+        constructor = ConstructionHeuristic(requests=df.head(
+            60), vehicles=V)  # husk å oppdatere counter_rid også
         print("Constructing initial solution")
         initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
         print("Initial objective: ", initial_objective)
@@ -42,18 +43,21 @@ def main():
         alns.set_operators(operators)
 
         # Run ALNS
-        current_route_plan, current_objective, current_infeasible_set = alns.iterate(iterations)
-        #print(current_route_plan)
+        current_route_plan, current_objective, current_infeasible_set = alns.iterate(
+            iterations)
+        # print(current_route_plan)
         print("Objective", current_objective)
         print("Num vehicles:", len(current_route_plan))
         print(current_infeasible_set)
         constructor.print_new_objective(
             initial_route_plan, initial_infeasible_set)
-        constructor.print_new_objective(current_route_plan, current_infeasible_set)
+        constructor.print_new_objective(
+            current_route_plan, current_infeasible_set)
 
         # SIMULATION
         print("Start simulation")
-        sim_clock = datetime.strptime("2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
+        sim_clock = datetime.strptime(
+            "2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
         simulator = Simulator(sim_clock)
         updater = Updater()
         first_iteration = True
@@ -78,8 +82,10 @@ def main():
             elif disruption_type == 'no disruption':
                 continue
             else:
-                current_route_plan = updater.update_route_plan(current_route_plan, disruption_type, disruption_info)
-                current_objective = constructor.new_objective(current_route_plan, current_infeasible_set) # update objective?
+                current_route_plan = updater.update_route_plan(
+                    current_route_plan, disruption_type, disruption_info)
+                current_objective = constructor.new_objective(
+                    current_route_plan, current_infeasible_set)  # update objective?
 
             # heuristic
             alns = ALNS(weights, reaction_factor, current_route_plan, current_objective, current_infeasible_set,
@@ -91,7 +97,8 @@ def main():
             alns.set_operators(operators)
 
             # Run ALNS
-            current_route_plan, current_objective, current_infeasible_set = alns.iterate(iterations)
+            current_route_plan, current_objective, current_infeasible_set = alns.iterate(
+                iterations)
 
     except Exception as e:
         print("ERROR:", e)

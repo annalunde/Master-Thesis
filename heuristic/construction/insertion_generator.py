@@ -290,7 +290,7 @@ class InsertionGenerator:
                                                 node_idx=end_idx)
 
                                             feasible_request = True
-    
+
                                             self.check_remove(
                                                 rid, request)
 

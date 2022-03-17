@@ -40,14 +40,20 @@ class Operators:
         # Find the requests to remove
         for j in range(num_remove):
 
-            # Pick random node to remove
-            row = rnd.randint(0, len(destroyed_route_plan))
-            while len(destroyed_route_plan[row]) == 1:
-                row = rnd.randint(0, len(destroyed_route_plan))
-            if len(destroyed_route_plan[row]) == 3:
-                col = 1
-            else:
-                col = rnd.randint(1, len(destroyed_route_plan[row]) - 1)
+            # Pick random node in route plan to remove and to compare other nodes to
+            rows = [i for i in range(0, len(destroyed_route_plan))]
+            rnd.shuffle(rows)
+
+            for row in rows:
+                if len(destroyed_route_plan[row]) < 3:
+                    continue
+                elif len(destroyed_route_plan[row]) == 3:
+                    col = 1
+                    break
+                else:
+                    col = rnd.randint(
+                        1, len(destroyed_route_plan[row]) - 1)
+                    break
             node = destroyed_route_plan[row][col]
 
             # Find col-index of associated pickup/drop-off node

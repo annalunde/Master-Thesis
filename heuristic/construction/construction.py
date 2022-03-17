@@ -107,7 +107,8 @@ class ConstructionHeuristic:
                     d = d if d > timedelta(0) else -d
                     total_deviation += d
 
-        updated = alpha*total_travel_time + beta*total_deviation + gamma*total_infeasible
+        updated = alpha*total_travel_time + beta * \
+            total_deviation + gamma*total_infeasible
         return updated
 
     def print_new_objective(self, new_routeplan, new_infeasible_set):
