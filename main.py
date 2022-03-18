@@ -11,6 +11,7 @@ from config.construction_config import *
 from heuristic.improvement.alns import ALNS
 from config.initial_improvement_config import *
 from heuristic.improvement.initial.initial_operators import Operators
+from heuristic.improvement.reopt.reopt_operators import ReOptOperators
 from heuristic.improvement.simulated_annealing import SimulatedAnnealing
 from simulation.simulator import Simulator
 from heuristic.improvement.reopt.disruption_updater import DisruptionUpdater
@@ -97,7 +98,7 @@ def main():
                         criterion,
                         destruction_degree, new_request_updater, random_state)
 
-            operators = Operators(alns)
+            operators = ReOptOperators(alns, disruption_time)
 
             alns.set_operators(operators)
 

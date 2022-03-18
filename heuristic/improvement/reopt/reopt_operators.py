@@ -1,5 +1,7 @@
 import copy
 import math
+import sys
+
 import numpy.random as rnd
 from datetime import datetime
 import pandas as pd
@@ -7,15 +9,16 @@ from datetime import timedelta
 
 from heuristic.construction.construction import ConstructionHeuristic
 from config.construction_config import *
-from heuristic.improvement.initial.initial_repair_generator import RepairGenerator
+from heuristic.improvement.reopt.reopt_repair_generator import ReOptRepairGenerator
 
 
-class Operators:
-    def __init__(self, alns):
+class ReOptOperators:
+    def __init__(self, alns, sim_clock):
         self.destruction_degree = alns.destruction_degree
         self.constructor = alns.constructor
         self.T_ij = self.constructor.T_ij
-        self.repair_generator = RepairGenerator(self.constructor)
+        self.reopt_repair_generator = ReOptRepairGenerator(self.constructor)
+        self.sim_clock = sim_clock
 
     # Find number of requests to remove based on degree of destruction
     def nodes_to_remove(self, route_plan):
@@ -36,48 +39,58 @@ class Operators:
         to_remove = []
         removed_requests = []
         index_removed_requests = []
+        possible_removals = self.find_possible_removals(destroyed_route_plan)
+        empty = 0
+        for vehicle in possible_removals:
+            empty += len(vehicle)
+
+        if not empty:
+            return current_route_plan, removed_requests, index_removed_requests, False
 
         # Number of requests to remove
-        num_remove = self.nodes_to_remove(destroyed_route_plan)
+        num_remove = self.nodes_to_remove(possible_removals)
 
         # Find the requests to remove
         while len(to_remove)/2 < num_remove:
 
             # Pick random node in route plan to remove and to compare other nodes to
-            rows = [i for i in range(0, len(destroyed_route_plan))]
+            rows = [i for i in range(0, len(possible_removals))]
             rnd.shuffle(rows)
 
             for row in rows:
-                if len(destroyed_route_plan[row]) < 3:
+                if len(possible_removals[row]) < 3:
                     continue
-                elif len(destroyed_route_plan[row]) == 3:
+                elif len(possible_removals[row]) == 3:
                     col = 1
                     break
                 else:
                     col = rnd.randint(
-                        1, len(destroyed_route_plan[row]))
+                        1, len(possible_removals[row]))
                     break
-            node = destroyed_route_plan[row][col]
+            node = possible_removals[row][col]
+            destroy_node = destroyed_route_plan[row][node[6]]
 
             # Find col-index of associated pickup/drop-off node
             index, pickup = self.find_associated_node(
-                row, col, destroyed_route_plan)
-            associated_node = destroyed_route_plan[row][index]
+                row, col, possible_removals)
+            associated_node = possible_removals[row][index]
+            destroy_associated_node = destroyed_route_plan[row][associated_node[6]]
 
             # Skip already added nodes
-            if [node, row] in to_remove or [associated_node, row] in to_remove:
+            if [node, row, destroy_node] in to_remove or [associated_node, row, destroy_associated_node] in to_remove:
                 continue
 
             # Add both pickup and drop-off node to to_remove
-            to_remove.append([node, row])
-            to_remove.append([associated_node, row])
+            to_remove.append([node, row, destroy_node])
+            to_remove.append([associated_node, row, destroy_associated_node])
 
-        # Remove nearest nodes from destroyed route plan
+        # Remove nearest nodes from destroyed route plan and from possible_removals
         for n in to_remove:
             index_removed_requests.append(
-                (n[0][0], n[1], destroyed_route_plan[n[1]].index(n[0])))
+                (n[0][0], n[1], n[0][6]))
         for n in to_remove:
-            destroyed_route_plan[n[1]].remove(n[0])
+            possible_removals[n[1]].remove(n[0])
+            destroyed_route_plan[n[1]].remove(n[2])
 
             # Add request id to removed_requests
             if not n[0][0] % int(n[0][0]):
@@ -90,28 +103,37 @@ class Operators:
         to_remove = []
         removed_requests = []
         index_removed_requests = []
+        possible_removals = self.find_possible_removals(destroyed_route_plan)
+        empty = 0
+        for vehicle in possible_removals:
+            empty += len(vehicle)
+
+        if not empty:
+            return current_route_plan, removed_requests, index_removed_requests, False
 
         # Number of requests to remove
-        num_remove = self.nodes_to_remove(destroyed_route_plan)
+        num_remove = self.nodes_to_remove(possible_removals)
 
         # Find the requests to remove
         for j in range(num_remove):
             worst_deviation = timedelta(0)
             worst_node = None
 
-            for row in range(len(destroyed_route_plan)):
-                for col in range(1, len(destroyed_route_plan[row])):
+            for row in range(len(possible_removals)):
+                for col in range(1, len(possible_removals[row])):
 
-                    temp = destroyed_route_plan[row][col]
+                    temp = possible_removals[row][col]
+                    destroyed_temp = destroyed_route_plan[row][temp[6]]
 
                     # Skip already added nodes
-                    if [temp, row] in to_remove:
+                    if [temp, row, destroyed_temp] in to_remove:
                         continue
 
                     # Find associated drop off/pickup node
                     index, pickup = self.find_associated_node(
-                        row, col, destroyed_route_plan)
-                    associated_temp = destroyed_route_plan[row][index]
+                        row, col, possible_removals)
+                    associated_temp = possible_removals[row][index]
+                    destroyed_associated_temp = destroyed_route_plan[row][associated_temp[6]]
 
                     temp_deviation = temp[2]
                     associated_temp_deviation = associated_temp[2]
@@ -130,8 +152,8 @@ class Operators:
                     # Update worst deviation so far
                     if deviation > worst_deviation and deviation > timedelta(0):
                         worst_deviation = deviation
-                        worst_node = [temp, row]
-                        worst_associated_node = [associated_temp, row]
+                        worst_node = [temp, row, destroyed_temp]
+                        worst_associated_node = [associated_temp, row, destroyed_associated_temp]
 
             # Add node with worst deviation to list of nodes to remove
 
@@ -144,14 +166,15 @@ class Operators:
         # If not enough nodes have deviation > 0, remove the rest randomly
         if len(to_remove)/2 < num_remove:
             to_remove = self.worst_deviation_random_removal(
-                destroyed_route_plan, num_remove, to_remove)
+                destroyed_route_plan, possible_removals, num_remove, to_remove)
 
-        # Remove nearest nodes from destroyed route plan
+        # Remove nearest nodes from destroyed route plan and from possible_removals
         for n in to_remove:
             index_removed_requests.append(
-                (n[0][0], n[1], destroyed_route_plan[n[1]].index(n[0])))
+                (n[0][0], n[1], n[0][6]))
         for n in to_remove:
-            destroyed_route_plan[n[1]].remove(n[0])
+            possible_removals[n[1]].remove(n[0])
+            destroyed_route_plan[n[1]].remove(n[2])
 
             # Add request id to removed_requests
             if not n[0][0] % int(n[0][0]):
@@ -164,14 +187,20 @@ class Operators:
         destroyed_route_plan = copy.deepcopy(current_route_plan)
         removed_requests = []
         index_removed_requests = []
+        possible_removals = self.find_possible_removals(destroyed_route_plan)
+        empty = 0
+        for vehicle in possible_removals:
+            empty += len(vehicle)
+
+        if not empty:
+            return current_route_plan, removed_requests, index_removed_requests, False
 
         # Number of requests to remove
-        num_remove = self.nodes_to_remove(destroyed_route_plan)
+        num_remove = self.nodes_to_remove(possible_removals)
 
         if len(current_infeasible_set) != 0:
             # Pick random node in infeasible_set to compare other nodes to - always pickup nodes
-            initial_node = current_infeasible_set[rnd.randint(
-                0, len(current_infeasible_set))]
+            initial_node = current_infeasible_set[rnd.randint(0, len(current_infeasible_set))]
             node = self.get_pickup(initial_node)
             pickup = True
 
@@ -182,28 +211,30 @@ class Operators:
 
         else:
             # Pick random node in route plan to remove and to compare other nodes to
-            rows = [i for i in range(0, len(destroyed_route_plan))]
+            rows = [i for i in range(0, len(possible_removals))]
             rnd.shuffle(rows)
 
             for row_index in rows:
-                if len(destroyed_route_plan[row_index]) < 3:
+                if len(possible_removals[row_index]) < 3:
                     continue
-                elif len(destroyed_route_plan[row_index]) == 3:
+                elif len(possible_removals[row_index]) == 3:
                     col_index = 1
                     break
                 else:
                     col_index = rnd.randint(
-                        1, len(destroyed_route_plan[row_index]))
+                        1, len(possible_removals[row_index]))
                     break
-            node = destroyed_route_plan[row_index][col_index]
+            node = possible_removals[row_index][col_index]
+            destroy_node = destroyed_route_plan[row_index][node[6]]
 
             # Find associated node
             index, pickup = self.find_associated_node(
-                row_index, col_index, destroyed_route_plan)
-            associated_node = destroyed_route_plan[row_index][index]
+                row_index, col_index, possible_removals)
+            associated_node = possible_removals[row_index][index]
+            destroy_associated_node = destroyed_route_plan[row_index][associated_node[6]]
 
             # List of nodes to remove
-            to_remove = [[node, row_index], [associated_node, row_index]]
+            to_remove = [[node, row_index, destroy_node], [associated_node, row_index, destroy_associated_node]]
 
             # Remaining number of nodes to remove
             num_remove -= 1
@@ -214,20 +245,22 @@ class Operators:
             # To do: finne ut hva denne initielt skal settes som
             best_diff = 48 * 60 * 60
 
-            for row in range(len(destroyed_route_plan)):
-                for col in range(1, len(destroyed_route_plan[row])):
+            for row in range(len(possible_removals)):
+                for col in range(1, len(possible_removals[row])):
 
                     # Drop off/pickup of request to compare
-                    temp = destroyed_route_plan[row][col]
+                    temp = possible_removals[row][col]
+                    destroyed_temp = destroyed_route_plan[row][temp[6]]
 
                     # Skip already added nodes
-                    if [temp, row] in to_remove:
+                    if [temp, row, destroyed_temp] in to_remove:
                         continue
 
                     # Find associated drop off/pickup node of request to compare
                     temp_index, temp_pickup = self.find_associated_node(
-                        row, col, destroyed_route_plan)
-                    associated_temp = destroyed_route_plan[row][temp_index]
+                        row, col, possible_removals)
+                    associated_temp = possible_removals[row][temp_index]
+                    destroyed_associated_temp = destroyed_route_plan[row][associated_temp[6]]
 
                     # Find difference in distance between pickup and drop-off of requests
                     if (temp_pickup == pickup) & pickup:
@@ -248,18 +281,19 @@ class Operators:
                     # Compare with smallest difference in current iteration
                     if diff < best_diff:
                         best_diff = diff
-                        nearest_node = [temp, row]
-                        nearest_associated_node = [associated_temp, row]
+                        nearest_node = [temp, row, destroyed_temp]
+                        nearest_associated_node = [associated_temp, row, destroyed_associated_temp]
 
             to_remove.append(nearest_node)
             to_remove.append(nearest_associated_node)
 
-        # Remove nearest nodes from destroyed route plan
+        # Remove nearest nodes from destroyed route plan and from possible_removals
         for n in to_remove:
             index_removed_requests.append(
-                (n[0][0], n[1], destroyed_route_plan[n[1]].index(n[0])))
+                (n[0][0], n[1], n[0][6]))
         for n in to_remove:
-            destroyed_route_plan[n[1]].remove(n[0])
+            possible_removals[n[1]].remove(n[0])
+            destroyed_route_plan[n[1]].remove(n[2])
 
             # Add request id to removed_requests
             if not n[0][0] % int(n[0][0]):
@@ -272,14 +306,20 @@ class Operators:
         destroyed_route_plan = copy.deepcopy(current_route_plan)
         removed_requests = []
         index_removed_requests = []
+        possible_removals = self.find_possible_removals(destroyed_route_plan)
+        empty = 0
+        for vehicle in possible_removals:
+            empty += len(vehicle)
+
+        if not empty:
+            return current_route_plan, removed_requests, index_removed_requests, False
 
         # Number of requests to remove
-        num_remove = self.nodes_to_remove(destroyed_route_plan)
+        num_remove = self.nodes_to_remove(possible_removals)
 
         if len(current_infeasible_set) != 0:
             # Pick random node in infeasible_set to compare other nodes to - always pickup nodes
-            initial_node = current_infeasible_set[rnd.randint(
-                0, len(current_infeasible_set))]
+            initial_node = current_infeasible_set[rnd.randint(0, len(current_infeasible_set))]
             node = self.get_pickup(initial_node)
             pickup = True
 
@@ -290,28 +330,30 @@ class Operators:
 
         else:
             # Pick random node in route plan to remove and to compare other nodes to
-            rows = [i for i in range(0, len(destroyed_route_plan))]
+            rows = [i for i in range(0, len(possible_removals))]
             rnd.shuffle(rows)
 
             for row_index in rows:
-                if len(destroyed_route_plan[row_index]) < 3:
+                if len(possible_removals[row_index]) < 3:
                     continue
-                elif len(destroyed_route_plan[row_index]) == 3:
+                elif len(possible_removals[row_index]) == 3:
                     col_index = 1
                     break
                 else:
                     col_index = rnd.randint(
-                        1, len(destroyed_route_plan[row_index]))
+                        1, len(possible_removals[row_index]))
                     break
-            node = destroyed_route_plan[row_index][col_index]
+            node = possible_removals[row_index][col_index]
+            destroy_node = destroyed_route_plan[row_index][node[6]]
 
             # Find associated node
             index, pickup = self.find_associated_node(
-                row_index, col_index, destroyed_route_plan)
-            associated_node = destroyed_route_plan[row_index][index]
+                row_index, col_index, possible_removals)
+            associated_node = possible_removals[row_index][index]
+            destroy_associated_node = destroyed_route_plan[row_index][associated_node[6]]
 
             # List of nodes to remove
-            nodes_to_remove = [[node, row_index], [associated_node, row_index]]
+            nodes_to_remove = [[node, row_index, destroy_node], [associated_node, row_index, destroy_associated_node]]
 
             # Remaining number of nodes to remove
             num_remove -= 1
@@ -322,19 +364,21 @@ class Operators:
             # To do: finne ut hva denne initielt skal settes som
             best_diff = 48 * 60 * 60
 
-            for row in range(len(destroyed_route_plan)):
-                for col in range(1, len(destroyed_route_plan[row])):
+            for row in range(len(possible_removals)):
+                for col in range(1, len(possible_removals[row])):
 
-                    temp = destroyed_route_plan[row][col]
+                    temp = possible_removals[row][col]
+                    destroyed_temp = destroyed_route_plan[row][temp[6]]
 
                     # Skip already added nodes
-                    if [temp, row] in nodes_to_remove:
+                    if [temp, row, destroyed_temp] in nodes_to_remove:
                         continue
 
                     # Find associated drop off/pickup node
                     temp_index, temp_pickup = self.find_associated_node(
-                        row, col, destroyed_route_plan)
-                    associated_temp = destroyed_route_plan[row][temp_index]
+                        row, col, possible_removals)
+                    associated_temp = possible_removals[row][temp_index]
+                    destroyed_associated_temp = destroyed_route_plan[row][associated_temp[6]]
 
                     # Find difference between pickup-times and drop off-times of requests
                     if temp_pickup == pickup:
@@ -348,18 +392,19 @@ class Operators:
                     # Compare with smallest difference in current iteration
                     if diff < best_diff:
                         best_diff = diff
-                        nearest_node = [temp, row]
-                        nearest_associated_node = [associated_temp, row]
+                        nearest_node = [temp, row, destroyed_temp]
+                        nearest_associated_node = [associated_temp, row, destroyed_associated_temp]
 
             nodes_to_remove.append(nearest_node)
             nodes_to_remove.append(nearest_associated_node)
 
-        # Remove nearest nodes from destroyed route plan
+        # Remove nearest nodes from destroyed route plan and from possible_removals
         for n in nodes_to_remove:
             index_removed_requests.append(
-                (n[0][0], n[1], destroyed_route_plan[n[1]].index(n[0])))
+                (n[0][0], n[1], n[0][6]))
         for n in nodes_to_remove:
-            destroyed_route_plan[n[1]].remove(n[0])
+            possible_removals[n[1]].remove(n[0])
+            destroyed_route_plan[n[1]].remove(n[2])
 
             # Add request id to removed_requests
             if not n[0][0] % int(n[0][0]):
@@ -372,14 +417,20 @@ class Operators:
         destroyed_route_plan = copy.deepcopy(current_route_plan)
         removed_requests = []
         index_removed_requests = []
+        possible_removals = self.find_possible_removals(destroyed_route_plan)
+        empty = 0
+        for vehicle in possible_removals:
+            empty += len(vehicle)
+
+        if not empty:
+            return current_route_plan, removed_requests, index_removed_requests, False
 
         # Number of requests to remove
-        num_remove = self.nodes_to_remove(destroyed_route_plan)
+        num_remove = self.nodes_to_remove(possible_removals)
 
         if len(current_infeasible_set) != 0:
             # Pick random node in infeasible_set to compare other nodes to - always pickup nodes
-            initial_node = current_infeasible_set[rnd.randint(
-                0, len(current_infeasible_set))]
+            initial_node = current_infeasible_set[rnd.randint(0, len(current_infeasible_set))]
             node = self.get_pickup(initial_node)
             pickup = True
 
@@ -390,28 +441,30 @@ class Operators:
 
         else:
             # Pick random node in route plan to remove and to compare other nodes to
-            rows = [i for i in range(0, len(destroyed_route_plan))]
+            rows = [i for i in range(0, len(possible_removals))]
             rnd.shuffle(rows)
 
             for row_index in rows:
-                if len(destroyed_route_plan[row_index]) < 3:
+                if len(possible_removals[row_index]) < 3:
                     continue
-                elif len(destroyed_route_plan[row_index]) == 3:
+                elif len(possible_removals[row_index]) == 3:
                     col_index = 1
                     break
                 else:
                     col_index = rnd.randint(
-                        1, len(destroyed_route_plan[row_index]))
+                        1, len(possible_removals[row_index]))
                     break
-            node = destroyed_route_plan[row_index][col_index]
+            node = possible_removals[row_index][col_index]
+            destroy_node = destroyed_route_plan[row_index][node[6]]
 
             # Find associated node
             index, pickup = self.find_associated_node(
-                row_index, col_index, destroyed_route_plan)
-            associated_node = destroyed_route_plan[row_index][index]
+                row_index, col_index, possible_removals)
+            associated_node = possible_removals[row_index][index]
+            destroy_associated_node = destroyed_route_plan[row_index][associated_node[6]]
 
             # List of nodes to remove
-            nodes_to_remove = [[node, row_index], [associated_node, row_index]]
+            nodes_to_remove = [[node, row_index, destroy_node], [associated_node, row_index, destroy_associated_node]]
 
             # Remaining number of nodes to remove
             num_remove -= 1
@@ -422,19 +475,21 @@ class Operators:
             # To do: finne ut hva denne initielt skal settes som
             best_diff = 48 * 60 * 60
 
-            for row in range(len(destroyed_route_plan)):
-                for col in range(1, len(destroyed_route_plan[row])):
+            for row in range(len(possible_removals)):
+                for col in range(1, len(possible_removals[row])):
 
-                    temp = destroyed_route_plan[row][col]
+                    temp = possible_removals[row][col]
+                    destroyed_temp = destroyed_route_plan[row][temp[6]]
 
                     # Skip already added nodes
-                    if [temp, row] in nodes_to_remove:
+                    if [temp, row, destroyed_temp] in nodes_to_remove:
                         continue
 
                     # Find associated drop off/pickup node
                     temp_index, temp_pickup = self.find_associated_node(
-                        row, col, destroyed_route_plan)
-                    associated_temp = destroyed_route_plan[row][temp_index]
+                        row, col, possible_removals)
+                    associated_temp = possible_removals[row][temp_index]
+                    destroyed_associated_temp = destroyed_route_plan[row][associated_temp[6]]
 
                     # Find difference between requests
                     if (temp_pickup == pickup) & pickup:
@@ -466,18 +521,19 @@ class Operators:
                     # Compare with smallest difference in current iteration
                     if diff < best_diff:
                         best_diff = diff
-                        nearest_node = [temp, row]
-                        nearest_associated_node = [associated_temp, row]
+                        nearest_node = [temp, row, destroyed_temp]
+                        nearest_associated_node = [associated_temp, row, destroyed_associated_temp]
 
             nodes_to_remove.append(nearest_node)
             nodes_to_remove.append(nearest_associated_node)
 
-        # Remove nearest nodes from destroyed route plan
+        # Remove nearest nodes from destroyed route plan and from possible_removals
         for n in nodes_to_remove:
             index_removed_requests.append(
-                (n[0][0], n[1], destroyed_route_plan[n[1]].index(n[0])))
+                (n[0][0], n[1], n[0][6]))
         for n in nodes_to_remove:
-            destroyed_route_plan[n[1]].remove(n[0])
+            possible_removals[n[1]].remove(n[0])
+            destroyed_route_plan[n[1]].remove(n[2])
 
             # Add request id to removed_requests
             if not n[0][0] % int(n[0][0]):
@@ -500,7 +556,7 @@ class Operators:
             index_removal = [
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
-            route_plan, new_objective, infeasible_set = self.repair_generator.generate_insertions(
+            route_plan, new_objective, infeasible_set = self.reopt_repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=current_route_plan, index_removed=index_removal)
 
             # update current objective
@@ -509,39 +565,41 @@ class Operators:
         return route_plan, current_objective, infeasible_set
 
     # Function to find random requests to remove if worst deviation removal does not remove enough
-    def worst_deviation_random_removal(self, destroyed_route_plan, num_remove, to_remove):
+    def worst_deviation_random_removal(self, destroyed_route_plan, possible_removals, num_remove, to_remove):
 
         # Find the requests to remove
         while len(to_remove)/2 < num_remove:
 
             # Pick random node in route plan to remove and to compare other nodes to
-            rows = [i for i in range(0, len(destroyed_route_plan))]
+            rows = [i for i in range(0, len(possible_removals))]
             rnd.shuffle(rows)
 
             for row in rows:
-                if len(destroyed_route_plan[row]) < 3:
+                if len(possible_removals[row]) < 3:
                     continue
-                elif len(destroyed_route_plan[row]) == 3:
+                elif len(possible_removals[row]) == 3:
                     col = 1
                     break
                 else:
                     col = rnd.randint(
-                        1, len(destroyed_route_plan[row]))
+                        1, len(possible_removals[row]))
                     break
-            node = destroyed_route_plan[row][col]
+            node = possible_removals[row][col]
+            destroy_node = destroyed_route_plan[row][node[6]]
 
             # Find col-index of associated pickup/drop-off node
             index, pickup = self.find_associated_node(
-                row, col, destroyed_route_plan)
-            associated_node = destroyed_route_plan[row][index]
+                row, col, possible_removals)
+            associated_node = possible_removals[row][index]
+            destroy_associated_node = destroyed_route_plan[row][associated_node[6]]
 
             # Skip already added nodes
-            if [node, row] in to_remove or [associated_node, row] in to_remove:
+            if [node, row, destroy_node] in to_remove or [associated_node, row, destroy_associated_node] in to_remove:
                 continue
 
             # Add both pickup and drop-off node to to_remove
-            to_remove.append([node, row])
-            to_remove.append([associated_node, row])
+            to_remove.append([node, row, destroy_node])
+            to_remove.append([associated_node, row, destroy_associated_node])
 
         return to_remove
 
@@ -587,19 +645,19 @@ class Operators:
     def find_associated_node_infeasible(infeasible_set, node):
         if node[0] % int(node[0]):
             # Node is drop-off, must find pickup
-            pickup = False
-            request = node[0] - 0.5
+            pickup=False
+            request=node[0] - 0.5
             for index in range(len(infeasible_set)):
-                temp = infeasible_set[index]
+                temp=infeasible_set[index]
                 if temp[0] == request:
                     return index, pickup
 
         else:
             # Node is pickup, must find drop-off
-            pickup = True
-            request = node[0] + 0.5
+            pickup=True
+            request=node[0] + 0.5
             for index in range(len(infeasible_set)):
-                temp = infeasible_set[index]
+                temp=infeasible_set[index]
                 if temp[0] == request:
                     return index, pickup
 
@@ -607,10 +665,10 @@ class Operators:
         # Node is pickup, find requested pickup time or calculated pickup time
         rid = node[0]
         if not pd.isnull(node[1]["Requested Pickup Time"]):
-            time = node[1]["Requested Pickup Time"] + timedelta(minutes=S)
+            time = node[1]["Requested Pickup Time"]
         else:
             time = node[1]["Requested Dropoff Time"] - self.constructor.travel_time(
-                rid - 1, self.constructor.n + rid - 1, True) - timedelta(minutes=S)
+                rid - 1, self.constructor.n + rid - 1, True)
 
         node = (rid, time)
         return node
@@ -620,21 +678,39 @@ class Operators:
         rid = node[0]
         d_rid = rid + 0.5
         if not pd.isnull(node[1]["Requested Dropoff Time"]):
-            time = node[1]["Requested Dropoff Time"] + 2*timedelta(minutes=S)
+            time = node[1]["Requested Dropoff Time"]
         else:
             time = node[1]["Requested Pickup Time"] + self.constructor.travel_time(
-                rid - 1, self.constructor.n + rid - 1, True) + 2*timedelta(minutes=S)
+                rid - 1, self.constructor.n + rid - 1, True)
 
         node = (d_rid, time)
         return node
 
+    def find_possible_removals(self, route_plan):
 
-'''
-    def __init__(self, destruction_degree, constructor):
+        possible_removals = [[(rid, t, d, p, w, request, idx + 1) for idx, (rid, t, d, p, w, request) in
+                              enumerate(route_plan[vehicle][1:]) if t >= self.sim_clock] for vehicle in
+                             range(0, len(route_plan))]
+
+        for vehicle in possible_removals:
+            rids = [rid for (rid, t, d, p, w, request, idx) in vehicle]
+            for node in vehicle:
+                if node[0] % int(node[0]):
+                    if not node[0] - 0.5 in rids:
+                        possible_removals[possible_removals.index(vehicle)].remove(node)
+                else:
+                    if not node[0] + 0.5 in rids:
+                        possible_removals[possible_removals.index(vehicle)].remove(node)
+
+        return possible_removals
+
+'''  
+    def __init__(self, destruction_degree, constructor, sim_clock):
         self.destruction_degree = destruction_degree
         self.constructor = constructor
         self.T_ij = self.constructor.T_ij
-        
+        self.sim_clock = sim_clock
+
 def main():
     constructor = None
 
@@ -643,10 +719,15 @@ def main():
         constructor = ConstructionHeuristic(requests=df.head(20), vehicles=V)
         print("Constructing initial solution")
         initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
-        operator = Operators(0.25, constructor)
-        destroyed_route_plan, removed_requests, index_removed_requests = operator.worst_deviation_removal(
+        sim_clock = datetime.strptime("2021-05-10 12:00:00", "%Y-%m-%d %H:%M:%S")
+
+        operator = ReOptOperators(0.25, constructor, sim_clock)
+
+        destroyed_route_plan, removed_requests, index_removed_requests, destroyed = operator.related_removal(
             initial_route_plan, initial_infeasible_set)
-        time = 2
+
+        destroyed_route_plan, removed_requests, index_removed_requests, destroyed = operator.related_removal(
+            destroyed_route_plan, removed_requests)
 
     except Exception as e:
         print("ERROR:", e)
@@ -662,3 +743,4 @@ def main():
 if __name__ == "__main__":
     main()
 '''
+
