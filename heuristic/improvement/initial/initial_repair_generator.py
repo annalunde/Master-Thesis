@@ -30,8 +30,8 @@ class RepairGenerator:
             if len(route_plan[introduced_vehicle]) == 1:
                 # it is trivial to add the new request
                 temp_route_plan = copy.deepcopy(route_plan)
-                temp_route_plan[introduced_vehicle] = self.add_initial_nodes_pickup(request=request, introduced_vehicle=introduced_vehicle, rid=rid, vehicle_route=temp_route_plan[introduced_vehicle],
-                                                                                    depot=True)
+                temp_route_plan[introduced_vehicle] = self.add_initial_nodes(request=request, introduced_vehicle=introduced_vehicle, rid=rid, vehicle_route=temp_route_plan[introduced_vehicle],
+                                                                             depot=True)
                 # calculate change in objective
                 change_objective = self.heuristic.new_objective(
                     temp_route_plan, infeasible_set)
@@ -68,10 +68,10 @@ class RepairGenerator:
                         activated_checks = False  # will be set to True if there is a test that fails
                         temp_route_plan = copy.deepcopy(route_plan)
 
-                        pickup_time = request["Requested Pickup Time"] if i == 0 else initial_route_plan[
+                        pickup_time = request["Requested Pickup Time"] + timedelta(minutes=S) if i == 0 else initial_route_plan[
                             pickup_removal[1]][pickup_removal[2]][1]
                         dropoff_time = request["Requested Pickup Time"] + self.heuristic.travel_time(
-                            rid-1, self.heuristic.n + rid-1, True) if i == 0 else initial_route_plan[dropoff_removal[1]][dropoff_removal[2]][1]
+                            rid-1, self.heuristic.n + rid-1, True) + 2*timedelta(minutes=S)if i == 0 else initial_route_plan[dropoff_removal[1]][dropoff_removal[2]][1]
 
                         start_idx = 0
                         vehicle_route = temp_route_plan[introduced_vehicle]
@@ -179,13 +179,10 @@ class RepairGenerator:
                                 depot=(s_p_node == 0), upper=False) - s_p_d if s_p_d is not None else self.get_bound_dev(depot=(s_p_node == 0), upper=False)
                             upper_dev = self.get_bound_dev(
                                 depot=False, upper=True) - e_p_d
-                            if s_p_time + lower_dev + s_p_travel_time <= pickup_time and pickup_time + timedelta(minutes=S) + p_e_travel_time <= e_p_time + upper_dev:
+                            if s_p_time + lower_dev + s_p_travel_time <= pickup_time and pickup_time + p_e_travel_time <= e_p_time + upper_dev:
                                 push_back_p = s_p_time + s_p_travel_time - pickup_time if pickup_time - s_p_time - s_p_travel_time < timedelta(
                                     0) else 0
-                                push_forward_p = pickup_time + timedelta(
-                                    minutes=S) + p_e_travel_time - e_p_time if e_p_time - pickup_time - \
-                                    timedelta(
-                                    minutes=S) - p_e_travel_time < timedelta(
+                                push_forward_p = pickup_time + p_e_travel_time - e_p_time if e_p_time - pickup_time - p_e_travel_time < timedelta(
                                     0) else 0
 
                                 # update forward
@@ -253,8 +250,7 @@ class RepairGenerator:
                                 lower_dev_d = self.get_bound_dev(
                                     depot=(s_d_node == 0), upper=False) - s_d_d if s_d_d is not None else self.get_bound_dev(depot=(s_d_node == 0), upper=False)
 
-                                if s_p_time + lower_dev_p + s_p_travel_time <= pickup_time and pickup_time + timedelta(
-                                        minutes=S) + p_e_travel_time <= e_p_time + upper_dev_p and s_d_time + lower_dev_d + s_d_travel_time <= dropoff_time:
+                                if s_p_time + lower_dev_p + s_p_travel_time <= pickup_time and pickup_time + p_e_travel_time <= e_p_time + upper_dev_p and s_d_time + lower_dev_d + s_d_travel_time <= dropoff_time:
                                     push_back_d = s_d_time + s_d_travel_time - dropoff_time if \
                                         dropoff_time - \
                                         s_d_time - s_d_travel_time < timedelta(
@@ -262,14 +258,9 @@ class RepairGenerator:
                                     if e_d_node:
                                         upper_dev_d = self.get_bound_dev(
                                             depot=False, upper=True) - e_d_d
-                                        if dropoff_time + timedelta(
-                                                minutes=S) + d_e_travel_time <= e_d_time + upper_dev_d:
-                                            push_forward_d = dropoff_time + \
-                                                timedelta(
-                                                    minutes=S) + d_e_travel_time - e_d_time if e_d_time - \
-                                                dropoff_time - \
-                                                timedelta(
-                                                    minutes=S) - d_e_travel_time < timedelta(
+                                        if dropoff_time + d_e_travel_time <= e_d_time + upper_dev_d:
+                                            push_forward_d = dropoff_time + d_e_travel_time - e_d_time if e_d_time - \
+                                                dropoff_time - d_e_travel_time < timedelta(
                                                     0) else 0
                                         else:
                                             activated_checks = True
@@ -353,7 +344,7 @@ class RepairGenerator:
                 new_vehicle = self.vehicles.pop(0)
                 temp_route_plan.append([])
                 self.introduced_vehicles.add(new_vehicle)
-                temp_route_plan[new_vehicle] = self.add_initial_nodes_pickup(
+                temp_route_plan[new_vehicle] = self.add_initial_nodes(
                     request=request, introduced_vehicle=new_vehicle, rid=rid, vehicle_route=temp_route_plan[new_vehicle], depot=False)
 
                 # calculate change in objective
@@ -394,7 +385,7 @@ class RepairGenerator:
                     n_next - 0.5 - 1 + self.heuristic.n if n_next_node else n_next - 1)
                 travel_time = self.heuristic.travel_time(
                     n_node_id, n_next_node_id, True)
-                push_back = t + timedelta(minutes=S) + travel_time - t_next if t_next - timedelta(minutes=S) - \
+                push_back = t + travel_time - t_next if t_next - \
                     t - travel_time < timedelta(0) else timedelta(0)
 
             if d is not None and d - push_back < L_D_N and (rid, request) not in self.heuristic.infeasible_set:
@@ -427,7 +418,7 @@ class RepairGenerator:
                     n_prev - 0.5 - 1 + self.heuristic.n if n_prev_node else n_prev - 1)
                 travel_time = self.heuristic.travel_time(
                     n_node_id, n_prev_node_id, True)
-                push_forward = t_prev + timedelta(minutes=S) + travel_time - t if t - timedelta(minutes=S) - \
+                push_forward = t_prev + travel_time - t if t - \
                     t_prev - travel_time < timedelta(0) else timedelta(0)
 
             if d is not None and push_forward == timedelta(0):
@@ -500,7 +491,7 @@ class RepairGenerator:
                 break
         return activated_checks
 
-    def add_initial_nodes_pickup(self, request, introduced_vehicle, rid, vehicle_route, depot):
+    def add_initial_nodes(self, request, introduced_vehicle, rid, vehicle_route, depot):
         if not depot:
             service_time = request["Requested Pickup Time"] - self.heuristic.travel_time(
                 rid-1, 2*self.heuristic.n + introduced_vehicle, True)
@@ -508,13 +499,13 @@ class RepairGenerator:
                 (0, service_time, None, 0, 0, None))
             vehicle_route.append(
                 (rid,
-                    request["Requested Pickup Time"], timedelta(0), request["Number of Passengers"], request["Wheelchair"], request)
+                    request["Requested Pickup Time"] + timedelta(minutes=S), timedelta(0), request["Number of Passengers"], request["Wheelchair"], request)
             )
             travel_time = self.heuristic.travel_time(
                 rid-1, self.heuristic.n + rid - 1, True)
             vehicle_route.append(
                 (rid + 0.5,
-                    request["Requested Pickup Time"]+travel_time, timedelta(0), 0, 0, request)
+                    request["Requested Pickup Time"]+travel_time+2 * timedelta(minutes=S), timedelta(0), 0, 0, request)
             )
         else:
             service_time = request["Requested Pickup Time"] - self.heuristic.travel_time(
@@ -522,13 +513,13 @@ class RepairGenerator:
             vehicle_route[0] = (0, service_time, None, 0, 0, None)
             vehicle_route.insert(1,
                                  (rid,
-                                  request["Requested Pickup Time"], timedelta(0), request["Number of Passengers"], request["Wheelchair"], request)
+                                  request["Requested Pickup Time"] + timedelta(minutes=S), timedelta(0), request["Number of Passengers"], request["Wheelchair"], request)
                                  )
             travel_time = self.heuristic.travel_time(
                 rid-1, self.heuristic.n + rid - 1, True)
             vehicle_route.insert(2,
                                  (rid + 0.5,
-                                  request["Requested Pickup Time"]+travel_time, timedelta(0), 0, 0, request)
+                                  request["Requested Pickup Time"]+travel_time+2 * timedelta(minutes=S), timedelta(0), 0, 0, request)
                                  )
 
         return vehicle_route

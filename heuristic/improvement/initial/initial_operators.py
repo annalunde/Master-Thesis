@@ -143,7 +143,8 @@ class Operators:
 
         # If not enough nodes have deviation > 0, remove the rest randomly
         if len(to_remove)/2 < num_remove:
-            to_remove = self.worst_deviation_random_removal(destroyed_route_plan, num_remove, to_remove)
+            to_remove = self.worst_deviation_random_removal(
+                destroyed_route_plan, num_remove, to_remove)
 
         # Remove nearest nodes from destroyed route plan
         for n in to_remove:
@@ -169,7 +170,8 @@ class Operators:
 
         if len(current_infeasible_set) != 0:
             # Pick random node in infeasible_set to compare other nodes to - always pickup nodes
-            initial_node = current_infeasible_set[rnd.randint(0, len(current_infeasible_set))]
+            initial_node = current_infeasible_set[rnd.randint(
+                0, len(current_infeasible_set))]
             node = self.get_pickup(initial_node)
             pickup = True
 
@@ -276,7 +278,8 @@ class Operators:
 
         if len(current_infeasible_set) != 0:
             # Pick random node in infeasible_set to compare other nodes to - always pickup nodes
-            initial_node = current_infeasible_set[rnd.randint(0, len(current_infeasible_set))]
+            initial_node = current_infeasible_set[rnd.randint(
+                0, len(current_infeasible_set))]
             node = self.get_pickup(initial_node)
             pickup = True
 
@@ -375,7 +378,8 @@ class Operators:
 
         if len(current_infeasible_set) != 0:
             # Pick random node in infeasible_set to compare other nodes to - always pickup nodes
-            initial_node = current_infeasible_set[rnd.randint(0, len(current_infeasible_set))]
+            initial_node = current_infeasible_set[rnd.randint(
+                0, len(current_infeasible_set))]
             node = self.get_pickup(initial_node)
             pickup = True
 
@@ -583,19 +587,19 @@ class Operators:
     def find_associated_node_infeasible(infeasible_set, node):
         if node[0] % int(node[0]):
             # Node is drop-off, must find pickup
-            pickup=False
-            request=node[0] - 0.5
+            pickup = False
+            request = node[0] - 0.5
             for index in range(len(infeasible_set)):
-                temp=infeasible_set[index]
+                temp = infeasible_set[index]
                 if temp[0] == request:
                     return index, pickup
 
         else:
             # Node is pickup, must find drop-off
-            pickup=True
-            request=node[0] + 0.5
+            pickup = True
+            request = node[0] + 0.5
             for index in range(len(infeasible_set)):
-                temp=infeasible_set[index]
+                temp = infeasible_set[index]
                 if temp[0] == request:
                     return index, pickup
 
@@ -603,10 +607,10 @@ class Operators:
         # Node is pickup, find requested pickup time or calculated pickup time
         rid = node[0]
         if not pd.isnull(node[1]["Requested Pickup Time"]):
-            time = node[1]["Requested Pickup Time"]
+            time = node[1]["Requested Pickup Time"] + timedelta(minutes=S)
         else:
             time = node[1]["Requested Dropoff Time"] - self.constructor.travel_time(
-                rid - 1, self.constructor.n + rid - 1, True)
+                rid - 1, self.constructor.n + rid - 1, True) - timedelta(minutes=S)
 
         node = (rid, time)
         return node
@@ -616,13 +620,14 @@ class Operators:
         rid = node[0]
         d_rid = rid + 0.5
         if not pd.isnull(node[1]["Requested Dropoff Time"]):
-            time = node[1]["Requested Dropoff Time"]
+            time = node[1]["Requested Dropoff Time"] + 2*timedelta(minutes=S)
         else:
             time = node[1]["Requested Pickup Time"] + self.constructor.travel_time(
-                rid - 1, self.constructor.n + rid - 1, True)
+                rid - 1, self.constructor.n + rid - 1, True) + 2*timedelta(minutes=S)
 
         node = (d_rid, time)
         return node
+
 
 '''
     def __init__(self, destruction_degree, constructor):
@@ -657,4 +662,3 @@ def main():
 if __name__ == "__main__":
     main()
 '''
-
