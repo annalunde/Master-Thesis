@@ -26,7 +26,6 @@ class ALNS:
         self.destroy_repair_updater = Destroy_Repair_Updater(constructor)
 
     # Run ALNS algorithm
-
     def iterate(self, num_iterations):
         weights = np.asarray(self.weights, dtype=np.float16)
         current_route_plan = copy.deepcopy(self.route_plan)
@@ -35,6 +34,7 @@ class ALNS:
         best_objective = copy.deepcopy(self.objective)
         current_infeasible_set = copy.deepcopy(self.initial_infeasible_set)
         best_infeasible_set = copy.deepcopy(self.initial_infeasible_set)
+        found_solutions = {}
 
         d_weights = np.ones(len(self.destroy_operators), dtype=np.float16)
         r_weights = np.ones(len(self.repair_operators), dtype=np.float16)
@@ -42,6 +42,8 @@ class ALNS:
         r_count = np.zeros(len(self.repair_operators), dtype=np.float16)
 
         for i in tqdm(range(num_iterations), colour='#39ff14'):
+            already_found = False
+
             # Select destroy method
             destroy = self.select_operator(
                 self.destroy_operators, d_weights, self.rnd_state)
@@ -63,7 +65,8 @@ class ALNS:
             # Fix solution
             r_operator = self.repair_operators[repair]
             candidate, candidate_objective, candidate_infeasible_set = r_operator(
-                updated_route, removed_requests, current_infeasible_set, current, index_removed)
+                updated_route_plan, removed_requests, current_infeasible_set, current_route_plan, index_removed)
+
             if current_infeasible_set:
                 print(
                     "ERROR: You cannot serve all obligatory requests with current fleet.")
@@ -77,13 +80,21 @@ class ALNS:
                 current_route_plan, current_objective, current_infeasible_set,
                 candidate, candidate_objective, candidate_infeasible_set, self.criterion)
 
-            # Update weights
-            d_weights[destroy] = d_weights[destroy] * \
-                (1 - self.reaction_factor) + \
-                (self.reaction_factor * weights[weight_score]/d_count[destroy])
-            r_weights[repair] = r_weights[repair] * \
-                (1 - self.reaction_factor) + \
-                (self.reaction_factor * weights[weight_score]/r_count[repair])
+            if hash(str(candidate)) == hash(str(current_route_plan)) and hash(str(candidate)) in found_solutions.keys():
+                already_found = True
+            else:
+                found_solutions[hash(str(current_route_plan))] = 1
+
+            if not already_found:
+                # Update weights
+                d_weights[destroy] = d_weights[destroy] * \
+                    (1 - self.reaction_factor) + \
+                    (self.reaction_factor *
+                     weights[weight_score]/d_count[destroy])
+                r_weights[repair] = r_weights[repair] * \
+                    (1 - self.reaction_factor) + \
+                    (self.reaction_factor *
+                     weights[weight_score]/r_count[repair])
 
         return best, best_objective, best_infeasible_set
 
