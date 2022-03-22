@@ -12,7 +12,7 @@ class Destroy_Repair_Updater:
     def __init__(self, heuristic):
         self.heuristic = heuristic
 
-    def update_solution(self, route_plan, index_removed_requests, removed_requests):
+    def update_solution(self, route_plan, index_removed_requests, disruption_time):
         updated_solution = copy.deepcopy(route_plan)
         # (row, counter) --> sequences([(node,row,col),...])
         index_removed_requests = self.filter_indexes(index_removed_requests)
@@ -55,8 +55,8 @@ class Destroy_Repair_Updater:
                 travel_time = self.heuristic.travel_time(
                     left_node_id, right_node_id, True)
 
-                reduction_dev = right_node[1] - timedelta(minutes=S) - \
-                    left_node[1] - travel_time if right_node[1] - timedelta(minutes=S) - \
+                reduction_dev = right_node[1] - \
+                    left_node[1] - travel_time if right_node[1] - \
                     left_node[1] - travel_time > timedelta(0) else 0
 
                 if not reduction_dev:
@@ -79,10 +79,10 @@ class Destroy_Repair_Updater:
 
                 if push_backward:
                     vehicle_route = self.update_backward(
-                        vehicle_route, left_idx, push_backward)
+                        vehicle_route, left_idx, push_backward, disruption_time)
                 if push_forward:
                     vehicle_route = self.update_forward(
-                        vehicle_route, right_idx, push_forward, row)
+                        vehicle_route, right_idx, push_forward, row, disruption_time)
 
                 updated_solution[row] = vehicle_route
 
@@ -115,7 +115,7 @@ class Destroy_Repair_Updater:
 
         return updated_solution
 
-    def update_backward(self, vehicle_route, start_idx, push_backward, activated_checks, rid, request, introduced_vehicle):
+    def update_backward(self, vehicle_route, start_idx, push_backward, activated_checks, rid, request, introduced_vehicle, disruption_time):
         idx = start_idx
         for n, t, d, p, w, r in vehicle_route[start_idx:]:
             # since updating happens at start_idx + 1, there is no need to check for depot
@@ -129,21 +129,24 @@ class Destroy_Repair_Updater:
                     n_prev - 0.5 - 1 + self.heuristic.n if n_prev_node else n_prev - 1)
                 travel_time = self.heuristic.travel_time(
                     n_node_id, n_prev_node_id, True)
-                push_backward = t - travel_time - t_prev - \
-                    timedelta(minutes=S) if t - travel_time - t_prev - \
-                    timedelta(minutes=S) > timedelta(0) else timedelta(0)
+                push_backward = t - travel_time - t_prev if t - \
+                    travel_time - t_prev > timedelta(0) else timedelta(0)
 
             if d is not None and push_backward == timedelta(0):
                 break
 
-            t = t - push_backward if d > timedelta(0) else t
-            d = d - push_backward if d > timedelta(0) else d
+            t = t - \
+                push_backward if d > timedelta(
+                    0) and t - push_backward > disruption_time else t
+            d = d - \
+                push_backward if d > timedelta(
+                    0) and t - push_backward > disruption_time else d
             vehicle_route[idx] = (n, t, d, p, w, r)
             idx += 1
 
         return vehicle_route
 
-    def update_forward(self, vehicle_route, start_idx, push_forward, introduced_vehicle):
+    def update_forward(self, vehicle_route, start_idx, push_forward, introduced_vehicle, disruption_time):
         for idx in range(start_idx, -1, -1):
             n, t, d, p, w, r = vehicle_route[idx]
             if idx < start_idx:
@@ -157,16 +160,22 @@ class Destroy_Repair_Updater:
                     n_next - 0.5 - 1 + self.heuristic.n if n_next_node else n_next - 1)
                 travel_time = self.heuristic.travel_time(
                     n_node_id, n_next_node_id, True)
-                push_forward = t_next - travel_time - t - \
-                    timedelta(minutes=S) if t_next - t - travel_time - \
-                    timedelta(minutes=S) > timedelta(0) else timedelta(0)
+                push_forward = t_next - travel_time - t if t_next - \
+                    t - travel_time > timedelta(0) else timedelta(0)
 
             if push_forward == timedelta(0):
                 break
 
+            if t + push_forward <= disruption_time or t <= disruption_time:
+                break
+
             if d is not None:
-                t = t + push_forward if d < timedelta(0) else t
-                d = d + push_forward if d < timedelta(0) else d
+                t = t + \
+                    push_forward if d < timedelta(
+                        0) and t + push_forward > disruption_time else t
+                d = d + \
+                    push_forward if d < timedelta(
+                        0) and t + push_forward > disruption_time else d
                 vehicle_route[idx] = (n, t, d, p, w, r)
             else:
                 t = t + push_forward

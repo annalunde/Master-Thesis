@@ -1,6 +1,7 @@
 from decouple import config
 import pandas as pd
 
+
 class NewRequests:
     def __init__(self, data_path):
         self.data_path = data_path
@@ -9,11 +10,11 @@ class NewRequests:
         df = pd.read_csv(self.data_path, index_col=0)
         df = df[df['Request Status'].isin(["Completed"])]
         df['Request Creation Time'] = pd.to_datetime(df['Request Creation Time'],
-                                                             format="%Y-%m-%d %H:%M:%S")
+                                                     format="%Y-%m-%d %H:%M:%S")
         df['Requested Pickup Time'] = pd.to_datetime(df['Requested Pickup Time'],
-                                                             format="%Y-%m-%d %H:%M:%S")
+                                                     format="%Y-%m-%d %H:%M:%S")
         df['Requested Dropoff Time'] = pd.to_datetime(df['Requested Dropoff Time'],
-                                                              format="%Y-%m-%d %H:%M:%S")
+                                                      format="%Y-%m-%d %H:%M:%S")
 
         # request arrives at same day as it is requested to be served
         df["Requested Pickup/Dropoff Time"] = (df["Requested Pickup Time"]).fillna(
@@ -35,7 +36,6 @@ class NewRequests:
                                      'Actual Pickup Time',
                                      'Requested Dropoff Time',
                                      'Actual Dropoff Time',
-                                     'Original Planned Pickup Time',
                                      'Requested Pickup/Dropoff Time',
                                      'Date Creation',
                                      'Time Creation',
@@ -51,7 +51,8 @@ class NewRequests:
                                      'Reason For Travel'], inplace=True)
 
         # drop the request
-        df_same_day_after_10_updated = df_same_day_after_10.drop(random_request.index)
+        df_same_day_after_10_updated = df_same_day_after_10.drop(
+            random_request.index)
 
         # write updated dataframe to csv
         df_same_day_after_10_updated.to_csv(config("data_simulator_path"))

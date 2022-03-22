@@ -73,8 +73,7 @@ class NewRequestUpdater:
                                'No Show Time',
                                'Origin Zone',
                                'Destination Zone',
-                               'Reason For Travel',
-                               'Original Planned Pickup Time'], inplace=True)
+                               'Reason For Travel'], inplace=True)
 
         return requests
 
@@ -122,7 +121,7 @@ class NewRequestUpdater:
         request = new_request.iloc[0]
 
         route_plan, new_objective, infeasible_set = self.re_opt_repair_generator.generate_insertions(
-            route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set)
+            route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=None, index_removed=None)
 
         # update current objective
         self.current_objective = new_objective
@@ -143,7 +142,8 @@ class NewRequestUpdater:
                     d = d if d > timedelta(0) else -d
                     total_deviation += d
 
-        updated = alpha*total_travel_time + beta*total_deviation + gamma*total_infeasible
+        updated = alpha*total_travel_time + beta * \
+            total_deviation + gamma*total_infeasible
         return updated
 
     def print_new_objective(self, new_routeplan, new_infeasible_set):
@@ -263,7 +263,8 @@ def main():
         print("Constructing initial solution")
         initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
 
-        sim_clock = datetime.strptime("2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
+        sim_clock = datetime.strptime(
+            "2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
         simulator = Simulator(sim_clock)
         disruption_type, disruption_time, disruption_info = simulator.get_disruption(initial_route_plan, config(
             "data_processed_path"))

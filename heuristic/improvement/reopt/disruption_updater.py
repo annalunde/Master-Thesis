@@ -6,6 +6,7 @@ from config.construction_config import *
 from simulation.simulator import Simulator
 from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
 
+
 class DisruptionUpdater:
     def __init__(self, new_request_updater):
         self.new_request_updater = new_request_updater
@@ -20,15 +21,18 @@ class DisruptionUpdater:
             del updated_route_plan[disruption_info[0]][disruption_info[2]]
             # remove pickup node
             del updated_route_plan[disruption_info[0]][disruption_info[1]]
+
         else:
             # remove dropoff node
             del updated_route_plan[disruption_info[0]][disruption_info[2]]
 
-        # kalle på kode for å oppdatere tider - lik den mellom destroy og repair
+        # updating times of the disrupted route plan
+
         return updated_route_plan
 
     def update_new_request(self, new_request):
         self.new_request_updater.set_parameters(new_request)
+
 
 def main():
     updater = None
@@ -41,7 +45,8 @@ def main():
         current_route_plan, initial_objective, infeasible_set = constructor.construct_initial()
 
         # SIMULATION
-        sim_clock = datetime.strptime("2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
+        sim_clock = datetime.strptime(
+            "2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
         # første runde av simulator må kjøre med new requests fra data_processed_path for å få fullstendig antall
         # requests første runde, deretter skal rundene kjøre med data_simulator_path for å få updated data
         simulator = Simulator(sim_clock)
@@ -58,7 +63,8 @@ def main():
         elif disruption_type == 'no disruption':
             pass
         else:
-            updated_route_plan = disruption_updater.update_route_plan(current_route_plan, disruption_type, disruption_info)
+            updated_route_plan = disruption_updater.update_route_plan(
+                current_route_plan, disruption_type, disruption_info)
 
     except Exception as e:
         print("ERROR:", e)

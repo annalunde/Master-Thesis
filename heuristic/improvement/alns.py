@@ -26,7 +26,7 @@ class ALNS:
         self.destroy_repair_updater = Destroy_Repair_Updater(constructor)
 
     # Run ALNS algorithm
-    def iterate(self, num_iterations):
+    def iterate(self, num_iterations, disrupted, index_removed, disruption_time):
         weights = np.asarray(self.weights, dtype=np.float16)
         current_route_plan = copy.deepcopy(self.route_plan)
         best = copy.deepcopy(self.route_plan)
@@ -40,6 +40,11 @@ class ALNS:
         r_weights = np.ones(len(self.repair_operators), dtype=np.float16)
         d_count = np.zeros(len(self.destroy_operators), dtype=np.float16)
         r_count = np.zeros(len(self.repair_operators), dtype=np.float16)
+
+        if disrupted:
+            # Update disrupted solution
+            current_route_plan = self.destroy_repair_updater.update_solution(
+                current_route_plan, index_removed, disruption_time)
 
         for i in tqdm(range(num_iterations), colour='#39ff14'):
             already_found = False
@@ -64,7 +69,7 @@ class ALNS:
 
             # Update solution
             updated_route_plan = self.destroy_repair_updater.update_solution(
-                destroyed_route_plan, index_removed, removed_requests)
+                destroyed_route_plan, index_removed, disruption_time)
 
             # Fix solution
             r_operator = self.repair_operators[repair]

@@ -45,7 +45,7 @@ def main():
 
         # Run ALNS
         current_route_plan, current_objective, current_infeasible_set = alns.iterate(
-            iterations)
+            iterations, None, None, None)
         # print(current_route_plan)
         print("Objective", current_objective)
         print("Num vehicles:", len(current_route_plan))
@@ -66,6 +66,8 @@ def main():
         first_iteration = True
 
         while len(simulator.disruptions_stack) > 0:
+            prev_inf_len = len(current_infeasible_set)
+
             # use correct data path
             if not first_iteration:
                 disruption_type, disruption_time, disruption_info = simulator.get_disruption(current_route_plan, config(
@@ -78,6 +80,7 @@ def main():
             print(disruption_type)
 
             # updates before heuristic
+            disrupt = (False, None)
             if disruption_type == 'request':
                 disruption_updater.update_new_request(disruption_info)
                 current_route_plan, current_objective, current_infeasible_set = new_request_updater.\
@@ -91,7 +94,11 @@ def main():
                 current_route_plan = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info)
                 current_objective = new_request_updater.new_objective(
-                    current_route_plan, current_infeasible_set)  # update objective?
+                    current_route_plan, current_infeasible_set)
+                if disruption_type == 'cancel' or disruption_type == 'no show':
+                    index_removed = [(disruption_info[4], disruption_info[0], disruption_info[1]),
+                                     (disruption_info[3], disruption_info[0], disruption_info[2])]
+                    disrupt = (True, index_removed)
 
             # heuristic
             alns = ALNS(weights, reaction_factor, current_route_plan, current_objective, current_infeasible_set,
@@ -104,8 +111,8 @@ def main():
 
             # Run ALNS
             current_route_plan, current_objective, current_infeasible_set = alns.iterate(
-                iterations)
-            if disruption_type == 'request' and len(current_infeasible_set) == 0:
+                iterations, disrupt[0], disrupt[1], disruption_time)
+            if disruption_type == 'request' and not(len(current_infeasible_set) > prev_inf_len):
                 print("New request inserted")
 
     except Exception as e:

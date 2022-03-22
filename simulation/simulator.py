@@ -7,6 +7,7 @@ from config.simulation_config import *
 import random
 from scipy.stats import gamma
 
+
 class Simulator:
     def __init__(self, sim_clock):
         self.sim_clock = sim_clock
@@ -15,10 +16,14 @@ class Simulator:
 
     def create_disruption_stack(self):
         # get disruption times for each disruption type
-        request = self.poisson.disruption_times(arrival_rate_request, self.sim_clock, 'request')
-        delay = self.poisson.disruption_times(arrival_rate_delay, self.sim_clock, 'delay')
-        cancel = self.poisson.disruption_times(arrival_rate_cancel, self.sim_clock, 'cancel')
-        initial_no_show = self.poisson.disruption_times(arrival_rate_no_show, self.sim_clock, 'no show')
+        request = self.poisson.disruption_times(
+            arrival_rate_request, self.sim_clock, 'request')
+        delay = self.poisson.disruption_times(
+            arrival_rate_delay, self.sim_clock, 'delay')
+        cancel = self.poisson.disruption_times(
+            arrival_rate_cancel, self.sim_clock, 'cancel')
+        initial_no_show = self.poisson.disruption_times(
+            arrival_rate_no_show, self.sim_clock, 'no show')
         disruption_stack = request + delay + cancel + initial_no_show
         disruption_stack.sort(reverse=True, key=lambda x: x[1])
         return disruption_stack
@@ -31,29 +36,37 @@ class Simulator:
 
         # find which disruption type it is
         if disruption_type == 'request':
-            add_request, disruption_info = self.new_request(disruption_time, data_path)
+            add_request, disruption_info = self.new_request(
+                disruption_time, data_path)
             if add_request < 0:
                 disruption_type = 'no disruption'
                 disruption_info = None
 
         elif disruption_type == 'delay':
-            delay_vehicle_index, delay_rid_index, duration_delay = self.delay(disruption_time, current_route_plan)
-            disruption_info = (delay_vehicle_index, delay_rid_index, duration_delay)
+            delay_vehicle_index, delay_rid_index, duration_delay = self.delay(
+                disruption_time, current_route_plan)
+            disruption_info = (delay_vehicle_index,
+                               delay_rid_index, duration_delay)
             if delay_rid_index < 0:
                 disruption_type = 'no disruption'
                 disruption_info = None
 
         elif disruption_type == 'cancel':
-            cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index = self.cancel(disruption_time, current_route_plan)
-            disruption_info = (cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index)
+            cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index, node_d, node_p = self.cancel(
+                disruption_time, current_route_plan)
+            disruption_info = (
+                cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index, node_d, node_p)
             if cancel_pickup_rid_index < 0:
                 disruption_type = 'no disruption'
                 disruption_info = None
 
         else:
-            no_show_vehicle_index, no_show_pickup_rid_index, no_show_dropoff_rid_index, actual_no_show = self.no_show(disruption_time, current_route_plan)
-            disruption_info = (no_show_vehicle_index, no_show_pickup_rid_index, no_show_dropoff_rid_index)
-            next_disruption_time = self.disruptions_stack[-1][1] if len(self.disruptions_stack) > 0 else datetime.strptime("2021-05-10 19:00:00", "%Y-%m-%d %H:%M:%S")
+            no_show_vehicle_index, no_show_pickup_rid_index, no_show_dropoff_rid_index, node_d, node_p, actual_no_show = self.no_show(
+                disruption_time, current_route_plan)
+            disruption_info = (
+                no_show_vehicle_index, no_show_pickup_rid_index, no_show_dropoff_rid_index, node_d, node_p)
+            next_disruption_time = self.disruptions_stack[-1][1] if len(
+                self.disruptions_stack) > 0 else datetime.strptime("2021-05-10 19:00:00", "%Y-%m-%d %H:%M:%S")
             if no_show_pickup_rid_index < 0 or actual_no_show >= next_disruption_time:
                 disruption_type = 'no disruption'
                 disruption_info = None
@@ -69,7 +82,9 @@ class Simulator:
         random_number = np.random.rand()
         if random_number > percentage_dropoff:
             # request has requested pickup time - draw random time
-            requested_pickup_time = request_arrival + timedelta(minutes=gamma.rvs(pickup_fit_shape, pickup_fit_loc, pickup_fit_scale))
+            requested_pickup_time = request_arrival + \
+                timedelta(minutes=gamma.rvs(pickup_fit_shape,
+                          pickup_fit_loc, pickup_fit_scale))
 
             # if request arrival is after 17.45 or the requested pickup time is after 17.45, the request is ignored
             if request_arrival > datetime(request_arrival.year, request_arrival.month, request_arrival.day, 17, 45, 00) \
@@ -78,7 +93,8 @@ class Simulator:
 
             else:
                 # get random request
-                random_request = NewRequests(data_path).get_and_drop_random_request()
+                random_request = NewRequests(
+                    data_path).get_and_drop_random_request()
 
                 # update creation time to request disruption time
                 random_request['Request Creation Time'] = request_arrival
@@ -91,7 +107,9 @@ class Simulator:
 
         else:
             # request has requested dropoff time - draw random time
-            requested_dropoff_time = request_arrival + timedelta(minutes=gamma.rvs(dropoff_fit_shape, dropoff_fit_loc, dropoff_fit_scale))
+            requested_dropoff_time = request_arrival + \
+                timedelta(minutes=gamma.rvs(dropoff_fit_shape,
+                          dropoff_fit_loc, dropoff_fit_scale))
 
             # if request arrival is after 17.45 or requested dropoff time is after 18.00, the request is ignored
             if request_arrival > datetime(request_arrival.year, request_arrival.month, request_arrival.day, 17, 45, 00)\
@@ -100,7 +118,8 @@ class Simulator:
 
             else:
                 # get random request
-                random_request = NewRequests(data_path).get_and_drop_random_request()
+                random_request = NewRequests(
+                    data_path).get_and_drop_random_request()
 
                 # update creation time to request disruption time
                 random_request['Request Creation Time'] = request_arrival
@@ -113,7 +132,8 @@ class Simulator:
 
     def delay(self, initial_delay, current_route_plan):
         # draw duration of delay
-        delay = timedelta(minutes=gamma.rvs(delay_fit_shape, delay_fit_loc, delay_fit_scale))
+        delay = timedelta(minutes=gamma.rvs(
+            delay_fit_shape, delay_fit_loc, delay_fit_scale))
 
         rids_indices = []
         planned_departure_times = []
@@ -134,8 +154,10 @@ class Simulator:
         # if yes, pick the delay with earliest planned departure time
         if len(rids_indices) > 0:
             temp_actual_disruption_time = min(planned_departure_times)
-            rid_index = rids_indices[planned_departure_times.index(temp_actual_disruption_time)]
-            vehicle_index = vehicle_indices[planned_departure_times.index(temp_actual_disruption_time)]
+            rid_index = rids_indices[planned_departure_times.index(
+                temp_actual_disruption_time)]
+            vehicle_index = vehicle_indices[planned_departure_times.index(
+                temp_actual_disruption_time)]
             return vehicle_index, rid_index, delay
         else:
             return -1, -1, -1
@@ -152,16 +174,17 @@ class Simulator:
                 if not temp_rid % int(temp_rid) and temp_planned_time >= cancel:
                     for i in range(col, len(row)):
                         if row[i][0] == temp_rid + 0.5:
-                            indices.append((vehicle_index, col, i))
+                            indices.append(
+                                (vehicle_index, col, i, row[i][0], temp_rid))
             vehicle_index += 1
 
         # check whether there are any cancellations, if not, another disruption will be chosen
         # if yes, pick a random pickup node as the cancellation
         if len(indices) > 0:
             index = random.choice(indices)
-            return index[0], index[1], index[2]
+            return index[0], index[1], index[2], index[3], index[4]
         else:
-            return -1, -1, -1
+            return -1, -1, -1, -1, -1
 
     def no_show(self, initial_no_show, current_route_plan):
         indices = []
@@ -176,7 +199,8 @@ class Simulator:
                 if not temp_rid % int(temp_rid) and temp_planned_time >= initial_no_show:
                     for i in range(col, len(row)):
                         if row[i][0] == temp_rid + 0.5:
-                            indices.append((vehicle_index, col, i))
+                            indices.append(
+                                (vehicle_index, col, i, row[i][0], temp_rid))
                             planned_pickup_times.append(temp_planned_time)
             vehicle_index += 1
 
@@ -185,9 +209,9 @@ class Simulator:
         if len(indices) > 0:
             actual_disruption_time = min(planned_pickup_times)
             index = indices[planned_pickup_times.index(actual_disruption_time)]
-            return index[0], index[1], index[2], actual_disruption_time
+            return index[0], index[1], index[2], index[3], index[4], actual_disruption_time
         else:
-            return -1, -1, -1, -1
+            return -1, -1, -1, -1, -1, -1
 
 
 def main():
@@ -211,7 +235,8 @@ def main():
         # første runde av simulator må kjøre med new requests fra data_processed_path for å få fullstendig antall
         # requests første runde, deretter skal rundene kjøre med data_simulator_path for å få updated data
         print("Start simulation")
-        sim_clock = datetime.strptime("2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
+        sim_clock = datetime.strptime(
+            "2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
         simulator = Simulator(sim_clock)
         first_iteration = True
 
@@ -226,7 +251,7 @@ def main():
             #print("Disruption type", disruption_type)
             #print("Disruption time", disruption_time)
             #print("Disruption info", disruption_info)
-            #print()
+            # print()
 
             if disruption_type == "request":
                 num_new_requests += 1
