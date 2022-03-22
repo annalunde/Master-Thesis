@@ -20,7 +20,7 @@ class ReOptRepairGenerator:
             self.heuristic.introduced_vehicles)
         self.vehicles = copy.deepcopy(self.heuristic.vehicles)
 
-    def generate_insertions(self, route_plan, request, rid, infeasible_set, initial_route_plan, index_removed):
+    def generate_insertions(self, route_plan, request, rid, infeasible_set, initial_route_plan, index_removed, sim_clock):
         possible_insertions = {}  # dict: delta objective --> route plan
         self.introduced_vehicles = set([i for i in range(len(route_plan))])
         self.vehicles = [i for i in range(len(route_plan), V)]
@@ -74,7 +74,7 @@ class ReOptRepairGenerator:
                         pickup_time = request["Requested Pickup Time"] + timedelta(minutes=S) if i == 0 else initial_route_plan[
                             pickup_removal[1]][pickup_removal[2]][1]
                         dropoff_time = request["Requested Pickup Time"] + self.heuristic.travel_time(
-                            rid-1, self.heuristic.n + rid-1, True) + timedelta(minutes=2*S) if i == 0 else initial_route_plan[dropoff_removal[1]][dropoff_removal[2]][1]
+                            rid-1, self.heuristic.n + rid-1, True) + 2*timedelta(minutes=S)if i == 0 else initial_route_plan[dropoff_removal[1]][dropoff_removal[2]][1]
 
                         start_idx = 0
                         vehicle_route = temp_route_plan[introduced_vehicle]
@@ -111,7 +111,9 @@ class ReOptRepairGenerator:
                                     # update backward to test vehicle route
                                     if push_back:
                                         test_vehicle_route, activated_checks = self.update_check_backward(
-                                            vehicle_route=test_vehicle_route, start_idx=start_idx, push_back=push_back, activated_checks=activated_checks, rid=rid, request=request, introduced_vehicle=introduced_vehicle)
+                                            vehicle_route=test_vehicle_route, start_idx=start_idx, push_back=push_back,
+                                            activated_checks=activated_checks, rid=rid, request=request,
+                                            introduced_vehicle=introduced_vehicle, sim_clock=sim_clock)
 
                                     # add pickup node to test vehicle route
                                     pickup_id, test_vehicle_route = self.add_node(
@@ -138,7 +140,8 @@ class ReOptRepairGenerator:
                                             temp_route_plan[introduced_vehicle], activated_checks = self.update_check_backward(
                                                 vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx,
                                                 push_back=push_back, activated_checks=activated_checks, rid=rid,
-                                                request=request, introduced_vehicle=introduced_vehicle)
+                                                request=request, introduced_vehicle=introduced_vehicle,
+                                                sim_clock=sim_clock)
 
                                         # add pickup node
                                         pickup_id, vehicle_route = self.add_node(
@@ -200,7 +203,7 @@ class ReOptRepairGenerator:
                                     test_vehicle_route, activated_checks = self.update_check_backward(
                                         vehicle_route=test_vehicle_route, start_idx=start_idx,
                                         push_back=push_back_p, activated_checks=activated_checks, rid=rid,
-                                        request=request, introduced_vehicle=introduced_vehicle)
+                                        request=request, introduced_vehicle=introduced_vehicle, sim_clock=sim_clock)
 
                                 # add pickup node to test vehicle route
                                 pickup_id, test_vehicle_route = self.add_node(
@@ -285,7 +288,8 @@ class ReOptRepairGenerator:
                                                 vehicle_route=test_vehicle_route, start_idx=start_idx,
                                                 push_back=push_back_d, activated_checks=activated_checks,
                                                 rid=rid,
-                                                request=request, introduced_vehicle=introduced_vehicle)
+                                                request=request, introduced_vehicle=introduced_vehicle,
+                                                sim_clock=sim_clock)
 
                                         # add dropoff node to test vehicle route
                                         dropoff_id, test_vehicle_route = self.add_node(
@@ -373,9 +377,14 @@ class ReOptRepairGenerator:
         if (rid, request) in infeasible_set:
             infeasible_set.remove((rid, request))
 
-    def update_check_backward(self, vehicle_route, start_idx, push_back, activated_checks, rid, request, introduced_vehicle):
+    def update_check_backward(self, vehicle_route, start_idx, push_back, activated_checks, rid, request, introduced_vehicle, sim_clock):
         for idx in range(start_idx, -1, -1):
             n, t, d, p, w, r = vehicle_route[idx]
+
+            if t <= sim_clock:
+                if push_back:
+                    activated_checks = True
+                break
 
             if idx < start_idx:
                 n_next, t_next, d_next, p_next, w_next, r_next = vehicle_route[idx+1]
@@ -392,6 +401,10 @@ class ReOptRepairGenerator:
                     t - travel_time < timedelta(0) else timedelta(0)
 
             if d is not None and d - push_back < L_D_N and (rid, request) not in self.heuristic.infeasible_set:
+                activated_checks = True
+                break
+
+            if t - push_back <= sim_clock:
                 activated_checks = True
                 break
 
