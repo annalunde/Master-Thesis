@@ -58,20 +58,3 @@ class NewRequests:
         df_same_day_after_10_updated.to_csv(config("data_simulator_path"))
 
         return random_request
-
-
-def main():
-    new_request = None
-
-    try:
-        new_request = NewRequests(data_path=config("data_simulator_path"))
-        #new_request = NewRequests(data_path=config("data_processed_path"))
-        random_request = new_request.get_and_drop_random_request()
-        print(random_request)
-
-    except Exception as e:
-        print("ERROR:", e)
-
-
-if __name__ == "__main__":
-    main()

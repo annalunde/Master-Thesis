@@ -13,20 +13,11 @@ from heuristic.improvement.reopt.reopt_repair_generator import ReOptRepairGenera
 
 
 class ReOptOperators:
-    '''
     def __init__(self, alns, sim_clock):
         self.destruction_degree = alns.destruction_degree
         self.constructor = alns.constructor
         self.T_ij = self.constructor.T_ij
         self.reopt_repair_generator = ReOptRepairGenerator(self.constructor)
-        self.sim_clock = sim_clock
-    '''
-
-    def __init__(self, destruction_degree, constructor, sim_clock):
-        self.destruction_degree = destruction_degree
-        self.constructor = constructor
-        self.reopt_repair_generator = ReOptRepairGenerator(self.constructor)
-        self.T_ij = self.constructor.T_ij
         self.sim_clock = sim_clock
 
     # Find number of requests to remove based on degree of destruction
@@ -162,7 +153,8 @@ class ReOptOperators:
                     if deviation > worst_deviation and deviation > timedelta(0):
                         worst_deviation = deviation
                         worst_node = [temp, row, destroyed_temp]
-                        worst_associated_node = [associated_temp, row, destroyed_associated_temp]
+                        worst_associated_node = [
+                            associated_temp, row, destroyed_associated_temp]
 
             # Add node with worst deviation to list of nodes to remove
 
@@ -209,7 +201,8 @@ class ReOptOperators:
 
         if len(current_infeasible_set) != 0:
             # Pick random node in infeasible_set to compare other nodes to - always pickup nodes
-            initial_node = current_infeasible_set[rnd.randint(0, len(current_infeasible_set))]
+            initial_node = current_infeasible_set[rnd.randint(
+                0, len(current_infeasible_set))]
             node = self.get_pickup(initial_node)
             pickup = True
 
@@ -243,7 +236,8 @@ class ReOptOperators:
             destroy_associated_node = destroyed_route_plan[row_index][associated_node[6]]
 
             # List of nodes to remove
-            to_remove = [[node, row_index, destroy_node], [associated_node, row_index, destroy_associated_node]]
+            to_remove = [[node, row_index, destroy_node], [
+                associated_node, row_index, destroy_associated_node]]
 
             # Remaining number of nodes to remove
             num_remove -= 1
@@ -291,7 +285,8 @@ class ReOptOperators:
                     if diff < best_diff:
                         best_diff = diff
                         nearest_node = [temp, row, destroyed_temp]
-                        nearest_associated_node = [associated_temp, row, destroyed_associated_temp]
+                        nearest_associated_node = [
+                            associated_temp, row, destroyed_associated_temp]
 
             to_remove.append(nearest_node)
             to_remove.append(nearest_associated_node)
@@ -328,7 +323,8 @@ class ReOptOperators:
 
         if len(current_infeasible_set) != 0:
             # Pick random node in infeasible_set to compare other nodes to - always pickup nodes
-            initial_node = current_infeasible_set[rnd.randint(0, len(current_infeasible_set))]
+            initial_node = current_infeasible_set[rnd.randint(
+                0, len(current_infeasible_set))]
             node = self.get_pickup(initial_node)
             pickup = True
 
@@ -362,7 +358,8 @@ class ReOptOperators:
             destroy_associated_node = destroyed_route_plan[row_index][associated_node[6]]
 
             # List of nodes to remove
-            nodes_to_remove = [[node, row_index, destroy_node], [associated_node, row_index, destroy_associated_node]]
+            nodes_to_remove = [[node, row_index, destroy_node], [
+                associated_node, row_index, destroy_associated_node]]
 
             # Remaining number of nodes to remove
             num_remove -= 1
@@ -402,7 +399,8 @@ class ReOptOperators:
                     if diff < best_diff:
                         best_diff = diff
                         nearest_node = [temp, row, destroyed_temp]
-                        nearest_associated_node = [associated_temp, row, destroyed_associated_temp]
+                        nearest_associated_node = [
+                            associated_temp, row, destroyed_associated_temp]
 
             nodes_to_remove.append(nearest_node)
             nodes_to_remove.append(nearest_associated_node)
@@ -439,7 +437,8 @@ class ReOptOperators:
 
         if len(current_infeasible_set) != 0:
             # Pick random node in infeasible_set to compare other nodes to - always pickup nodes
-            initial_node = current_infeasible_set[rnd.randint(0, len(current_infeasible_set))]
+            initial_node = current_infeasible_set[rnd.randint(
+                0, len(current_infeasible_set))]
             node = self.get_pickup(initial_node)
             pickup = True
 
@@ -473,7 +472,8 @@ class ReOptOperators:
             destroy_associated_node = destroyed_route_plan[row_index][associated_node[6]]
 
             # List of nodes to remove
-            nodes_to_remove = [[node, row_index, destroy_node], [associated_node, row_index, destroy_associated_node]]
+            nodes_to_remove = [[node, row_index, destroy_node], [
+                associated_node, row_index, destroy_associated_node]]
 
             # Remaining number of nodes to remove
             num_remove -= 1
@@ -531,7 +531,8 @@ class ReOptOperators:
                     if diff < best_diff:
                         best_diff = diff
                         nearest_node = [temp, row, destroyed_temp]
-                        nearest_associated_node = [associated_temp, row, destroyed_associated_temp]
+                        nearest_associated_node = [
+                            associated_temp, row, destroyed_associated_temp]
 
             nodes_to_remove.append(nearest_node)
             nodes_to_remove.append(nearest_associated_node)
@@ -655,19 +656,19 @@ class ReOptOperators:
     def find_associated_node_infeasible(infeasible_set, node):
         if node[0] % int(node[0]):
             # Node is drop-off, must find pickup
-            pickup=False
-            request=node[0] - 0.5
+            pickup = False
+            request = node[0] - 0.5
             for index in range(len(infeasible_set)):
-                temp=infeasible_set[index]
+                temp = infeasible_set[index]
                 if temp[0] == request:
                     return index, pickup
 
         else:
             # Node is pickup, must find drop-off
-            pickup=True
-            request=node[0] + 0.5
+            pickup = True
+            request = node[0] + 0.5
             for index in range(len(infeasible_set)):
-                temp=infeasible_set[index]
+                temp = infeasible_set[index]
                 if temp[0] == request:
                     return index, pickup
 
@@ -707,48 +708,11 @@ class ReOptOperators:
             for node in vehicle:
                 if node[0] % int(node[0]):
                     if not node[0] - 0.5 in rids:
-                        possible_removals[possible_removals.index(vehicle)].remove(node)
+                        possible_removals[possible_removals.index(
+                            vehicle)].remove(node)
                 else:
                     if not node[0] + 0.5 in rids:
-                        possible_removals[possible_removals.index(vehicle)].remove(node)
+                        possible_removals[possible_removals.index(
+                            vehicle)].remove(node)
 
         return possible_removals
-
-
-def main():
-    constructor = None
-
-    try:
-        df = pd.read_csv(config("test_data_construction"))
-        constructor = ConstructionHeuristic(requests=df.head(40), vehicles=V)
-        print("Constructing initial solution")
-        initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
-        sim_clock = datetime.strptime("2021-05-10 12:00:00", "%Y-%m-%d %H:%M:%S")
-
-        operator = ReOptOperators(0.25, constructor, sim_clock)
-
-        destroyed_route_plan, removed_requests, index_removed_requests, destroyed = operator.random_removal(
-            initial_route_plan, initial_infeasible_set)
-
-        repaired_route_plan, repaired_objective, repaired_infeasible_set = operator.greedy_repair(destroyed_route_plan,
-            removed_requests, initial_infeasible_set, initial_route_plan, index_removed_requests)
-
-        print("fix")
-        time = 2
-
-    except Exception as e:
-        print("ERROR:", e)
-        exception_type, exception_object, exception_traceback = sys.exc_info()
-        filename = exception_traceback.tb_frame.f_code.co_filename
-        line_number = exception_traceback.tb_lineno
-        full_traceback = traceback.format_exc()
-        print("FULL TRACEBACK: ", full_traceback)
-        print("Exception type: ", exception_type)
-        print("File name: ", filename)
-        print("Line number: ", line_number)
-
-
-if __name__ == "__main__":
-    main()
-
-

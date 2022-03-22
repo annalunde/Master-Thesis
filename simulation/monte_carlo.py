@@ -5,6 +5,7 @@ from config.simulation_config import *
 import random
 from scipy.stats import gamma
 
+
 class MonteCarlo:
     def __init__(self, sim_clock, sim_duration):
         self.sim_clock = sim_clock
@@ -18,7 +19,8 @@ class MonteCarlo:
         requests = []
 
         while sim_clock <= self.sim_clock + self.sim_duration:
-            request_arrival = Poisson(arrival_rate_request, sim_clock).disruption_time()
+            request_arrival = Poisson(
+                arrival_rate_request, sim_clock).disruption_time()
             print("Sim clock: ", sim_clock)
             print("Arrival: ", request_arrival)
             if request_arrival <= self.sim_clock + self.sim_duration:
@@ -29,7 +31,8 @@ class MonteCarlo:
                 print("New request")
                 print()
             else:
-                sim_clock = self.sim_clock + self.sim_duration + timedelta(minutes=1)
+                sim_clock = self.sim_clock + \
+                    self.sim_duration + timedelta(minutes=1)
                 print("Simulation done")
 
         # read all new requests to file
@@ -62,7 +65,9 @@ class MonteCarlo:
         random_number = np.random.rand()
         if random_number > percentage_dropoff:
             # request has requested pickup time - draw random time
-            requested_pickup_time = request_arrival + timedelta(minutes=gamma.rvs(pickup_fit_shape, pickup_fit_loc, pickup_fit_scale))
+            requested_pickup_time = request_arrival + \
+                timedelta(minutes=gamma.rvs(pickup_fit_shape,
+                          pickup_fit_loc, pickup_fit_scale))
             print("Requested pickup time: ", requested_pickup_time)
 
             # if request arrival is after 17.45 or the requested pickup time is after 17.45, the request is ignored
@@ -72,7 +77,8 @@ class MonteCarlo:
 
             else:
                 # get random request
-                random_request = NewRequests(self.data_path).get_and_drop_random_request()
+                random_request = NewRequests(
+                    self.data_path).get_and_drop_random_request()
 
                 # update creation time to request disruption time
                 random_request['Request Creation Time'] = request_arrival
@@ -85,7 +91,9 @@ class MonteCarlo:
 
         else:
             # request has requested dropoff time - draw random time
-            requested_dropoff_time = request_arrival + timedelta(minutes=gamma.rvs(dropoff_fit_shape, dropoff_fit_loc, dropoff_fit_scale))
+            requested_dropoff_time = request_arrival + \
+                timedelta(minutes=gamma.rvs(dropoff_fit_shape,
+                          dropoff_fit_loc, dropoff_fit_scale))
 
             # if request arrival is after 17.45 or requested dropoff time is after 18.00, the request is ignored
             if request_arrival > datetime(request_arrival.year, request_arrival.month, request_arrival.day, 17, 45, 00)\
@@ -94,7 +102,8 @@ class MonteCarlo:
 
             else:
                 # get random request
-                random_request = NewRequests(self.data_path).get_and_drop_random_request()
+                random_request = NewRequests(
+                    self.data_path).get_and_drop_random_request()
 
                 # update creation time to request disruption time
                 random_request['Request Creation Time'] = request_arrival
@@ -104,20 +113,3 @@ class MonteCarlo:
                 random_request['Requested Dropoff Time'] = requested_dropoff_time
 
                 return 1, random_request
-
-def main():
-    simulator = None
-
-    try:
-        sim_clock = datetime.strptime("2021-05-10 16:00:00", "%Y-%m-%d %H:%M:%S")
-        sim_duration = timedelta(hours=2)
-        print("Start simulation")
-        simulator = MonteCarlo(sim_clock, sim_duration)
-        simulator.get_new_requests()
-
-    except Exception as e:
-        print("ERROR:", e)
-
-
-if __name__ == "__main__":
-    main()
