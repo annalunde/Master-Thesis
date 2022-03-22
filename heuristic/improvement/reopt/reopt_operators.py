@@ -6,18 +6,27 @@ import numpy.random as rnd
 from datetime import datetime
 import pandas as pd
 from datetime import timedelta
-
+import traceback
 from heuristic.construction.construction import ConstructionHeuristic
 from config.construction_config import *
 from heuristic.improvement.reopt.reopt_repair_generator import ReOptRepairGenerator
 
 
 class ReOptOperators:
+    '''
     def __init__(self, alns, sim_clock):
         self.destruction_degree = alns.destruction_degree
         self.constructor = alns.constructor
         self.T_ij = self.constructor.T_ij
         self.reopt_repair_generator = ReOptRepairGenerator(self.constructor)
+        self.sim_clock = sim_clock
+    '''
+
+    def __init__(self, destruction_degree, constructor, sim_clock):
+        self.destruction_degree = destruction_degree
+        self.constructor = constructor
+        self.reopt_repair_generator = ReOptRepairGenerator(self.constructor)
+        self.T_ij = self.constructor.T_ij
         self.sim_clock = sim_clock
 
     # Find number of requests to remove based on degree of destruction
@@ -557,7 +566,8 @@ class ReOptOperators:
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
             route_plan, new_objective, infeasible_set = self.reopt_repair_generator.generate_insertions(
-                route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=current_route_plan, index_removed=index_removal)
+                route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set,
+                initial_route_plan=current_route_plan, index_removed=index_removal, sim_clock=self.sim_clock)
 
             # update current objective
             current_objective = new_objective
@@ -704,37 +714,35 @@ class ReOptOperators:
 
         return possible_removals
 
-'''  
-    def __init__(self, destruction_degree, constructor, sim_clock):
-        self.destruction_degree = destruction_degree
-        self.constructor = constructor
-        self.T_ij = self.constructor.T_ij
-        self.sim_clock = sim_clock
 
 def main():
     constructor = None
 
     try:
         df = pd.read_csv(config("test_data_construction"))
-        constructor = ConstructionHeuristic(requests=df.head(20), vehicles=V)
+        constructor = ConstructionHeuristic(requests=df.head(40), vehicles=V)
         print("Constructing initial solution")
         initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
         sim_clock = datetime.strptime("2021-05-10 12:00:00", "%Y-%m-%d %H:%M:%S")
 
         operator = ReOptOperators(0.25, constructor, sim_clock)
 
-        destroyed_route_plan, removed_requests, index_removed_requests, destroyed = operator.related_removal(
+        destroyed_route_plan, removed_requests, index_removed_requests, destroyed = operator.random_removal(
             initial_route_plan, initial_infeasible_set)
 
-        destroyed_route_plan, removed_requests, index_removed_requests, destroyed = operator.related_removal(
-            destroyed_route_plan, removed_requests)
+        repaired_route_plan, repaired_objective, repaired_infeasible_set = operator.greedy_repair(destroyed_route_plan,
+            removed_requests, initial_infeasible_set, initial_route_plan, index_removed_requests)
+
+        print("fix")
+        time = 2
 
     except Exception as e:
         print("ERROR:", e)
         exception_type, exception_object, exception_traceback = sys.exc_info()
         filename = exception_traceback.tb_frame.f_code.co_filename
         line_number = exception_traceback.tb_lineno
-
+        full_traceback = traceback.format_exc()
+        print("FULL TRACEBACK: ", full_traceback)
         print("Exception type: ", exception_type)
         print("File name: ", filename)
         print("Line number: ", line_number)
@@ -742,5 +750,5 @@ def main():
 
 if __name__ == "__main__":
     main()
-'''
+
 

@@ -421,7 +421,7 @@ class InsertionGenerator:
                          in enumerate(vehicle_route) if node == n+0.5)
             pn, pickup_time, pd, pp, pw, _ = vehicle_route[p_idx]
             dn, dropoff_time, dd, dp, dw, _ = vehicle_route[d_idx]
-            total_time = (dropoff_time - pickup_time).seconds
+            total_time = (dropoff_time - pickup_time).seconds - timedelta(minutes=S).seconds
             max_time = self.heuristic.get_max_travel_time(
                 n-1, n-1 + self.heuristic.n)
             if total_time > max_time.total_seconds():
