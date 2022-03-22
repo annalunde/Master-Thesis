@@ -114,14 +114,14 @@ class NewRequestUpdater:
                     P_ij[n_j].add(n_i+1)
         return np.array(P_ij)
 
-    def greedy_insertion_new_request(self, current_route_plan, current_infeasible_set, new_request):
+    def greedy_insertion_new_request(self, current_route_plan, current_infeasible_set, new_request, sim_clock):
         rid = len(self.requests.index)
         route_plan = copy.deepcopy(current_route_plan)
         infeasible_set = copy.deepcopy(current_infeasible_set)
         request = new_request.iloc[0]
 
         route_plan, new_objective, infeasible_set = self.re_opt_repair_generator.generate_insertions(
-            route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=None, index_removed=None)
+            route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=None, index_removed=None, sim_clock=sim_clock)
 
         # update current objective
         self.current_objective = new_objective
@@ -252,40 +252,3 @@ class NewRequestUpdater:
 
     def get_max_travel_time(self, to_id, from_id):
         return timedelta(seconds=(1+F) * self.T_ij[to_id, from_id])
-
-
-def main():
-    constructor = None
-
-    try:
-        df = pd.read_csv(config("test_data_construction"))
-        constructor = ConstructionHeuristic(requests=df.head(20), vehicles=V)
-        print("Constructing initial solution")
-        initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
-
-        sim_clock = datetime.strptime(
-            "2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
-        simulator = Simulator(sim_clock)
-        disruption_type, disruption_time, disruption_info = simulator.get_disruption(initial_route_plan, config(
-            "data_processed_path"))
-
-        df = pd.read_csv(config("test_data_construction"))
-        constructor = NewRequestUpdater(
-            requests=df.head(20), vehicles=V, infeasible_set=[])
-
-        if disruption_type == 'request':
-            constructor.set_parameters(disruption_info)
-
-    except Exception as e:
-        print("ERROR:", e)
-        exception_type, exception_object, exception_traceback = sys.exc_info()
-        filename = exception_traceback.tb_frame.f_code.co_filename
-        line_number = exception_traceback.tb_lineno
-
-        print("Exception type: ", exception_type)
-        print("File name: ", filename)
-        print("Line number: ", line_number)
-
-
-if __name__ == "__main__":
-    main()
