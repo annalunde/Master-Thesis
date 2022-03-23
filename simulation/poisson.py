@@ -30,10 +30,7 @@ class Poisson:
             seconds = int(((timestamp-hours)*60-minutes)*60)
             date_time = datetime(sim_clock.year, sim_clock.month, sim_clock.day,
                                  hours, minutes, seconds)
-            disruption_timestamps.append((disruption_type, date_time))
-
-        # We plot the resulting inhomogeneous Poisson process with its
-        # intensity and its ticks over time
-        # plot_point_process(in_poi)
+            if date_time >= sim_clock:
+                disruption_timestamps.append((disruption_type, date_time))
 
         return disruption_timestamps

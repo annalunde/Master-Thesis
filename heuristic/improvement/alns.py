@@ -75,10 +75,6 @@ class ALNS:
             r_operator = self.repair_operators[repair]
             candidate, candidate_objective, candidate_infeasible_set = r_operator(
                 updated_route_plan, removed_requests, current_infeasible_set, current_route_plan, index_removed)
-            if current_infeasible_set:
-                print(
-                    "ERROR: You cannot serve all obligatory requests with current fleet.")
-                break
 
             r_count[repair] += 1
 
