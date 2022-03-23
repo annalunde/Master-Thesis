@@ -500,8 +500,10 @@ class ReOptRepairGenerator:
         for n in nodes_set:
             p_idx = next(i for i, (node, *_)
                          in enumerate(vehicle_route) if node == n)
-            d_idx = next(i for i, (node, *_)
-                         in enumerate(vehicle_route) if node == n+0.5)
+            d_idx = next((i for i, (node, *_)
+                         in enumerate(vehicle_route) if node == n+0.5), None)
+            if d_idx is None:
+                continue
             pn, pickup_time, pd, pp, pw, _ = vehicle_route[p_idx]
             dn, dropoff_time, dd, dp, dw, _ = vehicle_route[d_idx]
             total_time = (dropoff_time - pickup_time).seconds - \

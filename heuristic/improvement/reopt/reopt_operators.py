@@ -209,7 +209,7 @@ class ReOptOperators:
             # Find associated node - dropoff node
             associated_node = self.get_dropoff(initial_node)
 
-            nodes_to_remove = []
+            to_remove = []
 
         else:
             # Pick random node in route plan to remove and to compare other nodes to
@@ -331,7 +331,7 @@ class ReOptOperators:
             # Find associated node - dropoff node
             associated_node = self.get_dropoff(initial_node)
 
-            nodes_to_remove = []
+            to_remove = []
 
         else:
             # Pick random node in route plan to remove and to compare other nodes to
@@ -358,7 +358,7 @@ class ReOptOperators:
             destroy_associated_node = destroyed_route_plan[row_index][associated_node[6]]
 
             # List of nodes to remove
-            nodes_to_remove = [[node, row_index, destroy_node], [
+            to_remove = [[node, row_index, destroy_node], [
                 associated_node, row_index, destroy_associated_node]]
 
             # Remaining number of nodes to remove
@@ -377,7 +377,7 @@ class ReOptOperators:
                     destroyed_temp = destroyed_route_plan[row][temp[6]]
 
                     # Skip already added nodes
-                    if [temp, row, destroyed_temp] in nodes_to_remove:
+                    if [temp, row, destroyed_temp] in to_remove:
                         continue
 
                     # Find associated drop off/pickup node
@@ -402,14 +402,14 @@ class ReOptOperators:
                         nearest_associated_node = [
                             associated_temp, row, destroyed_associated_temp]
 
-            nodes_to_remove.append(nearest_node)
-            nodes_to_remove.append(nearest_associated_node)
+            to_remove.append(nearest_node)
+            to_remove.append(nearest_associated_node)
 
         # Remove nearest nodes from destroyed route plan and from possible_removals
-        for n in nodes_to_remove:
+        for n in to_remove:
             index_removed_requests.append(
                 (n[0][0], n[1], n[0][6]))
-        for n in nodes_to_remove:
+        for n in to_remove:
             possible_removals[n[1]].remove(n[0])
             destroyed_route_plan[n[1]].remove(n[2])
 
@@ -445,7 +445,7 @@ class ReOptOperators:
             # Find associated node - dropoff node
             associated_node = self.get_dropoff(initial_node)
 
-            nodes_to_remove = []
+            to_remove = []
 
         else:
             # Pick random node in route plan to remove and to compare other nodes to
@@ -472,7 +472,7 @@ class ReOptOperators:
             destroy_associated_node = destroyed_route_plan[row_index][associated_node[6]]
 
             # List of nodes to remove
-            nodes_to_remove = [[node, row_index, destroy_node], [
+            to_remove = [[node, row_index, destroy_node], [
                 associated_node, row_index, destroy_associated_node]]
 
             # Remaining number of nodes to remove
@@ -491,7 +491,7 @@ class ReOptOperators:
                     destroyed_temp = destroyed_route_plan[row][temp[6]]
 
                     # Skip already added nodes
-                    if [temp, row, destroyed_temp] in nodes_to_remove:
+                    if [temp, row, destroyed_temp] in to_remove:
                         continue
 
                     # Find associated drop off/pickup node
@@ -534,14 +534,14 @@ class ReOptOperators:
                         nearest_associated_node = [
                             associated_temp, row, destroyed_associated_temp]
 
-            nodes_to_remove.append(nearest_node)
-            nodes_to_remove.append(nearest_associated_node)
+            to_remove.append(nearest_node)
+            to_remove.append(nearest_associated_node)
 
         # Remove nearest nodes from destroyed route plan and from possible_removals
-        for n in nodes_to_remove:
+        for n in to_remove:
             index_removed_requests.append(
                 (n[0][0], n[1], n[0][6]))
-        for n in nodes_to_remove:
+        for n in to_remove:
             possible_removals[n[1]].remove(n[0])
             destroyed_route_plan[n[1]].remove(n[2])
 

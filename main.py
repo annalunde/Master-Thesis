@@ -77,8 +77,9 @@ def main():
                     "data_processed_path"))
                 first_iteration = False
 
-            print(disruption_type)
-
+            print("Disruption type", disruption_type)
+            print("Disruption time:", disruption_time)
+            print()
             # updates before heuristic
             disrupt = (False, None)
             if disruption_type == 'request':

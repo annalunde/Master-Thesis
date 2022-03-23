@@ -268,6 +268,47 @@ class InsertionGenerator:
                                             activated_checks=activated_checks, rid=rid, request=request)
 
                                         if not activated_checks:
+                                            # update forward
+                                            if push_forward_p:
+                                                temp_route_plan[
+                                                    introduced_vehicle], activated_checks = self.update_check_forward(
+                                                    vehicle_route=temp_route_plan[introduced_vehicle],
+                                                    start_idx=start_idx,
+                                                    push_forward=push_forward_p, activated_checks=activated_checks,
+                                                    rid=rid,
+                                                    request=request)
+
+                                            # update backward
+                                            if push_back_p:
+                                                temp_route_plan[
+                                                    introduced_vehicle], activated_checks = self.update_check_backward(
+                                                    vehicle_route=temp_route_plan[introduced_vehicle],
+                                                    start_idx=start_idx,
+                                                    push_back=push_back_p, activated_checks=activated_checks, rid=rid,
+                                                    request=request, introduced_vehicle=introduced_vehicle)
+
+                                            # update forward
+                                            if e_d_node:
+                                                if push_forward_d:
+                                                    temp_route_plan[
+                                                        introduced_vehicle], activated_checks = self.update_check_forward(
+                                                        vehicle_route=temp_route_plan[introduced_vehicle],
+                                                        start_idx=start_idx,
+                                                        push_forward=push_forward_d,
+                                                        activated_checks=activated_checks,
+                                                        rid=rid,
+                                                        request=request)
+
+                                            # update backward
+                                            if push_back_d:
+                                                temp_route_plan[
+                                                    introduced_vehicle], activated_checks = self.update_check_backward(
+                                                    vehicle_route=temp_route_plan[introduced_vehicle],
+                                                    start_idx=start_idx,
+                                                    push_back=push_back_d, activated_checks=activated_checks,
+                                                    rid=rid,
+                                                    request=request, introduced_vehicle=introduced_vehicle)
+
                                             # add pickup node
                                             pickup_id, vehicle_route = self.add_node(
                                                 vehicle_route=temp_route_plan[introduced_vehicle], request=request,

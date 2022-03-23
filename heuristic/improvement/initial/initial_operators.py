@@ -178,7 +178,7 @@ class Operators:
             # Find associated node - dropoff node
             associated_node = self.get_dropoff(initial_node)
 
-            nodes_to_remove = []
+            to_remove = []
 
         else:
             # Pick random node in route plan to remove and to compare other nodes to
@@ -286,7 +286,7 @@ class Operators:
             # Find associated node - dropoff node
             associated_node = self.get_dropoff(initial_node)
 
-            nodes_to_remove = []
+            to_remove = []
 
         else:
             # Pick random node in route plan to remove and to compare other nodes to
@@ -311,7 +311,7 @@ class Operators:
             associated_node = destroyed_route_plan[row_index][index]
 
             # List of nodes to remove
-            nodes_to_remove = [[node, row_index], [associated_node, row_index]]
+            to_remove = [[node, row_index], [associated_node, row_index]]
 
             # Remaining number of nodes to remove
             num_remove -= 1
@@ -328,7 +328,7 @@ class Operators:
                     temp = destroyed_route_plan[row][col]
 
                     # Skip already added nodes
-                    if [temp, row] in nodes_to_remove:
+                    if [temp, row] in to_remove:
                         continue
 
                     # Find associated drop off/pickup node
@@ -351,14 +351,14 @@ class Operators:
                         nearest_node = [temp, row]
                         nearest_associated_node = [associated_temp, row]
 
-            nodes_to_remove.append(nearest_node)
-            nodes_to_remove.append(nearest_associated_node)
+            to_remove.append(nearest_node)
+            to_remove.append(nearest_associated_node)
 
         # Remove nearest nodes from destroyed route plan
-        for n in nodes_to_remove:
+        for n in to_remove:
             index_removed_requests.append(
                 (n[0][0], n[1], destroyed_route_plan[n[1]].index(n[0])))
-        for n in nodes_to_remove:
+        for n in to_remove:
             destroyed_route_plan[n[1]].remove(n[0])
 
             # Add request id to removed_requests
@@ -386,7 +386,7 @@ class Operators:
             # Find associated node - dropoff node
             associated_node = self.get_dropoff(initial_node)
 
-            nodes_to_remove = []
+            to_remove = []
 
         else:
             # Pick random node in route plan to remove and to compare other nodes to
@@ -411,7 +411,7 @@ class Operators:
             associated_node = destroyed_route_plan[row_index][index]
 
             # List of nodes to remove
-            nodes_to_remove = [[node, row_index], [associated_node, row_index]]
+            to_remove = [[node, row_index], [associated_node, row_index]]
 
             # Remaining number of nodes to remove
             num_remove -= 1
@@ -428,7 +428,7 @@ class Operators:
                     temp = destroyed_route_plan[row][col]
 
                     # Skip already added nodes
-                    if [temp, row] in nodes_to_remove:
+                    if [temp, row] in to_remove:
                         continue
 
                     # Find associated drop off/pickup node
@@ -469,14 +469,14 @@ class Operators:
                         nearest_node = [temp, row]
                         nearest_associated_node = [associated_temp, row]
 
-            nodes_to_remove.append(nearest_node)
-            nodes_to_remove.append(nearest_associated_node)
+            to_remove.append(nearest_node)
+            to_remove.append(nearest_associated_node)
 
         # Remove nearest nodes from destroyed route plan
-        for n in nodes_to_remove:
+        for n in to_remove:
             index_removed_requests.append(
                 (n[0][0], n[1], destroyed_route_plan[n[1]].index(n[0])))
-        for n in nodes_to_remove:
+        for n in to_remove:
             destroyed_route_plan[n[1]].remove(n[0])
 
             # Add request id to removed_requests
