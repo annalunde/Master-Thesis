@@ -83,8 +83,7 @@ def main():
                 current_route_plan, current_objective, current_infeasible_set = new_request_updater.\
                     greedy_insertion_new_request(
                         current_route_plan, current_infeasible_set, disruption_info, disruption_time)
-                if len(current_infeasible_set) == 0:
-                    print("New request inserted")
+
             elif disruption_type == 'no disruption':
                 continue
             else:
