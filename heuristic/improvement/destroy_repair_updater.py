@@ -16,8 +16,11 @@ class Destroy_Repair_Updater:
         updated_solution = copy.deepcopy(route_plan)
         # (row, counter) --> sequences([(node,row,col),...])
         index_removed_requests = self.filter_indexes(index_removed_requests)
+        # remove rows where there is no deviation to remove unnecessary computations
+        improve_indexes = self.improve_indexes(
+            index_removed_requests, updated_solution)
 
-        for row, c in index_removed_requests.keys():
+        for row, c in improve_indexes.keys():
             new_dict = {}
             vehicle_route = updated_solution[row]
             first_element = index_removed_requests[row, c][0]
@@ -203,3 +206,9 @@ class Destroy_Repair_Updater:
                 bundles[(row, c)] = seq
                 c += 1
         return bundles
+
+    def improve_indexes(self, index_removed_requests, route_plan):
+        # rows with not only timedelta(0) in deviation
+        not_zero_dev_rows = [idx for idx, row in enumerate(route_plan) if not all(
+            r[2] == timedelta(0) or r[2] == None for r in row)]
+        return dict(filter(lambda x: x[0][0] in not_zero_dev_rows, index_removed_requests.items()))
