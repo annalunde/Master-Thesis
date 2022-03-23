@@ -268,6 +268,39 @@ class InsertionGenerator:
                                             activated_checks=activated_checks, rid=rid, request=request)
 
                                         if not activated_checks:
+                                            # update forward
+                                            if push_forward_p:
+                                                temp_route_plan[introduced_vehicle], activated_checks = self.update_check_forward(
+                                                    vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx,
+                                                    push_forward=push_forward_p, activated_checks=activated_checks,
+                                                    rid=rid,
+                                                    request=request)
+
+                                            # update backward
+                                            if push_back_p:
+                                                temp_route_plan[introduced_vehicle], activated_checks = self.update_check_backward(
+                                                    vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx,
+                                                    push_back=push_back_p, activated_checks=activated_checks, rid=rid,
+                                                    request=request, introduced_vehicle=introduced_vehicle)
+
+                                            # update forward
+                                            if e_d_node:
+                                                if push_forward_d:
+                                                    temp_route_plan[introduced_vehicle], activated_checks = self.update_check_forward(
+                                                        vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx,
+                                                        push_forward=push_forward_d,
+                                                        activated_checks=activated_checks,
+                                                        rid=rid,
+                                                        request=request)
+
+                                            # update backward
+                                            if push_back_d:
+                                                temp_route_plan[introduced_vehicle], activated_checks = self.update_check_backward(
+                                                    vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx,
+                                                    push_back=push_back_d, activated_checks=activated_checks,
+                                                    rid=rid,
+                                                    request=request, introduced_vehicle=introduced_vehicle)
+
                                             # add pickup node
                                             pickup_id, vehicle_route = self.add_node(
                                                 vehicle_route=temp_route_plan[introduced_vehicle], request=request,
@@ -421,7 +454,8 @@ class InsertionGenerator:
                          in enumerate(vehicle_route) if node == n+0.5)
             pn, pickup_time, pd, pp, pw, _ = vehicle_route[p_idx]
             dn, dropoff_time, dd, dp, dw, _ = vehicle_route[d_idx]
-            total_time = (dropoff_time - pickup_time).seconds - timedelta(minutes=S).seconds
+            total_time = (dropoff_time - pickup_time).seconds - \
+                timedelta(minutes=S).seconds
             max_time = self.heuristic.get_max_travel_time(
                 n-1, n-1 + self.heuristic.n)
             if total_time > max_time.total_seconds():
