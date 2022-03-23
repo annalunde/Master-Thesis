@@ -627,38 +627,3 @@ class Operators:
 
         node = (d_rid, time)
         return node
-
-
-'''
-    def __init__(self, destruction_degree, constructor):
-        self.destruction_degree = destruction_degree
-        self.constructor = constructor
-        self.T_ij = self.constructor.T_ij
-        
-def main():
-    constructor = None
-
-    try:
-        df = pd.read_csv(config("test_data_construction"))
-        constructor = ConstructionHeuristic(requests=df.head(20), vehicles=V)
-        print("Constructing initial solution")
-        initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
-        operator = Operators(0.25, constructor)
-        destroyed_route_plan, removed_requests, index_removed_requests = operator.worst_deviation_removal(
-            initial_route_plan, initial_infeasible_set)
-        time = 2
-
-    except Exception as e:
-        print("ERROR:", e)
-        exception_type, exception_object, exception_traceback = sys.exc_info()
-        filename = exception_traceback.tb_frame.f_code.co_filename
-        line_number = exception_traceback.tb_lineno
-
-        print("Exception type: ", exception_type)
-        print("File name: ", filename)
-        print("Line number: ", line_number)
-
-
-if __name__ == "__main__":
-    main()
-'''

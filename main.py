@@ -9,7 +9,7 @@ import traceback
 from heuristic.construction.construction import ConstructionHeuristic
 from config.construction_config import *
 from heuristic.improvement.alns import ALNS
-from config.initial_improvement_config import *
+from config.main_config import *
 from heuristic.improvement.initial.initial_operators import Operators
 from heuristic.improvement.reopt.reopt_operators import ReOptOperators
 from heuristic.improvement.simulated_annealing import SimulatedAnnealing
@@ -25,10 +25,11 @@ def main():
     try:
         # CONSTRUCTION OF INITIAL SOLUTION
         df = pd.read_csv(config("test_data_construction"))
-        constructor = ConstructionHeuristic(requests=df.head(20), vehicles=V)
+        constructor = ConstructionHeuristic(requests=df.head(R), vehicles=V)
         print("Constructing initial solution")
         initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
-        print("Initial objective: ", initial_objective)
+        constructor.print_new_objective(
+            initial_route_plan, initial_infeasible_set)
 
         # IMPROVEMENT OF INITIAL SOLUTION
         random_state = rnd.RandomState()
@@ -46,12 +47,7 @@ def main():
         # Run ALNS
         current_route_plan, current_objective, current_infeasible_set = alns.iterate(
             iterations, None, None, None)
-        # print(current_route_plan)
-        print("Objective", current_objective)
-        print("Num vehicles:", len(current_route_plan))
-        print(current_infeasible_set)
-        constructor.print_new_objective(
-            initial_route_plan, initial_infeasible_set)
+
         constructor.print_new_objective(
             current_route_plan, current_infeasible_set)
 
@@ -61,7 +57,7 @@ def main():
             "2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
         simulator = Simulator(sim_clock)
         new_request_updater = NewRequestUpdater(
-            df.head(20), V, initial_infeasible_set)
+            df.head(R), V, initial_infeasible_set)
         disruption_updater = DisruptionUpdater(new_request_updater)
         first_iteration = True
 

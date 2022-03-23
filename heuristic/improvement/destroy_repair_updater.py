@@ -135,12 +135,16 @@ class Destroy_Repair_Updater:
             if d is not None and push_backward == timedelta(0):
                 break
 
+            if disruption_time:
+                if t - push_backward <= disruption_time:
+                    push_backward = t-disruption_time
+
             t = t - \
                 push_backward if d > timedelta(
-                    0) and t - push_backward > disruption_time else t
+                    0) else t
             d = d - \
                 push_backward if d > timedelta(
-                    0) and t - push_backward > disruption_time else d
+                    0) else d
             vehicle_route[idx] = (n, t, d, p, w, r)
             idx += 1
 
@@ -166,16 +170,17 @@ class Destroy_Repair_Updater:
             if push_forward == timedelta(0):
                 break
 
-            if t + push_forward <= disruption_time or t <= disruption_time:
-                break
+            if disruption_time:
+                if t + push_forward <= disruption_time or t <= disruption_time:
+                    break
 
             if d is not None:
                 t = t + \
                     push_forward if d < timedelta(
-                        0) and t + push_forward > disruption_time else t
+                        0) else t
                 d = d + \
                     push_forward if d < timedelta(
-                        0) and t + push_forward > disruption_time else d
+                        0) else d
                 vehicle_route[idx] = (n, t, d, p, w, r)
             else:
                 t = t + push_forward
