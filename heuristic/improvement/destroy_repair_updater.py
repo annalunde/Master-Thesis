@@ -115,7 +115,7 @@ class Destroy_Repair_Updater:
 
         return updated_solution
 
-    def update_backward(self, vehicle_route, start_idx, push_backward, activated_checks, rid, request, introduced_vehicle, disruption_time):
+    def update_backward(self, vehicle_route, start_idx, push_backward, disruption_time):
         idx = start_idx
         for n, t, d, p, w, r in vehicle_route[start_idx:]:
             # since updating happens at start_idx + 1, there is no need to check for depot
