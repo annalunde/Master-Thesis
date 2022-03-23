@@ -122,7 +122,7 @@ class NewRequestUpdater:
 
         route_plan, new_objective, infeasible_set = self.re_opt_repair_generator.generate_insertions(
             route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=None,
-            index_removed=None, sim_clock=sim_clock)
+            index_removed=None, sim_clock=sim_clock, objectives=False)
 
         # update current objective
         self.current_objective = new_objective
@@ -136,8 +136,7 @@ class NewRequestUpdater:
         for vehicle_route in new_routeplan:
             diff = (pd.to_datetime(
                 vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
-            if diff < 0:
-                print("oh no")
+
             total_travel_time += timedelta(minutes=diff)
             for n, t, d, p, w, _ in vehicle_route:
                 if d is not None:

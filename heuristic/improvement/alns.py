@@ -100,9 +100,6 @@ class ALNS:
                     (self.reaction_factor *
                      weights[weight_score]/r_count[repair])
 
-        print("D Weights", d_weights)
-        print("R Weights", r_weights)
-
         return best, best_objective, best_infeasible_set
 
     def set_operators(self, operators):
@@ -115,7 +112,8 @@ class ALNS:
 
         # Add repair operators
         self.add_repair_operator(operators.greedy_repair)
-        # alns.add_repair_operator(operators.regret_repair)
+        self.add_repair_operator(operators.regret_2_repair)
+        # self.add_repair_operator(operators.regret_3_repair)
 
     # Add operator to the heuristic instance
 

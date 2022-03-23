@@ -20,7 +20,7 @@ class ReOptRepairGenerator:
             self.heuristic.introduced_vehicles)
         self.vehicles = copy.deepcopy(self.heuristic.vehicles)
 
-    def generate_insertions(self, route_plan, request, rid, infeasible_set, initial_route_plan, index_removed, sim_clock):
+    def generate_insertions(self, route_plan, request, rid, infeasible_set, initial_route_plan, index_removed, sim_clock, objectives):
         possible_insertions = {}  # dict: delta objective --> route plan
         self.introduced_vehicles = set([i for i in range(len(route_plan))])
         self.vehicles = [i for i in range(len(route_plan), V)]
@@ -406,6 +406,9 @@ class ReOptRepairGenerator:
             else:
                 if (rid, request) not in infeasible_set:
                     infeasible_set.append((rid, request))
+
+        if objectives:
+            return sorted(possible_insertions.keys())[0] if len(possible_insertions) else timedelta(minutes=gamma), sorted(possible_insertions.keys())[1] if len(possible_insertions) > 1 else timedelta(minutes=gamma)
 
         return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else timedelta(0), infeasible_set
 
