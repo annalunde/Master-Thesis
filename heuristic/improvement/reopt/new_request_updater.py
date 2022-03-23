@@ -114,14 +114,15 @@ class NewRequestUpdater:
                     P_ij[n_j].add(n_i+1)
         return np.array(P_ij)
 
-    def greedy_insertion_new_request(self, current_route_plan, current_infeasible_set, new_request):
+    def greedy_insertion_new_request(self, current_route_plan, current_infeasible_set, new_request, sim_clock):
         rid = len(self.requests.index)
         route_plan = copy.deepcopy(current_route_plan)
         infeasible_set = copy.deepcopy(current_infeasible_set)
         request = new_request.iloc[0]
 
         route_plan, new_objective, infeasible_set = self.re_opt_repair_generator.generate_insertions(
-            route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=None, index_removed=None)
+            route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=None,
+            index_removed=None, sim_clock=sim_clock)
 
         # update current objective
         self.current_objective = new_objective
@@ -135,7 +136,8 @@ class NewRequestUpdater:
         for vehicle_route in new_routeplan:
             diff = (pd.to_datetime(
                 vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
-            print("diff", diff)
+            if diff < 0:
+                print("oh no")
             total_travel_time += timedelta(minutes=diff)
             for n, t, d, p, w, _ in vehicle_route:
                 if d is not None:

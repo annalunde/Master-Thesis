@@ -315,6 +315,49 @@ class ReOptRepairGenerator:
                                             activated_checks=activated_checks, rid=rid, request=request)
 
                                         if not activated_checks:
+                                            # update forward
+                                            if push_forward_p:
+                                                temp_route_plan[
+                                                    introduced_vehicle], activated_checks = self.update_check_forward(
+                                                    vehicle_route=temp_route_plan[introduced_vehicle],
+                                                    start_idx=start_idx,
+                                                    push_forward=push_forward_p, activated_checks=activated_checks,
+                                                    rid=rid,
+                                                    request=request)
+
+                                            # update backward
+                                            if push_back_p:
+                                                temp_route_plan[
+                                                    introduced_vehicle], activated_checks = self.update_check_backward(
+                                                    vehicle_route=temp_route_plan[introduced_vehicle],
+                                                    start_idx=start_idx,
+                                                    push_back=push_back_p, activated_checks=activated_checks, rid=rid,
+                                                    request=request, introduced_vehicle=introduced_vehicle,
+                                                    sim_clock=sim_clock)
+
+                                            # update forward
+                                            if e_d_node:
+                                                if push_forward_d:
+                                                    temp_route_plan[
+                                                        introduced_vehicle], activated_checks = self.update_check_forward(
+                                                        vehicle_route=temp_route_plan[introduced_vehicle],
+                                                        start_idx=start_idx,
+                                                        push_forward=push_forward_d,
+                                                        activated_checks=activated_checks,
+                                                        rid=rid,
+                                                        request=request)
+
+                                            # update backward
+                                            if push_back_d:
+                                                temp_route_plan[
+                                                    introduced_vehicle], activated_checks = self.update_check_backward(
+                                                    vehicle_route=temp_route_plan[introduced_vehicle],
+                                                    start_idx=start_idx,
+                                                    push_back=push_back_d, activated_checks=activated_checks,
+                                                    rid=rid,
+                                                    request=request, introduced_vehicle=introduced_vehicle,
+                                                    sim_clock=sim_clock)
+
                                             # add pickup node
                                             pickup_id, vehicle_route = self.add_node(
                                                 vehicle_route=temp_route_plan[introduced_vehicle], request=request,
@@ -510,7 +553,7 @@ class ReOptRepairGenerator:
 
     def add_initial_nodes(self, request, introduced_vehicle, rid, vehicle_route, depot):
         if not depot:
-            service_time = request["Requested Pickup Time"] - self.heuristic.travel_time(
+            service_time = request["Requested Pickup Time"] + timedelta(minutes=S) - self.heuristic.travel_time(
                 rid-1, 2*self.heuristic.n + introduced_vehicle, True)
             vehicle_route.append(
                 (0, service_time, None, 0, 0, None))
@@ -525,7 +568,7 @@ class ReOptRepairGenerator:
                     request["Requested Pickup Time"]+travel_time+2 * timedelta(minutes=S), timedelta(0), 0, 0, request)
             )
         else:
-            service_time = request["Requested Pickup Time"] - self.heuristic.travel_time(
+            service_time = request["Requested Pickup Time"] + timedelta(minutes=S) - self.heuristic.travel_time(
                 rid-1, 2*self.heuristic.n + introduced_vehicle, True)
             vehicle_route[0] = (0, service_time, None, 0, 0, None)
             vehicle_route.insert(1,
