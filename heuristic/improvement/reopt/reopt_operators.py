@@ -628,9 +628,9 @@ class ReOptOperators:
             index_removal = [
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
-            first_objective, third_objective = self.repair_generator.generate_insertions(
+            first_objective, third_objective = self.reopt_repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set,
-                initial_route_plan=current_route_plan, index_removed=index_removal, objectives=3)
+                initial_route_plan=current_route_plan, index_removed=index_removal, sim_clock=self.sim_clock, objectives=3)
 
             regret_values.append(
                 (rid, request, third_objective-first_objective))
@@ -644,9 +644,9 @@ class ReOptOperators:
             index_removal = [
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
-            route_plan, new_objective, infeasible_set = self.repair_generator.generate_insertions(
+            route_plan, new_objective, infeasible_set = self.reopt_repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set,
-                initial_route_plan=current_route_plan, index_removed=index_removal, objectives=0)
+                initial_route_plan=current_route_plan, index_removed=index_removal, sim_clock=self.sim_clock, objectives=0)
 
             # update current objective
             current_objective = new_objective

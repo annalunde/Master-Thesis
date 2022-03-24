@@ -113,7 +113,7 @@ class ALNS:
         # Add repair operators
         self.add_repair_operator(operators.greedy_repair)
         self.add_repair_operator(operators.regret_2_repair)
-        # self.add_repair_operator(operators.regret_3_repair)
+        self.add_repair_operator(operators.regret_3_repair)
 
     # Add operator to the heuristic instance
 
