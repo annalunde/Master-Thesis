@@ -8,7 +8,6 @@ class NewRequests:
 
     def get_and_drop_random_request(self):
         df = pd.read_csv(self.data_path, index_col=0)
-        df = df[df['Request Status'].isin(["Completed"])]
         df['Request Creation Time'] = pd.to_datetime(df['Request Creation Time'],
                                                      format="%Y-%m-%d %H:%M:%S")
         df['Requested Pickup Time'] = pd.to_datetime(df['Requested Pickup Time'],

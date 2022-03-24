@@ -4,14 +4,14 @@ import numpy as np
 S = 2
 
 # ARRIVAL RATES FOR DISRUPTION TYPES
-arrival_rate_request = np.array([14.728110599078342, 8.193548387096774, 6.2949308755760365, 5.557603686635945,
-                                  5.428571428571429, 4.331797235023042, 2.824884792626728, 0.2350230414746544,
-                                  0.0001], dtype=float)
+arrival_rate_request = np.array([20.89189189189189, 13.378378378378379, 10.873873873873874, 8.977477477477477,
+                                 7.36936936936937, 5.387387387387387, 3.7972972972972974, 0.6621621621621622,
+                                 0.02252252252252252], dtype=float)
 
-# med delay = 10 minutes
-arrival_rate_delay = np.array([2.944186046511628, 2.6, 2.469767441860465, 3.167441860465116,
-                               3.269767441860465, 3.609302325581395, 2.469767441860465, 1.1162790697674418,
-                               0.06976744186046512], dtype=float)
+# med delay = 0.5 minutes
+arrival_rate_delay = np.array([15.462962962962964, 15.027777777777779, 14.083333333333334, 13.893518518518519,
+                               15.37962962962963, 13.98611111111111, 8.63425925925926, 4.837962962962963,
+                               0.08796296296296297], dtype=float)
 
 arrival_rate_cancel = np.array([3.0462962962962963, 2.1805555555555554, 1.9490740740740742, 1.75,
                                 1.3981481481481481, 0.7824074074074074, 0.33796296296296297, 0.06944444444444445,
@@ -26,20 +26,20 @@ start_poisson = 0
 end_poisson = 9
 
 # percentage of requests with requested pickup time
-percentage_dropoff = 1.549186676994578/100
+percentage_dropoff = 1.7523953605648008/100
 
 # PARAMETERS FOR GAMMA DISTRIBUTION FOR REQUESTED PICKUP TIME
-pickup_fit_shape = 1.155987842566804
-pickup_fit_loc = 0.18057194538803223
-pickup_fit_scale = 99.79981438192749
+pickup_fit_shape = 1.0099021053517845
+pickup_fit_loc = 0.18326168773040002
+pickup_fit_scale = 107.89424220559195
 
 # PARAMETERS FOR GAMMA DISTRIBUTION FOR REQUESTED DROPOFF TIME
-dropoff_fit_shape = 2.542159349839424
-dropoff_fit_loc = 19.77706537447331
-dropoff_fit_scale = 62.8899508584643
+dropoff_fit_shape = 4.448374147659267
+dropoff_fit_loc = -47.161377830375486
+dropoff_fit_scale = 47.59166885428937
 
 # PARAMETERS FOR GAMMA DISTRIBUTION FOR DELAYS
-delay_fit_shape = 0.9226135117635452
-delay_fit_loc = 9.999999999999998
-delay_fit_scale = 7.218157066378124
+delay_fit_shape = 0.9711662373816592
+delay_fit_loc = 0.49999999999999994
+delay_fit_scale = 6.502362718686129
 
