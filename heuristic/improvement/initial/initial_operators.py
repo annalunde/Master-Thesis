@@ -501,7 +501,7 @@ class Operators:
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
             route_plan, new_objective, infeasible_set = self.repair_generator.generate_insertions(
-                route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=current_route_plan, index_removed=index_removal, objectives=False)
+                route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=current_route_plan, index_removed=index_removal, objectives=0)
 
             # update current objective
             current_objective = new_objective
@@ -524,7 +524,7 @@ class Operators:
 
             first_objective, second_objective = self.repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set,
-                initial_route_plan=current_route_plan, index_removed=index_removal, objectives=True)
+                initial_route_plan=current_route_plan, index_removed=index_removal, objectives=2)
 
             regret_values.append(
                 (rid, request, second_objective-first_objective))
@@ -540,7 +540,46 @@ class Operators:
 
             route_plan, new_objective, infeasible_set = self.repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set,
-                initial_route_plan=current_route_plan, index_removed=index_removal, objectives=False)
+                initial_route_plan=current_route_plan, index_removed=index_removal, objectives=0)
+
+            # update current objective
+            current_objective = new_objective
+
+        return route_plan, current_objective, infeasible_set
+
+    def regret_3_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set, current_route_plan, index_removed_requests):
+        unassigned_requests = removed_requests.copy() + initial_infeasible_set.copy()
+        unassigned_requests.sort(key=lambda x: x[0])
+        route_plan = copy.deepcopy(destroyed_route_plan)
+        current_objective = timedelta(0)
+        infeasible_set = []
+        unassigned_requests = pd.DataFrame(unassigned_requests)
+        regret_values = []
+        for i in range(unassigned_requests.shape[0]):
+            rid = unassigned_requests.iloc[i][0]
+            request = unassigned_requests.iloc[i][1]
+            index_removal = [
+                i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
+
+            first_objective, third_objective = self.repair_generator.generate_insertions(
+                route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set,
+                initial_route_plan=current_route_plan, index_removed=index_removal, objectives=3)
+
+            regret_values.append(
+                (rid, request, third_objective-first_objective))
+
+        regret_values.sort(key=lambda x: x[2])
+
+        # iterate through requests in order of regret k value
+        for i in reversed(regret_values):
+            rid = i[0]
+            request = i[1]
+            index_removal = [
+                i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
+
+            route_plan, new_objective, infeasible_set = self.repair_generator.generate_insertions(
+                route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set,
+                initial_route_plan=current_route_plan, index_removed=index_removal, objectives=0)
 
             # update current objective
             current_objective = new_objective
