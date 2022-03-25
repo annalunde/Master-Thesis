@@ -13,6 +13,8 @@ U_D = timedelta(minutes=15)
 L_D = timedelta(minutes=-15)
 P_S = timedelta(minutes=7.5)  # penalized soft time windows
 
+# Rush hour factor
+R_F = 1.5
 
 # Estimated time to serve a node
 S_P = 2  # standard seats

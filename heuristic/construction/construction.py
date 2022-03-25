@@ -174,6 +174,16 @@ class ConstructionHeuristic:
                               ).total_seconds()
                 )
 
+        # rush hour modelling:
+        if not (df.iloc[0]["Requested Pickup Time"].weekday() == 5):
+            for k in range(self.n):
+                for l in range(self.n):
+                    if df.iloc[k]["Requested Pickup Time"].hour >= 15 and df.iloc[k]["Requested Pickup Time"].hour < 17 and df.iloc[l]["Requested Pickup Time"].hour >= 15 and df.iloc[l]["Requested Pickup Time"].hour < 17:
+                        T_ij[k][l] = T_ij[k][l]*R_F
+                        T_ij[k+self.n][l] = T_ij[k+self.n][l]*R_F
+                        T_ij[k][l+self.n] = T_ij[k][l+self.n]*R_F
+                        T_ij[k+self.n][l+self.n] = T_ij[k+self.n][l+self.n]*R_F
+
         return T_ij
 
     def requested_time_matrix(self):
