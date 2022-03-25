@@ -190,6 +190,10 @@ class ReOptRepairGenerator:
                                 depot=(s_p_node == 0), upper=False) - s_p_d if s_p_d is not None else self.get_bound_dev(depot=(s_p_node == 0), upper=False)
                             upper_dev = self.get_bound_dev(
                                 depot=False, upper=True) - e_p_d
+                            lower_dev = timedelta(
+                                0) if s_p_node in still_delayed_nodes else lower_dev
+                            upper_dev = timedelta(
+                                0) if e_p_node in still_delayed_nodes else upper_dev
                             if s_p_time + lower_dev + s_p_travel_time <= pickup_time and pickup_time + p_e_travel_time <= e_p_time + upper_dev:
                                 push_back_p = s_p_time + s_p_travel_time - pickup_time if pickup_time - s_p_time - s_p_travel_time < timedelta(
                                     0) else 0
@@ -260,6 +264,12 @@ class ReOptRepairGenerator:
                                     depot=False, upper=True) - e_p_d
                                 lower_dev_d = self.get_bound_dev(
                                     depot=(s_d_node == 0), upper=False) - s_d_d if s_d_d is not None else self.get_bound_dev(depot=(s_d_node == 0), upper=False)
+                                upper_dev_p = timedelta(
+                                    0) if e_p_node in still_delayed_nodes else upper_dev_p
+                                lower_dev_d = timedelta(
+                                    0) if s_d_node in still_delayed_nodes else lower_dev_d
+                                lower_dev_p = timedelta(
+                                    0) if s_p_node in still_delayed_nodes else lower_dev_p
 
                                 if s_p_time + lower_dev_p + s_p_travel_time <= pickup_time and pickup_time + p_e_travel_time <= e_p_time + upper_dev_p and s_d_time + lower_dev_d + s_d_travel_time <= dropoff_time:
                                     push_back_d = s_d_time + s_d_travel_time - dropoff_time if \
