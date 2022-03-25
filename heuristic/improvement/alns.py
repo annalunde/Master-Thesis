@@ -9,7 +9,8 @@ from config.initial_improvement_config import *
 
 
 class ALNS:
-    def __init__(self, weights, reaction_factor, current_route_plan, current_objective, initial_infeasible_set, criterion, destruction_degree, constructor, rnd_state=rnd.RandomState()):
+    def __init__(self, weights, reaction_factor, current_route_plan, current_objective, initial_infeasible_set,
+                 criterion, destruction_degree, constructor, num_update, rnd_state=rnd.RandomState()):
         # Reaction_factor (r) is a parameter that controls how fast weights adjust.
         # Weights is array of four elements, index 0 highest, 3 lowest
         self.destroy_operators = []
@@ -23,6 +24,7 @@ class ALNS:
         self.objective = current_objective
         self.criterion = criterion
         self.constructor = constructor
+        self.num_update = num_update
         self.destroy_repair_updater = Destroy_Repair_Updater(constructor)
 
     # Run ALNS algorithm
@@ -38,6 +40,8 @@ class ALNS:
 
         d_weights = np.ones(len(self.destroy_operators), dtype=np.float16)
         r_weights = np.ones(len(self.repair_operators), dtype=np.float16)
+        d_scores = np.ones(len(self.destroy_operators), dtype=np.float16)
+        r_scores = np.ones(len(self.repair_operators), dtype=np.float16)
         d_count = np.zeros(len(self.destroy_operators), dtype=np.float16)
         r_count = np.zeros(len(self.repair_operators), dtype=np.float16)
 
@@ -79,7 +83,8 @@ class ALNS:
             # Fix solution
             r_operator = self.repair_operators[repair]
             candidate, candidate_objective, candidate_infeasible_set = r_operator(
-                updated_route_plan, removed_requests, current_infeasible_set, current_route_plan, index_removed, delayed, still_delayed_nodes)
+                updated_route_plan, removed_requests, current_infeasible_set, current_route_plan, index_removed,
+                delayed, still_delayed_nodes)
 
             r_count[repair] += 1
 
@@ -95,15 +100,27 @@ class ALNS:
                 found_solutions[hash(str(current_route_plan))] = 1
 
             if not already_found:
-                # Update weights
-                d_weights[destroy] = d_weights[destroy] * \
-                    (1 - self.reaction_factor) + \
-                    (self.reaction_factor *
-                     weights[weight_score]/d_count[destroy])
-                r_weights[repair] = r_weights[repair] * \
-                    (1 - self.reaction_factor) + \
-                    (self.reaction_factor *
-                     weights[weight_score]/r_count[repair])
+                # Update scores
+                d_scores[destroy] += weight_score
+                r_scores[repair] += weight_score
+
+            # After a certain number of iterations, update weight
+            if (i+1) % self.num_update == 0:
+                # Update weights with scores
+                for destroy in range(len(d_weights)):
+                    d_weights[destroy] = d_weights[destroy] * \
+                                         (1 - self.reaction_factor) + \
+                                         (self.reaction_factor *
+                                          d_scores[destroy] / d_count[destroy])
+                for repair in range(len(r_weights)):
+                    r_weights[repair] = r_weights[repair] * \
+                                        (1 - self.reaction_factor) + \
+                                        (self.reaction_factor *
+                                         r_scores[repair] / r_count[repair])
+
+                # Reset scores
+                d_scores = np.ones(len(self.destroy_operators), dtype=np.float16)
+                r_scores = np.ones(len(self.repair_operators), dtype=np.float16)
 
         return best, best_objective, best_infeasible_set, still_delayed_nodes
 

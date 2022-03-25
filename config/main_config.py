@@ -7,6 +7,8 @@ weights = [3, 2, 1, 0.5]
 
 iterations = 10
 
+num_update = 100
+
 destruction_degree = 0.5
 
 # Number of requests
