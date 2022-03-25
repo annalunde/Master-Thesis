@@ -68,10 +68,11 @@ class RepairGenerator:
                         activated_checks = False  # will be set to True if there is a test that fails
                         temp_route_plan = copy.deepcopy(route_plan)
 
-                        pickup_time = request["Requested Pickup Time"] + timedelta(minutes=S) if i == 0 else initial_route_plan[
+                        s = S_W if request["Wheelchair"] else S_P
+                        pickup_time = request["Requested Pickup Time"] + timedelta(minutes=s) if i == 0 else initial_route_plan[
                             pickup_removal[1]][pickup_removal[2]][1]
                         dropoff_time = request["Requested Pickup Time"] + self.heuristic.travel_time(
-                            rid-1, self.heuristic.n + rid-1, True) + 2*timedelta(minutes=S)if i == 0 else initial_route_plan[dropoff_removal[1]][dropoff_removal[2]][1]
+                            rid-1, self.heuristic.n + rid-1, True) + 2*timedelta(minutes=s)if i == 0 else initial_route_plan[dropoff_removal[1]][dropoff_removal[2]][1]
 
                         start_idx = 0
                         vehicle_route = temp_route_plan[introduced_vehicle]
@@ -481,8 +482,9 @@ class RepairGenerator:
                          in enumerate(vehicle_route) if node == n+0.5)
             pn, pickup_time, pd, pp, pw, _ = vehicle_route[p_idx]
             dn, dropoff_time, dd, dp, dw, _ = vehicle_route[d_idx]
+            s = S_W if pw else S_P
             total_time = (dropoff_time - pickup_time).seconds - \
-                timedelta(minutes=S).seconds
+                timedelta(minutes=s).seconds
             max_time = self.heuristic.get_max_travel_time(
                 n-1, n-1 + self.heuristic.n)
             if total_time > max_time.total_seconds():
@@ -530,34 +532,35 @@ class RepairGenerator:
 
     def add_initial_nodes(self, request, introduced_vehicle, rid, vehicle_route, depot):
         vehicle_route = copy.deepcopy(vehicle_route)
+        s = S_W if request["Wheelchair"] else S_P
         if not depot:
-            service_time = request["Requested Pickup Time"] + timedelta(minutes=S) - self.heuristic.travel_time(
+            service_time = request["Requested Pickup Time"] + timedelta(minutes=s) - self.heuristic.travel_time(
                 rid-1, 2*self.heuristic.n + introduced_vehicle, True)
             vehicle_route.append(
                 (0, service_time, None, 0, 0, None))
             vehicle_route.append(
                 (rid,
-                    request["Requested Pickup Time"] + timedelta(minutes=S), timedelta(0), request["Number of Passengers"], request["Wheelchair"], request)
+                    request["Requested Pickup Time"] + timedelta(minutes=s), timedelta(0), request["Number of Passengers"], request["Wheelchair"], request)
             )
             travel_time = self.heuristic.travel_time(
                 rid-1, self.heuristic.n + rid - 1, True)
             vehicle_route.append(
                 (rid + 0.5,
-                    request["Requested Pickup Time"]+travel_time+2 * timedelta(minutes=S), timedelta(0), 0, 0, request)
+                    request["Requested Pickup Time"]+travel_time+2 * timedelta(minutes=s), timedelta(0), 0, 0, request)
             )
         else:
-            service_time = request["Requested Pickup Time"] + timedelta(minutes=S) - self.heuristic.travel_time(
+            service_time = request["Requested Pickup Time"] + timedelta(minutes=s) - self.heuristic.travel_time(
                 rid-1, 2*self.heuristic.n + introduced_vehicle, True)
             vehicle_route[0] = (0, service_time, None, 0, 0, None)
             vehicle_route.insert(1,
                                  (rid,
-                                  request["Requested Pickup Time"] + timedelta(minutes=S), timedelta(0), request["Number of Passengers"], request["Wheelchair"], request)
+                                  request["Requested Pickup Time"] + timedelta(minutes=s), timedelta(0), request["Number of Passengers"], request["Wheelchair"], request)
                                  )
             travel_time = self.heuristic.travel_time(
                 rid-1, self.heuristic.n + rid - 1, True)
             vehicle_route.insert(2,
                                  (rid + 0.5,
-                                  request["Requested Pickup Time"]+travel_time+2 * timedelta(minutes=S), timedelta(0), 0, 0, request)
+                                  request["Requested Pickup Time"]+travel_time+2 * timedelta(minutes=s), timedelta(0), 0, 0, request)
                                  )
 
         return vehicle_route

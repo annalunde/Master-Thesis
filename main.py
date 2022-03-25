@@ -18,11 +18,11 @@ from heuristic.improvement.reopt.disruption_updater import DisruptionUpdater
 from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
 
 
-def main()
- constructor = None
-  simulator = None
+def main():
+    constructor = None
+    simulator = None
 
-   try:
+    try:
         # CONSTRUCTION OF INITIAL SOLUTION
         df = pd.read_csv(config("test_data_construction"))
         constructor = ConstructionHeuristic(requests=df.head(R), vehicles=V)
@@ -83,7 +83,7 @@ def main()
             disrupt = (False, None)
             if disruption_type == 'request':
                 current_route_plan = disruption_updater.update_route_plan(
-                    current_route_plan, disruption_type, disruption_info, disruption_time)
+                    current_route_plan, disruption_type, disruption_info)
                 current_route_plan, current_objective, current_infeasible_set = new_request_updater.\
                     greedy_insertion_new_request(
                         current_route_plan, current_infeasible_set, disruption_info, disruption_time)

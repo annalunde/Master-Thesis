@@ -143,7 +143,8 @@ class Simulator:
         vehicle_index = 0
         for row in current_route_plan:
             for col in range(1, len(row)):
-                temp_planned_time = row[col][1] - timedelta(minutes=S)
+                s = S_W if row[col][5]["Wheelchair"] else S_P
+                temp_planned_time = row[col][1] - timedelta(minutes=s)
                 if temp_planned_time >= initial_delay:
                     rids_indices.append(col)
                     planned_departure_times.append(temp_planned_time)
@@ -170,7 +171,8 @@ class Simulator:
         for row in current_route_plan:
             for col in range(1, len(row)):
                 temp_rid = row[col][0]
-                temp_planned_time = row[col][1] - timedelta(minutes=S)
+                s = S_W if row[col][5]["Wheelchair"] else S_P
+                temp_planned_time = row[col][1] - timedelta(minutes=s)
                 if not temp_rid % int(temp_rid) and temp_planned_time >= cancel:
                     for i in range(col, len(row)):
                         if row[i][0] == temp_rid + 0.5:
@@ -195,7 +197,8 @@ class Simulator:
         for row in current_route_plan:
             for col in range(1, len(row)):
                 temp_rid = row[col][0]
-                temp_planned_time = row[col][1] - timedelta(minutes=S)
+                s = S_W if row[col][5]["Wheelchair"] else S_P
+                temp_planned_time = row[col][1] - timedelta(minutes=s)
                 if not temp_rid % int(temp_rid) and temp_planned_time >= initial_no_show:
                     for i in range(col, len(row)):
                         if row[i][0] == temp_rid + 0.5:

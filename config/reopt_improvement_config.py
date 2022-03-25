@@ -21,7 +21,8 @@ U_D_D = timedelta(minutes=30)
 L_D_D = timedelta(minutes=-30)
 
 # Estimated time to serve a node
-S = 2
+S_P = 2  # standard seats
+S_W = 5  # wheelchair
 
 # Vehicle standard seats capacity
 P = 15

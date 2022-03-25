@@ -42,8 +42,10 @@ class Destroy_Repair_Updater:
 
             if left_node[0] == 0 and disruption_time is None:
                 if right_idx != len(vehicle_route):
-                    service_time_depot = right_node[1] + timedelta(minutes=S) - \
-                        self.heuristic.travel_time(right_node[0] - 1, 2 * self.heuristic.n + row, True)
+                    s = S_W if right_node[5]["Wheelchair"] else S_P
+                    service_time_depot = right_node[1] + timedelta(minutes=s) - \
+                        self.heuristic.travel_time(
+                            right_node[0] - 1, 2 * self.heuristic.n + row, True)
 
                     n, t, d, p, w, r = vehicle_route[left_idx]
                     t = service_time_depot

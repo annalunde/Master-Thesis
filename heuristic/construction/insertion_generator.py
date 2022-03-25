@@ -47,10 +47,11 @@ class InsertionGenerator:
                     possible_pickup_nodes = self.generate_possible_nodes(
                         request, vehicle_route, None)
 
+                    s = S_W if request["Wheelchair"] else S_P
                     dropoff_time = request["Requested Pickup Time"] + self.heuristic.travel_time(
-                        rid-1, self.heuristic.n + rid-1, True) + 2*timedelta(minutes=S)
+                        rid-1, self.heuristic.n + rid-1, True) + 2*timedelta(minutes=s)
                     pickup_time = request["Requested Pickup Time"] + \
-                        timedelta(minutes=S)
+                        timedelta(minutes=s)
 
                     for start_idx in possible_pickup_nodes:
                         temp_route_plan = copy.deepcopy(route_plan)
@@ -354,7 +355,8 @@ class InsertionGenerator:
         return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else timedelta(0)
 
     def generate_possible_nodes(self, request, vehicle_route, dropoff_time):
-        pickup_time = request["Requested Pickup Time"] + timedelta(minutes=S)
+        s = S_W if request["Wheelchair"] else S_P
+        pickup_time = request["Requested Pickup Time"] + timedelta(minutes=s)
         upper_window = pickup_time +\
             U_D if not dropoff_time else dropoff_time + \
             U_D
@@ -454,8 +456,9 @@ class InsertionGenerator:
                          in enumerate(vehicle_route) if node == n+0.5)
             pn, pickup_time, pd, pp, pw, _ = vehicle_route[p_idx]
             dn, dropoff_time, dd, dp, dw, _ = vehicle_route[d_idx]
+            s = S_W if pw else S_P
             total_time = (dropoff_time - pickup_time).seconds - \
-                timedelta(minutes=S).seconds
+                timedelta(minutes=s).seconds
             max_time = self.heuristic.get_max_travel_time(
                 n-1, n-1 + self.heuristic.n)
             if total_time > max_time.total_seconds():
@@ -504,17 +507,20 @@ class InsertionGenerator:
     def add_initial_nodes(self, request, introduced_vehicle, rid, vehicle_route):
         service_time = request["Requested Pickup Time"] - self.heuristic.travel_time(
             rid-1, 2*self.heuristic.n + introduced_vehicle, True)
+
+        s = S_W if request["Wheelchair"] else S_P
+
         vehicle_route.append(
             (0, service_time, None, 0, 0, None))
         vehicle_route.append(
             (rid,
-                request["Requested Pickup Time"]+timedelta(minutes=S), timedelta(0), request["Number of Passengers"], request["Wheelchair"], request)
+                request["Requested Pickup Time"]+timedelta(minutes=s), timedelta(0), request["Number of Passengers"], request["Wheelchair"], request)
         )
         travel_time = self.heuristic.travel_time(
             rid-1, self.heuristic.n + rid - 1, True)
         vehicle_route.append(
             (rid + 0.5,
-                request["Requested Pickup Time"]+travel_time+2*timedelta(minutes=S), timedelta(0), 0, 0, request)
+                request["Requested Pickup Time"]+travel_time+2*timedelta(minutes=s), timedelta(0), 0, 0, request)
         )
         return vehicle_route
 

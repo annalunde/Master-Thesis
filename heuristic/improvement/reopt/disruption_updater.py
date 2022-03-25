@@ -11,12 +11,11 @@ class DisruptionUpdater:
     def __init__(self, new_request_updater):
         self.new_request_updater = new_request_updater
 
-    def update_route_plan(self, current_route_plan, disruption_type, disruption_info, sim_clock):
+    def update_route_plan(self, current_route_plan, disruption_type, disruption_info):
 
         # adding current position for each vehicle
-        vehicle_clocks, depot_updated_route_plan = self.depot_current_position(
-            current_route_plan, sim_clock, disruption_type, disruption_info)
-        updated_route_plan = copy.deepcopy(depot_updated_route_plan)
+
+        updated_route_plan = copy.deepcopy(current_route_plan)
 
         if disruption_type == 'request':
             self.new_request_updater.set_parameters(disruption_info)

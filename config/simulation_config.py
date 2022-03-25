@@ -1,7 +1,8 @@
 import numpy as np
 
 # estimated service time of a node
-S = 2
+S_P = 2  # standard seats
+S_W = 5  # wheelchair
 
 # ARRIVAL RATES FOR DISRUPTION TYPES
 arrival_rate_request = np.array([20.89189189189189, 13.378378378378379, 10.873873873873874, 8.977477477477477,
@@ -43,4 +44,3 @@ delay_fit_a = 0.8920223245173695
 delay_fit_b = 22.23772193022893
 delay_fit_loc = 4.999999999999999
 delay_fit_scale = 168.82933635388434
-
