@@ -134,9 +134,10 @@ class NewRequestUpdater:
         total_travel_time = timedelta(minutes=0)
         total_infeasible = timedelta(minutes=len(new_infeasible_set))
         for vehicle_route in new_routeplan:
-            diff = (pd.to_datetime(
-                vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
-            total_travel_time += timedelta(minutes=diff)
+            if len(vehicle_route) >= 2:
+                diff = (pd.to_datetime(
+                    vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
+                total_travel_time += timedelta(minutes=diff)
             for n, t, d, p, w, _ in vehicle_route:
                 if d is not None:
                     d = d if d > timedelta(0) else -d
