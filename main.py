@@ -90,9 +90,6 @@ def main():
             elif disruption_type == 'no disruption':
                 continue
             else:
-                if disruption_type == 'delay':
-                    print("hey")
-
                 current_route_plan = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info)
                 current_objective = new_request_updater.new_objective(

@@ -36,6 +36,7 @@ class ALNS:
         current_infeasible_set = copy.deepcopy(self.initial_infeasible_set)
         best_infeasible_set = copy.deepcopy(self.initial_infeasible_set)
         found_solutions = {}
+        initial_route_plan = copy.deepcopy(self.route_plan)
 
         d_weights = np.ones(len(self.destroy_operators), dtype=np.float16)
         r_weights = np.ones(len(self.repair_operators), dtype=np.float16)
@@ -73,7 +74,7 @@ class ALNS:
 
             if delayed[0]:
                 still_delayed_nodes = self.filter_still_delayed(
-                    index_removed, delayed, current_route_plan)
+                    delayed, current_route_plan, initial_route_plan)
 
             # Update solution
             updated_route_plan = self.destroy_repair_updater.update_solution(
@@ -154,12 +155,11 @@ class ALNS:
         return rnd_state.choice(a=a, p=w)
 
     @staticmethod
-    def filter_still_delayed(index_removed, delayed, current_route_plan):
-        initial_vehicle_route = copy.deepcopy(
-            current_route_plan[delayed[1]][delayed[2]:])
-        removed_vehicle_route = [i[0]
-                                 for i in index_removed if i[1] == delayed[1]]
-        return [i[0] for i in initial_vehicle_route if i[0] not in removed_vehicle_route]
+    def filter_still_delayed(delayed, current_route_plan, initial_route_plan):
+        initial_delayed_nodes = [i[0]
+                                 for i in initial_route_plan[delayed[1]][delayed[2]:]]
+        return [j[0] for j in current_route_plan[delayed[1]]
+                if j[0] in initial_delayed_nodes]
 
     # Evaluate candidate
     def evaluate_candidate(self, best, best_objective, best_infeasible_set, current, current_objective,
