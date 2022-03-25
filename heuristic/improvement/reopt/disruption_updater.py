@@ -11,10 +11,17 @@ class DisruptionUpdater:
     def __init__(self, new_request_updater):
         self.new_request_updater = new_request_updater
 
-    def update_route_plan(self, current_route_plan, disruption_type, disruption_info):
-        updated_route_plan = copy.deepcopy(current_route_plan)
+    def update_route_plan(self, current_route_plan, disruption_type, disruption_info, sim_clock):
 
-        if disruption_type == 'delay':
+        # adding current position for each vehicle
+        vehicle_clocks, depot_updated_route_plan = self.depot_current_position(
+            current_route_plan, sim_clock, disruption_type, disruption_info)
+        updated_route_plan = copy.deepcopy(depot_updated_route_plan)
+
+        if disruption_type == 'request':
+            self.new_request_updater.set_parameters(disruption_info)
+
+        elif disruption_type == 'delay':
             updated_route_plan = self.update_with_delay(
                 current_route_plan, disruption_info)
 
@@ -28,12 +35,7 @@ class DisruptionUpdater:
             # remove dropoff node
             del updated_route_plan[disruption_info[0]][disruption_info[2]]
 
-        # updating times of the disrupted route plan
-
         return updated_route_plan
-
-    def update_new_request(self, new_request):
-        self.new_request_updater.set_parameters(new_request)
 
     def update_with_delay(self, current_route_plan, disruption_info):
         delay_duration = disruption_info[2]
