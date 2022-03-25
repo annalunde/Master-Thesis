@@ -140,7 +140,8 @@ class NewRequestUpdater:
             for n, t, d, p, w, _ in vehicle_route:
                 if d is not None:
                     d = d if d > timedelta(0) else -d
-                    total_deviation += d
+                    pen_dev = d - P_S if d > P_S else timedelta(0)
+                    total_deviation += pen_dev
 
         updated = alpha*total_travel_time + beta * \
             total_deviation + gamma*total_infeasible

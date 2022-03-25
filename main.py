@@ -39,7 +39,7 @@ def main():
             start_temperature, end_temperature, step)
 
         alns = ALNS(weights, reaction_factor, initial_route_plan, initial_objective, initial_infeasible_set, criterion,
-                    destruction_degree, constructor, num_update, random_state)
+                    destruction_degree, constructor, rnd_state=rnd.RandomState())
 
         operators = Operators(alns)
 

@@ -9,8 +9,10 @@ F = 1
 V = 16
 
 # Allowed deviaiton from Requested service time (either pickup or dropoff)
-U_D = timedelta(minutes=5)
-L_D = timedelta(minutes=-5)
+U_D = timedelta(minutes=15)
+L_D = timedelta(minutes=-15)
+P_S = timedelta(minutes=7.5)  # penalized soft time windows
+
 
 # Estimated time to serve a node
 S_P = 2  # standard seats
