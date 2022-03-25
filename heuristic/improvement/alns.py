@@ -26,7 +26,7 @@ class ALNS:
         self.destroy_repair_updater = Destroy_Repair_Updater(constructor)
 
     # Run ALNS algorithm
-    def iterate(self, num_iterations, disrupted, index_removed, disruption_time):
+    def iterate(self, num_iterations, disrupted, index_removed, disruption_time, delayed):
         weights = np.asarray(self.weights, dtype=np.float16)
         current_route_plan = copy.deepcopy(self.route_plan)
         best = copy.deepcopy(self.route_plan)
@@ -48,6 +48,7 @@ class ALNS:
 
         for i in tqdm(range(num_iterations), colour='#39ff14'):
             already_found = False
+            still_delayed_nodes = []
 
             # Select destroy method
             destroy = self.select_operator(
@@ -67,6 +68,10 @@ class ALNS:
 
             d_count[destroy] += 1
 
+            if delayed[0]:
+                still_delayed_nodes = self.filter_still_delayed(
+                    index_removed, delayed, current_route_plan)
+
             # Update solution
             updated_route_plan = self.destroy_repair_updater.update_solution(
                 destroyed_route_plan, index_removed, disruption_time)
@@ -74,7 +79,7 @@ class ALNS:
             # Fix solution
             r_operator = self.repair_operators[repair]
             candidate, candidate_objective, candidate_infeasible_set = r_operator(
-                updated_route_plan, removed_requests, current_infeasible_set, current_route_plan, index_removed)
+                updated_route_plan, removed_requests, current_infeasible_set, current_route_plan, index_removed, delayed, still_delayed_nodes)
 
             r_count[repair] += 1
 
@@ -100,7 +105,7 @@ class ALNS:
                     (self.reaction_factor *
                      weights[weight_score]/r_count[repair])
 
-        return best, best_objective, best_infeasible_set
+        return best, best_objective, best_infeasible_set, still_delayed_nodes
 
     def set_operators(self, operators):
         # Add destroy operators
@@ -129,6 +134,14 @@ class ALNS:
         w = weights / np.sum(weights)
         a = [i for i in range(len(operators))]
         return rnd_state.choice(a=a, p=w)
+
+    @staticmethod
+    def filter_still_delayed(index_removed, delayed, current_route_plan):
+        initial_vehicle_route = copy.deepcopy(
+            current_route_plan[delayed[1]][delayed[2]:])
+        removed_vehicle_route = [i[0]
+                                 for i in index_removed if i[1] == delayed[1]]
+        return [i[0] for i in initial_vehicle_route if i[0] not in removed_vehicle_route]
 
     # Evaluate candidate
     def evaluate_candidate(self, best, best_objective, best_infeasible_set, current, current_objective,

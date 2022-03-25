@@ -122,7 +122,7 @@ class NewRequestUpdater:
 
         route_plan, new_objective, infeasible_set = self.re_opt_repair_generator.generate_insertions(
             route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=None,
-            index_removed=None, sim_clock=sim_clock, objectives=False)
+            index_removed=None, sim_clock=sim_clock, objectives=False, delayed=(False, None, None), still_delayed_nodes=[])
 
         # update current objective
         self.current_objective = new_objective

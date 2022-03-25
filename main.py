@@ -30,6 +30,7 @@ def main():
         initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
         constructor.print_new_objective(
             initial_route_plan, initial_infeasible_set)
+        delayed = (False, None, None)
 
         # IMPROVEMENT OF INITIAL SOLUTION
         random_state = rnd.RandomState()
@@ -45,8 +46,8 @@ def main():
         alns.set_operators(operators)
 
         # Run ALNS
-        current_route_plan, current_objective, current_infeasible_set = alns.iterate(
-            iterations, None, None, None)
+        current_route_plan, current_objective, current_infeasible_set, _ = alns.iterate(
+            iterations, None, None, None, delayed)
 
         constructor.print_new_objective(
             current_route_plan, current_infeasible_set)
@@ -63,6 +64,8 @@ def main():
 
         while len(simulator.disruptions_stack) > 0:
             prev_inf_len = len(current_infeasible_set)
+            delayed = (False, None, None)
+            delay_deltas = []
 
             # use correct data path
             if not first_iteration:
@@ -76,6 +79,7 @@ def main():
             print("Disruption type", disruption_type)
             print("Disruption time:", disruption_time)
             print()
+
             # updates before heuristic
             disrupt = (False, None)
             if disruption_type == 'request':
@@ -91,10 +95,14 @@ def main():
                     current_route_plan, disruption_type, disruption_info)
                 current_objective = new_request_updater.new_objective(
                     current_route_plan, current_infeasible_set)
+
                 if disruption_type == 'cancel' or disruption_type == 'no show':
                     index_removed = [(disruption_info[4], disruption_info[0], disruption_info[1]),
                                      (disruption_info[3], disruption_info[0], disruption_info[2])]
                     disrupt = (True, index_removed)
+                elif disruption_type == 'delay':
+                    delayed = (True, disruption_info[0], disruption_info[1])
+                    delay_deltas.append(current_objective)
 
             # heuristic
             alns = ALNS(weights, reaction_factor, current_route_plan, current_objective, current_infeasible_set,
@@ -106,8 +114,14 @@ def main():
             alns.set_operators(operators)
 
             # Run ALNS
-            current_route_plan, current_objective, current_infeasible_set = alns.iterate(
-                iterations, disrupt[0], disrupt[1], disruption_time)
+            current_route_plan, current_objective, current_infeasible_set, still_delayed_nodes = alns.iterate(
+                iterations, disrupt[0], disrupt[1], disruption_time, delayed)
+            if delayed[0]:
+                delay_deltas[-1] = delay_deltas[-1] - current_objective
+                print("Reduction in objective of delay: ", delay_deltas[-1])
+                current_route_plan = disruption_updater.recalibrate_solution(
+                    current_route_plan, disruption_info, still_delayed_nodes)
+
             if disruption_type == 'request' and not(len(current_infeasible_set) > prev_inf_len):
                 print("New request inserted")
 

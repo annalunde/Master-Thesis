@@ -486,7 +486,7 @@ class Operators:
         return destroyed_route_plan, removed_requests, index_removed_requests, True
 
     # Repair operators
-    def greedy_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set, current_route_plan, index_removed_requests):
+    def greedy_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set, current_route_plan, index_removed_requests, delayed, still_delayed):
         unassigned_requests = removed_requests.copy() + initial_infeasible_set.copy()
         unassigned_requests.sort(key=lambda x: x[0])
         route_plan = copy.deepcopy(destroyed_route_plan)
@@ -508,7 +508,7 @@ class Operators:
 
         return route_plan, current_objective, infeasible_set
 
-    def regret_2_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set, current_route_plan, index_removed_requests):
+    def regret_2_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set, current_route_plan, index_removed_requests, delayed, still_delayed):
         unassigned_requests = removed_requests.copy() + initial_infeasible_set.copy()
         unassigned_requests.sort(key=lambda x: x[0])
         route_plan = copy.deepcopy(destroyed_route_plan)
@@ -547,7 +547,7 @@ class Operators:
 
         return route_plan, current_objective, infeasible_set
 
-    def regret_3_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set, current_route_plan, index_removed_requests):
+    def regret_3_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set, current_route_plan, index_removed_requests, delayed, still_delayed):
         unassigned_requests = removed_requests.copy() + initial_infeasible_set.copy()
         unassigned_requests.sort(key=lambda x: x[0])
         route_plan = copy.deepcopy(destroyed_route_plan)

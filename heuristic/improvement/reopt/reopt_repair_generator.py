@@ -20,7 +20,7 @@ class ReOptRepairGenerator:
             self.heuristic.introduced_vehicles)
         self.vehicles = copy.deepcopy(self.heuristic.vehicles)
 
-    def generate_insertions(self, route_plan, request, rid, infeasible_set, initial_route_plan, index_removed, sim_clock, objectives):
+    def generate_insertions(self, route_plan, request, rid, infeasible_set, initial_route_plan, index_removed, sim_clock, objectives, delayed, still_delayed_nodes):
         possible_insertions = {}  # dict: delta objective --> route plan
         self.introduced_vehicles = set([i for i in range(len(route_plan))])
         self.vehicles = [i for i in range(len(route_plan), V)]
@@ -39,8 +39,11 @@ class ReOptRepairGenerator:
 
             else:
                 # the vehicle already has other nodes in its route
-
+                delayed_vehicle = False
                 vehicle_route = route_plan[introduced_vehicle]
+
+                if introduced_vehicle == delayed[1]:
+                    delayed_vehicle = True
 
                 # check if there are any infeasible matches with current request
                 preprocessed_check_activated = self.preprocess_check(
@@ -51,7 +54,7 @@ class ReOptRepairGenerator:
                     iterations = 1
 
                     if index_removed:
-                        if introduced_vehicle == index_removed[0][1]:
+                        if introduced_vehicle == index_removed[0][1] and not delayed_vehicle:
                             # try to add nodes both with initial requested times (i=0) and with deviation from initial route plan (i=1)
                             pickup_removal = index_removed[0] if not (
                                 index_removed[0][0] % int(index_removed[0][0])) else index_removed[1]
@@ -96,6 +99,8 @@ class ReOptRepairGenerator:
 
                             dev = self.get_bound_dev(
                                 depot=(s_p_node == 0), upper=False) - s_p_d if s_p_d is not None else self.get_bound_dev(depot=(s_p_node == 0), upper=False)
+                            dev = timedelta(
+                                0) if s_p_node in still_delayed_nodes else dev
                             if s_p_time + dev + s_p_travel_time <= pickup_time:
                                 push_back = s_p_time + s_p_travel_time - pickup_time if pickup_time - \
                                     s_p_time - s_p_travel_time < timedelta(0) else 0
@@ -126,7 +131,7 @@ class ReOptRepairGenerator:
                                     # check max ride time between nodes on test vehicle route
                                     activated_checks = self.check_max_ride_time(
                                         vehicle_route=test_vehicle_route,
-                                        activated_checks=activated_checks, rid=rid, request=request)
+                                        activated_checks=activated_checks, rid=rid, request=request, still_delayed_nodes=still_delayed_nodes)
 
                                     # check min ride time between nodes on test vehicle route
                                     activated_checks = self.check_min_ride_time(
@@ -196,7 +201,7 @@ class ReOptRepairGenerator:
                                     test_vehicle_route, activated_checks = self.update_check_forward(
                                         vehicle_route=test_vehicle_route, start_idx=start_idx,
                                         push_forward=push_forward_p, activated_checks=activated_checks, rid=rid,
-                                        request=request)
+                                        request=request, still_delayed_nodes=still_delayed_nodes)
 
                                 # update backward
                                 if push_back_p:
@@ -280,7 +285,7 @@ class ReOptRepairGenerator:
                                                     vehicle_route=test_vehicle_route, start_idx=start_idx,
                                                     push_forward=push_forward_d, activated_checks=activated_checks,
                                                     rid=rid,
-                                                    request=request)
+                                                    request=request, still_delayed_nodes=still_delayed_nodes)
 
                                         # update backward
                                         if push_back_d:
@@ -307,7 +312,7 @@ class ReOptRepairGenerator:
                                         # check max ride time between nodes
                                         activated_checks = self.check_max_ride_time(
                                             vehicle_route=test_vehicle_route,
-                                            activated_checks=activated_checks, rid=rid, request=request)
+                                            activated_checks=activated_checks, rid=rid, request=request, still_delayed_nodes=still_delayed_nodes)
 
                                         # check min ride time between nodes on test vehicle route
                                         activated_checks = self.check_min_ride_time(
@@ -323,7 +328,7 @@ class ReOptRepairGenerator:
                                                     start_idx=start_idx,
                                                     push_forward=push_forward_p, activated_checks=activated_checks,
                                                     rid=rid,
-                                                    request=request)
+                                                    request=request, still_delayed_nodes=still_delayed_nodes)
 
                                             # update backward
                                             if push_back_p:
@@ -345,7 +350,7 @@ class ReOptRepairGenerator:
                                                         push_forward=push_forward_d,
                                                         activated_checks=activated_checks,
                                                         rid=rid,
-                                                        request=request)
+                                                        request=request, still_delayed_nodes=still_delayed_nodes)
 
                                             # update backward
                                             if push_back_d:
@@ -466,7 +471,7 @@ class ReOptRepairGenerator:
                 vehicle_route[idx] = (n, t, d, p, w, r)
         return vehicle_route, activated_checks
 
-    def update_check_forward(self, vehicle_route, start_idx, push_forward, activated_checks, rid, request):
+    def update_check_forward(self, vehicle_route, start_idx, push_forward, activated_checks, rid, request, still_delayed_nodes):
         idx = start_idx + 1
         for n, t, d, p, w, r in vehicle_route[start_idx+1:]:
             # since updating happens at start_idx + 1, there is no need to check for depot
@@ -487,19 +492,24 @@ class ReOptRepairGenerator:
                 break
 
             if d + push_forward > U_D_N and (rid, request) not in self.heuristic.infeasible_set:
-                activated_checks = True
-                break
+                if n not in still_delayed_nodes:
+                    activated_checks = True
+                    break
             t = t + push_forward
             d = d + push_forward
             vehicle_route[idx] = (n, t, d, p, w, r)
             idx += 1
         return vehicle_route, activated_checks
 
-    def check_max_ride_time(self, vehicle_route, activated_checks, rid, request):
+    def check_max_ride_time(self, vehicle_route, activated_checks, rid, request, still_delayed_nodes):
         nodes = [int(n) for n, t, d, p, w, _ in vehicle_route]
         nodes.remove(0)
         nodes_set = []
         [nodes_set.append(i) for i in nodes if i not in nodes_set]
+        break_delay = [int(i) for i in still_delayed_nodes if int(
+            i) not in still_delayed_nodes]
+        nodes_set.remove(
+            break_delay) if break_delay in nodes_set else nodes_set
         for n in nodes_set:
             p_idx = next(i for i, (node, *_)
                          in enumerate(vehicle_route) if node == n)
