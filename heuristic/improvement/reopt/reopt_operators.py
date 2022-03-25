@@ -54,18 +54,16 @@ class ReOptOperators:
         while len(to_remove)/2 < num_remove:
 
             # Pick random node in route plan to remove and to compare other nodes to
-            rows = [i for i in range(0, len(possible_removals))]
+            rows = [i for i in range(0, len(possible_removals)) if len(possible_removals[i]) > 0]
             rnd.shuffle(rows)
 
             for row in rows:
-                if len(possible_removals[row]) < 3:
-                    continue
-                elif len(possible_removals[row]) == 3:
-                    col = 1
+                if len(possible_removals[row]) == 2:
+                    col = 0
                     break
                 else:
                     col = rnd.randint(
-                        1, len(possible_removals[row]))
+                        0, len(possible_removals[row]))
                     break
             node = possible_removals[row][col]
             destroy_node = destroyed_route_plan[row][node[6]]
@@ -119,8 +117,10 @@ class ReOptOperators:
             worst_deviation = timedelta(0)
             worst_node = None
 
-            for row in range(len(possible_removals)):
-                for col in range(1, len(possible_removals[row])):
+            rows = [i for i in range(0, len(possible_removals)) if len(possible_removals[i]) > 0]
+
+            for row in rows:
+                for col in range(0, len(possible_removals[row])):
 
                     temp = possible_removals[row][col]
                     destroyed_temp = destroyed_route_plan[row][temp[6]]
@@ -213,18 +213,16 @@ class ReOptOperators:
 
         else:
             # Pick random node in route plan to remove and to compare other nodes to
-            rows = [i for i in range(0, len(possible_removals))]
+            rows = [i for i in range(0, len(possible_removals)) if len(possible_removals[i]) > 0]
             rnd.shuffle(rows)
 
             for row_index in rows:
-                if len(possible_removals[row_index]) < 3:
-                    continue
-                elif len(possible_removals[row_index]) == 3:
-                    col_index = 1
+                if len(possible_removals[row_index]) == 2:
+                    col_index = 0
                     break
                 else:
                     col_index = rnd.randint(
-                        1, len(possible_removals[row_index]))
+                        0, len(possible_removals[row_index]))
                     break
             node = possible_removals[row_index][col_index]
             destroy_node = destroyed_route_plan[row_index][node[6]]
@@ -247,9 +245,10 @@ class ReOptOperators:
 
             # To do: finne ut hva denne initielt skal settes som
             best_diff = 48 * 60 * 60
+            rows = [i for i in range(0, len(possible_removals)) if len(possible_removals[i]) > 0]
 
-            for row in range(len(possible_removals)):
-                for col in range(1, len(possible_removals[row])):
+            for row in rows:
+                for col in range(0, len(possible_removals[row])):
 
                     # Drop off/pickup of request to compare
                     temp = possible_removals[row][col]
@@ -335,18 +334,16 @@ class ReOptOperators:
 
         else:
             # Pick random node in route plan to remove and to compare other nodes to
-            rows = [i for i in range(0, len(possible_removals))]
+            rows = [i for i in range(0, len(possible_removals)) if len(possible_removals[i]) > 0]
             rnd.shuffle(rows)
 
             for row_index in rows:
-                if len(possible_removals[row_index]) < 3:
-                    continue
-                elif len(possible_removals[row_index]) == 3:
-                    col_index = 1
+                if len(possible_removals[row_index]) == 2:
+                    col_index = 0
                     break
                 else:
                     col_index = rnd.randint(
-                        1, len(possible_removals[row_index]))
+                        0, len(possible_removals[row_index]))
                     break
             node = possible_removals[row_index][col_index]
             destroy_node = destroyed_route_plan[row_index][node[6]]
@@ -369,9 +366,10 @@ class ReOptOperators:
 
             # To do: finne ut hva denne initielt skal settes som
             best_diff = 48 * 60 * 60
+            rows = [i for i in range(0, len(possible_removals)) if len(possible_removals[i]) > 0]
 
-            for row in range(len(possible_removals)):
-                for col in range(1, len(possible_removals[row])):
+            for row in rows:
+                for col in range(0, len(possible_removals[row])):
 
                     temp = possible_removals[row][col]
                     destroyed_temp = destroyed_route_plan[row][temp[6]]
@@ -449,18 +447,16 @@ class ReOptOperators:
 
         else:
             # Pick random node in route plan to remove and to compare other nodes to
-            rows = [i for i in range(0, len(possible_removals))]
+            rows = [i for i in range(0, len(possible_removals)) if len(possible_removals[i]) > 0]
             rnd.shuffle(rows)
 
             for row_index in rows:
-                if len(possible_removals[row_index]) < 3:
-                    continue
-                elif len(possible_removals[row_index]) == 3:
-                    col_index = 1
+                if len(possible_removals[row_index]) == 2:
+                    col_index = 0
                     break
                 else:
                     col_index = rnd.randint(
-                        1, len(possible_removals[row_index]))
+                        0, len(possible_removals[row_index]))
                     break
             node = possible_removals[row_index][col_index]
             destroy_node = destroyed_route_plan[row_index][node[6]]
@@ -483,9 +479,10 @@ class ReOptOperators:
 
             # To do: finne ut hva denne initielt skal settes som
             best_diff = 48 * 60 * 60
+            rows = [i for i in range(0, len(possible_removals)) if len(possible_removals[i]) > 0]
 
-            for row in range(len(possible_removals)):
-                for col in range(1, len(possible_removals[row])):
+            for row in rows:
+                for col in range(0, len(possible_removals[row])):
 
                     temp = possible_removals[row][col]
                     destroyed_temp = destroyed_route_plan[row][temp[6]]
@@ -661,18 +658,16 @@ class ReOptOperators:
         while len(to_remove)/2 < num_remove:
 
             # Pick random node in route plan to remove and to compare other nodes to
-            rows = [i for i in range(0, len(possible_removals))]
+            rows = [i for i in range(0, len(possible_removals)) if len(possible_removals[i]) > 0]
             rnd.shuffle(rows)
 
             for row in rows:
-                if len(possible_removals[row]) < 3:
-                    continue
-                elif len(possible_removals[row]) == 3:
-                    col = 1
+                if len(possible_removals[row]) == 2:
+                    col = 0
                     break
                 else:
                     col = rnd.randint(
-                        1, len(possible_removals[row]))
+                        0, len(possible_removals[row]))
                     break
             node = possible_removals[row][col]
             destroy_node = destroyed_route_plan[row][node[6]]
@@ -782,16 +777,21 @@ class ReOptOperators:
                               enumerate(route_plan[vehicle][1:]) if t >= self.sim_clock] for vehicle in
                              range(0, len(route_plan))]
 
-        for vehicle in possible_removals:
+        vehicles = [vehicle for vehicle in possible_removals if len(vehicle) > 0]
+
+        for vehicle in vehicles:
             rids = [rid for (rid, t, d, p, w, request, idx) in vehicle]
+            to_remove = []
             for node in vehicle:
                 if node[0] % int(node[0]):
                     if not node[0] - 0.5 in rids:
-                        possible_removals[possible_removals.index(
-                            vehicle)].remove(node)
+                        to_remove.append(node)
                 else:
                     if not node[0] + 0.5 in rids:
-                        possible_removals[possible_removals.index(
-                            vehicle)].remove(node)
+                        to_remove.append(node)
+
+            for node in to_remove:
+                possible_removals[possible_removals.index(
+                    vehicle)].remove(node)
 
         return possible_removals

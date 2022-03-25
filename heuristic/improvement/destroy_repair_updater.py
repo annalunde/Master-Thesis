@@ -36,11 +36,22 @@ class Destroy_Repair_Updater:
             right_idx = first_element[2] if c == 0 else first_element[2] - \
                 removed_counter
 
-            left_node = vehicle_route[left_idx] if vehicle_route[left_idx][0] != 0 else None
+            left_node = vehicle_route[left_idx]
             right_node = vehicle_route[right_idx] if right_idx != len(
                 vehicle_route) else None
 
-            if left_node and right_node:
+            if left_node[0] == 0 and disruption_time is None:
+                if right_idx != len(vehicle_route):
+                    service_time_depot = right_node[1] + timedelta(minutes=S) - \
+                        self.heuristic.travel_time(right_node[0] - 1, 2 * self.heuristic.n + row, True)
+
+                    n, t, d, p, w, r = vehicle_route[left_idx]
+                    t = service_time_depot
+                    vehicle_route[left_idx] = n, t, d, p, w, r
+
+                updated_solution[row] = vehicle_route
+
+            if left_node and left_node[0] != 0 and right_node:
 
                 left_dev = left_node[2] if left_node[2] < timedelta(0) else 0
                 right_dev = right_node[2] if right_node[2] > timedelta(
@@ -89,7 +100,7 @@ class Destroy_Repair_Updater:
 
                 updated_solution[row] = vehicle_route
 
-            elif left_node:
+            elif left_node and left_node[0] != 0:
                 left_dev = left_node[2] if left_node[2] < timedelta(0) else 0
 
                 if not left_dev:
@@ -116,6 +127,7 @@ class Destroy_Repair_Updater:
 
                 updated_solution[row] = vehicle_route
 
+        tid = 2
         return updated_solution
 
     def update_backward(self, vehicle_route, start_idx, push_backward, disruption_time):

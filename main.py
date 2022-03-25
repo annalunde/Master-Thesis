@@ -55,7 +55,7 @@ def main():
         # SIMULATION
         print("Start simulation")
         sim_clock = datetime.strptime(
-            "2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
+            "2021-05-10 16:00:00", "%Y-%m-%d %H:%M:%S")
         simulator = Simulator(sim_clock)
         new_request_updater = NewRequestUpdater(
             df.head(R), V, initial_infeasible_set)
@@ -87,7 +87,6 @@ def main():
                 current_route_plan, current_objective, current_infeasible_set = new_request_updater.\
                     greedy_insertion_new_request(
                         current_route_plan, current_infeasible_set, disruption_info, disruption_time)
-
             elif disruption_type == 'no disruption':
                 continue
             else:
