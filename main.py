@@ -99,8 +99,8 @@ def main():
                     current_route_plan, current_infeasible_set)
 
                 if disruption_type == 'cancel' or disruption_type == 'no show':
-                    index_removed = [(disruption_info[4], disruption_info[0], disruption_info[1]),
-                                     (disruption_info[3], disruption_info[0], disruption_info[2])]
+                    index_removed = [(disruption_info[3], disruption_info[0], disruption_info[1]),
+                                     (disruption_info[4], disruption_info[0], disruption_info[2])]
                     disrupt = (True, index_removed)
                 elif disruption_type == 'delay':
                     delayed = (True, disruption_info[0], disruption_info[1])
