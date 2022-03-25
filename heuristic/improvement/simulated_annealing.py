@@ -17,20 +17,20 @@ class SimulatedAnnealing:
 
         # Always accept better solution
         if candidate_objective <= current_objective:
-            print("Found better solution")
+            #print("Found better solution")
             accept = True
 
         # Sometimes accept worse
         else:
-            print("Did not find better solution")
+            #print("Did not find better solution")
 
             diff = (candidate_objective.total_seconds() -
                     current_objective.total_seconds())/60
-            print("DIFF", diff)
+            #print("DIFF", diff)
             probability = np.exp(-diff / self.temperature)
-            print("Probability ", probability)
+            #print("Probability ", probability)
             accept = (probability >= random_state.random())
-            print("Did we still go with worse solution: ", accept)
+            #print("Did we still go with worse solution: ", accept)
 
         # Should not set a temperature that is lower than the end temperature.
         self.temperature = max(self.end_temperature,

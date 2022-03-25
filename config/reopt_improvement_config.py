@@ -4,7 +4,7 @@ reaction_factor = 0.2
 
 weights = [3, 2, 1, 0.5]
 
-iterations = 1000
+iterations = 10
 
 destruction_degree = 0.5
 
@@ -29,11 +29,14 @@ P = 15
 # Vehicle wheelchair seats capacity
 W = 1
 
-# Weight of deviation in objective function
+# Weight of ride time in objective function
 alpha = 1
 
-# Weight of ride time in objective function
-beta = 1
+# Weight of deviation in objective function
+beta = 5
+
+# Weight of infeasible set in objective function
+gamma = 10000
 
 
 # Simulated annealing temperatures -- NOTE: these must be tuned
