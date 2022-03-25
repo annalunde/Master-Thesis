@@ -5,7 +5,7 @@ from simulation.poisson import *
 from simulation.new_requests import *
 from config.simulation_config import *
 import random
-from scipy.stats import gamma
+from scipy.stats import gamma, beta
 
 
 class Simulator:
@@ -132,8 +132,8 @@ class Simulator:
 
     def delay(self, initial_delay, current_route_plan):
         # draw duration of delay
-        delay = timedelta(minutes=gamma.rvs(
-            delay_fit_shape, delay_fit_loc, delay_fit_scale))
+        delay = timedelta(minutes=beta.rvs(
+            delay_fit_a, delay_fit_b, delay_fit_loc, delay_fit_scale))
 
         rids_indices = []
         planned_departure_times = []
@@ -212,3 +212,59 @@ class Simulator:
             return index[0], index[1], index[2], index[3], index[4], actual_disruption_time
         else:
             return -1, -1, -1, -1, -1, -1
+
+def main():
+    simulator = None
+    try:
+        # CONSTRUCTION OF INITIAL SOLUTION
+        df = pd.read_csv(config("test_data_construction"))
+        constructor = ConstructionHeuristic(requests=df.head(20), vehicles=V)
+        print("Constructing initial solution")
+        current_route_plan, initial_objective, infeasible_set = constructor.construct_initial()
+        num_new_requests = 0
+        num_delay = 0
+        num_cancel = 0
+        num_no_show = 0
+        num_no_disruption = 0
+        # SIMULATION
+        # første runde av simulator må kjøre med new requests fra data_processed_path for å få fullstendig antall
+        # requests første runde, deretter skal rundene kjøre med data_simulator_path for å få updated data
+        print("Start simulation")
+        sim_clock = datetime.strptime("2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
+        simulator = Simulator(sim_clock)
+        first_iteration = True
+        while len(simulator.disruptions_stack) > 0:
+            if not first_iteration:
+                disruption_type, disruption_time, disruption_info = simulator.get_disruption(current_route_plan, config(
+                    "data_simulator_path"))
+            else:
+                disruption_type, disruption_time, disruption_info = simulator.get_disruption(current_route_plan, config(
+                    "data_processed_path"))
+                first_iteration = False
+            if disruption_type == 'delay':
+                print("Disruption type", disruption_type)
+                print("Disruption time", disruption_time)
+                print("Disruption info", disruption_info)
+                print()
+            if disruption_type == "request":
+                num_new_requests += 1
+            elif disruption_type == "delay":
+                num_delay += 1
+            elif disruption_type == 'cancel':
+                num_cancel += 1
+            elif disruption_type == 'no show':
+                num_no_show += 1
+            else:
+                num_no_disruption += 1
+        '''
+        print("New requests", num_new_requests)
+        print("Delay", num_delay)
+        print("Cancel", num_cancel)
+        print("No show", num_no_show)
+        print("No disruption", num_no_disruption)
+        '''
+    except Exception as e:
+        print("ERROR:", e)
+
+if __name__ == "__main__":
+    main()

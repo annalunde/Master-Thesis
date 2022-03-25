@@ -3,7 +3,7 @@ import pandas as pd
 import os
 
 import scipy
-from scipy.stats import gamma
+from scipy.stats import gamma, beta
 from decouple import config
 import numpy as np
 import matplotlib.pyplot as plt
@@ -322,11 +322,11 @@ class AnalyserDisruptions:
         # find best parameters for distribution
         xlin = np.linspace(0, 160, 50)
 
-        fit_shape, fit_loc, fit_scale = gamma.fit(waiting_times)
-        print([fit_shape, fit_loc, fit_scale])
+        fit_a, fit_b, fit_loc, fit_scale = beta.fit(waiting_times)
+        print([fit_a, fit_b, fit_loc, fit_scale])
         plt.hist(waiting_times, bins=50, density=True)
-        plt.plot(xlin, gamma.pdf(xlin, a=fit_shape,
-                 loc=fit_loc, scale=fit_scale))
+        plt.plot(xlin, beta.pdf(xlin, a=fit_a,
+                 b=fit_b, loc=fit_loc, scale=fit_scale))
 
         plt.show()
 
@@ -561,8 +561,8 @@ def main():
         # analyser.event_per_total()
         # analyser.no_show()
         # analyser.cancel()
-        analyser.new_request()
-        # analyser.delay(0.5)
+        # analyser.new_request()
+        analyser.delay(5)
 
     except Exception as e:
         print("ERROR:", e)
