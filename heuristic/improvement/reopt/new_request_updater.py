@@ -135,6 +135,7 @@ class NewRequestUpdater:
         total_infeasible = timedelta(minutes=len(new_infeasible_set))
         for vehicle_route in new_routeplan:
             if len(vehicle_route) >= 2:
+                print("objective route", vehicle_route)
                 diff = (pd.to_datetime(
                     vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
                 total_travel_time += timedelta(minutes=diff)

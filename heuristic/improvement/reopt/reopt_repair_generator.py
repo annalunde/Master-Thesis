@@ -521,6 +521,8 @@ class ReOptRepairGenerator:
             i) not in still_delayed_nodes]
         nodes_set.remove(
             break_delay) if break_delay in nodes_set else nodes_set
+        print("nodes set", nodes_set)
+        print("vehicle route", vehicle_route)
         for n in nodes_set:
             p_idx = next(i for i, (node, *_)
                          in enumerate(vehicle_route) if node == n)
