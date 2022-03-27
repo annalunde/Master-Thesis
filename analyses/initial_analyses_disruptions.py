@@ -3,7 +3,7 @@ import pandas as pd
 import os
 
 import scipy
-from scipy.stats import gamma
+from scipy.stats import gamma, beta
 from decouple import config
 import numpy as np
 import matplotlib.pyplot as plt
@@ -21,8 +21,7 @@ class AnalyserDisruptions:
     # distribution of how long in advance the new request is revealed
 
     def new_request(self):
-        df = pd.read_csv(self.data_path)
-        df_request = df[df['Request Status'].isin(["Completed"])]
+        df_request = pd.read_csv(self.data_path)
         df_request['Request Creation Time'] = pd.to_datetime(
             df_request['Request Creation Time'], format="%Y-%m-%d %H:%M:%S")
         df_request['Requested Pickup Time'] = pd.to_datetime(
@@ -145,6 +144,7 @@ class AnalyserDisruptions:
         plt.show()
 
         # probability density function time between request creation time and requested pickup time
+        print("Requested Pickup Time")
         waiting_times = []
         for index, row in df_pickup.iterrows():
             waiting_times.append(
@@ -154,7 +154,7 @@ class AnalyserDisruptions:
         plt.show()
 
         f = Fitter(waiting_times, distributions=[
-                   'gamma', 'lognorm', "burr", "norm"])
+                   'gamma', 'lognorm', "norm"])
         f.fit()
         print(f.summary())
         print(f.get_best(method='sumsquare_error'))
@@ -171,6 +171,7 @@ class AnalyserDisruptions:
         plt.show()
 
         # probability density function time between request creation time and requested dropoff time
+        print("Requested Dropoff Time")
         waiting_times = []
         for index, row in df_dropoff.iterrows():
             waiting_times.append(
@@ -181,7 +182,7 @@ class AnalyserDisruptions:
         plt.show()
 
         f = Fitter(waiting_times, distributions=[
-                   'gamma', 'lognorm', "burr", "norm"])
+                   'gamma', 'lognorm', "norm"])
         f.fit()
         print(f.summary())
         print(f.get_best(method='sumsquare_error'))
@@ -312,7 +313,7 @@ class AnalyserDisruptions:
 
         # find best distribution
         f = Fitter(waiting_times, distributions=[
-                   'gamma', 'lognorm', "beta", "burr", "norm"])
+                   'gamma', 'lognorm', "beta", "norm"])
         f.fit()
         print(f.summary())
         print(f.get_best(method='sumsquare_error'))
@@ -321,11 +322,11 @@ class AnalyserDisruptions:
         # find best parameters for distribution
         xlin = np.linspace(0, 160, 50)
 
-        fit_shape, fit_loc, fit_scale = gamma.fit(waiting_times)
-        print([fit_shape, fit_loc, fit_scale])
+        fit_a, fit_b, fit_loc, fit_scale = beta.fit(waiting_times)
+        print([fit_a, fit_b, fit_loc, fit_scale])
         plt.hist(waiting_times, bins=50, density=True)
-        plt.plot(xlin, gamma.pdf(xlin, a=fit_shape,
-                 loc=fit_loc, scale=fit_scale))
+        plt.plot(xlin, beta.pdf(xlin, a=fit_a,
+                 b=fit_b, loc=fit_loc, scale=fit_scale))
 
         plt.show()
 
@@ -560,8 +561,8 @@ def main():
         # analyser.event_per_total()
         # analyser.no_show()
         # analyser.cancel()
-        analyser.new_request()
-        # analyser.delay(10)
+        # analyser.new_request()
+        analyser.delay(5)
 
     except Exception as e:
         print("ERROR:", e)

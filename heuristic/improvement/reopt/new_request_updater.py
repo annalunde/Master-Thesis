@@ -8,19 +8,25 @@ from tqdm import tqdm
 from math import radians
 import sklearn.metrics
 from decouple import config
+
+from heuristic.construction.construction import ConstructionHeuristic
 from config.construction_config import *
-from heuristic.construction.insertion_generator import InsertionGenerator
 from datetime import datetime, timedelta
 from sklearn.metrics.pairwise import haversine_distances
+from heuristic.improvement.reopt.reopt_repair_generator import ReOptRepairGenerator
+from simulation.simulator import Simulator
+
 pd.options.mode.chained_assignment = None
 
 
-class ConstructionHeuristic:
-    def __init__(self, requests, vehicles):
-        self.vehicles = [i for i in range(vehicles)]
-        self.n = len(requests.index)
-        self.num_nodes_and_depots = 2 * vehicles + 2 * self.n
-        self.temp_requests = self.compute_pickup_time(requests)
+class NewRequestUpdater:
+    def __init__(self, requests, vehicles, infeasible_set):
+        self.vehicles = vehicles
+        self.introduced_vehicles = set()
+        self.temp_temp_requests = self.drop_columns_and_datetime(requests)
+        self.n = len(self.temp_temp_requests.index)
+        self.num_nodes_and_depots = 2 * self.vehicles + 2 * self.n
+        self.temp_requests = self.compute_pickup_time(self.temp_temp_requests)
         self.requests = self.temp_requests.sort_values(
             "Requested Pickup Time").reset_index(drop=True)
         self.requests["Requested Pickup Time"] = pd.to_datetime(
@@ -34,10 +40,42 @@ class ConstructionHeuristic:
         )
         self.current_objective = timedelta(0)
         self.T_ij = self.travel_matrix(self.requests)
-        self.introduced_vehicles = set()
-        self.infeasible_set = []
-        self.insertion_generator = InsertionGenerator(self)
+        self.infeasible_set = copy.deepcopy(infeasible_set)
+        self.re_opt_repair_generator = ReOptRepairGenerator(self)
         self.preprocessed = self.preprocess_requests()
+
+    def set_parameters(self, new_request):
+        self.requests = self.requests.append(new_request)
+        self.n = len(self.requests)
+        self.num_nodes_and_depots = 2 * self.vehicles + 2 * self.n
+        self.requests = self.compute_pickup_time(self.requests)
+        self.T_ij = self.travel_matrix(self.requests)
+        self.preprocessed = self.preprocess_requests()
+
+    def drop_columns_and_datetime(self, requests):
+        requests["Requested Pickup Time"] = pd.to_datetime(
+            requests["Requested Pickup Time"], format="%Y-%m-%d %H:%M:%S"
+        )
+        requests["Requested Dropoff Time"] = pd.to_datetime(
+            requests["Requested Dropoff Time"], format="%Y-%m-%d %H:%M:%S"
+        )
+        requests["Request Creation Time"] = pd.to_datetime(
+            requests["Request Creation Time"], format="%Y-%m-%d %H:%M:%S"
+        )
+        requests.drop(columns=['Unnamed: 0',
+                               'Actual Pickup Time',
+                               'Actual Dropoff Time',
+                               'Request ID',
+                               'Request Status',
+                               'Rider ID',
+                               'Ride ID',
+                               'Cancellation Time',
+                               'No Show Time',
+                               'Origin Zone',
+                               'Destination Zone',
+                               'Reason For Travel'], inplace=True)
+
+        return requests
 
     def compute_pickup_time(self, requests):
         requests["Requested Pickup Time"] = pd.to_datetime(
@@ -76,23 +114,21 @@ class ConstructionHeuristic:
                     P_ij[n_j].add(n_i+1)
         return np.array(P_ij)
 
-    def construct_initial(self):
-        rid = 1
-        unassigned_requests = self.requests.copy()
-        self.introduced_vehicles.add(self.vehicles.pop(0))
-        route_plan = [[]]
-        for i in tqdm(range(unassigned_requests.shape[0]), colour='#39ff14'):
-            # while not unassigned_requests.empty:
-            request = unassigned_requests.iloc[i]
+    def greedy_insertion_new_request(self, current_route_plan, current_infeasible_set, new_request, sim_clock, vehicle_clocks):
+        rid = len(self.requests.index)
+        route_plan = copy.deepcopy(current_route_plan)
+        infeasible_set = copy.deepcopy(current_infeasible_set)
+        request = new_request.iloc[0]
 
-            route_plan, new_objective = self.insertion_generator.generate_insertions(
-                route_plan=route_plan, request=request, rid=rid)
+        route_plan, new_objective, infeasible_set, vehicle_clocks = self.re_opt_repair_generator.generate_insertions(
+            route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=None,
+            index_removed=None, sim_clock=sim_clock, vehicle_clocks=vehicle_clocks,
+            objectives=False, delayed=(False, None, None), still_delayed_nodes=[])
 
-            # update current objective
-            self.current_objective = new_objective
+        # update current objective
+        self.current_objective = new_objective
 
-            rid += 1
-        return route_plan, self.current_objective, self.infeasible_set
+        return route_plan, self.current_objective, infeasible_set, vehicle_clocks
 
     def new_objective(self, new_routeplan, new_infeasible_set):
         total_deviation = timedelta(minutes=0)
@@ -100,6 +136,7 @@ class ConstructionHeuristic:
         total_infeasible = timedelta(minutes=len(new_infeasible_set))
         for vehicle_route in new_routeplan:
             if len(vehicle_route) >= 2:
+                print("objective route", vehicle_route)
                 diff = (pd.to_datetime(
                     vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
                 total_travel_time += timedelta(minutes=diff)
@@ -143,13 +180,13 @@ class ConstructionHeuristic:
         vehicle_lat_lon = []
 
         # Origins for each vehicle
-        for i in range(len(self.vehicles)):
+        for i in range(self.vehicles):
             vehicle_lat_lon.append(
                 (radians(59.946829115276145), radians(10.779841653639243))
             )
 
         # Destinations for each vehicle
-        for i in range(len(self.vehicles)):
+        for i in range(self.vehicles):
             vehicle_lat_lon.append(
                 (radians(59.946829115276145), radians(10.779841653639243))
             )
@@ -174,16 +211,6 @@ class ConstructionHeuristic:
                     timedelta(hours=(D_ij[i][j] / speed)
                               ).total_seconds()
                 )
-
-        # rush hour modelling:
-        if not (df.iloc[0]["Requested Pickup Time"].weekday() == 5):
-            for k in range(self.n):
-                for l in range(self.n):
-                    if df.iloc[k]["Requested Pickup Time"].hour >= 15 and df.iloc[k]["Requested Pickup Time"].hour < 17 and df.iloc[l]["Requested Pickup Time"].hour >= 15 and df.iloc[l]["Requested Pickup Time"].hour < 17:
-                        T_ij[k][l] = T_ij[k][l]*R_F
-                        T_ij[k+self.n][l] = T_ij[k+self.n][l]*R_F
-                        T_ij[k][l+self.n] = T_ij[k][l+self.n]*R_F
-                        T_ij[k+self.n][l+self.n] = T_ij[k+self.n][l+self.n]*R_F
 
         return T_ij
 

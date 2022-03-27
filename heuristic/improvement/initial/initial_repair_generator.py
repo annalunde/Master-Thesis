@@ -4,38 +4,41 @@ import numpy as np
 import pandas
 import sklearn.metrics
 from math import radians
-from config.construction_config import *
+from config.initial_improvement_config import *
 from decouple import config
 from datetime import datetime, timedelta
 
+"""
+NOTE: we only try to add it after the first node that is closest in time
+"""
 
-class InsertionGenerator:
-    def __init__(self, construction_heuristic):
-        self.heuristic = construction_heuristic
 
-    def generate_insertions(self, route_plan, request, rid):
+class RepairGenerator:
+    def __init__(self, heuristic):
+        self.heuristic = heuristic
+        self.introduced_vehicles = copy.deepcopy(
+            self.heuristic.introduced_vehicles)
+        self.vehicles = copy.deepcopy(self.heuristic.vehicles)
+
+    def generate_insertions(self, route_plan, request, rid, infeasible_set, initial_route_plan, index_removed, objectives):
         possible_insertions = {}  # dict: delta objective --> route plan
-        for introduced_vehicle in self.heuristic.introduced_vehicles:
-            # generate all possible insertions
+        self.introduced_vehicles = set([i for i in range(len(route_plan))])
+        self.vehicles = [i for i in range(len(route_plan), V)]
 
-            if not route_plan[introduced_vehicle]:
+        for introduced_vehicle in self.introduced_vehicles:
+            # generate all possible insertions
+            if len(route_plan[introduced_vehicle]) == 1:
                 # it is trivial to add the new request
                 temp_route_plan = copy.deepcopy(route_plan)
-
-                temp_route_plan[introduced_vehicle] = self.add_initial_nodes(
-                    request=request, introduced_vehicle=introduced_vehicle, rid=rid, vehicle_route=temp_route_plan[introduced_vehicle])
-
+                temp_route_plan[introduced_vehicle] = self.add_initial_nodes(request=request, introduced_vehicle=introduced_vehicle, rid=rid, vehicle_route=temp_route_plan[introduced_vehicle],
+                                                                             depot=True)
                 # calculate change in objective
-                new_objective = self.heuristic.new_objective(
-                    temp_route_plan, self.heuristic.infeasible_set)
-                possible_insertions[new_objective] = temp_route_plan
+                change_objective = self.heuristic.new_objective(
+                    temp_route_plan, infeasible_set)
+                possible_insertions[change_objective] = temp_route_plan
 
             else:
                 # the vehicle already has other nodes in its route
-                # will be set to True if both pickup and dropoff of the request have been added
-                feasible_request = False
-                activated_checks = False  # will be set to True if there is a test that fails
-                temp_route_plan = copy.deepcopy(route_plan)
 
                 vehicle_route = route_plan[introduced_vehicle]
 
@@ -44,29 +47,54 @@ class InsertionGenerator:
                     rid=rid, vehicle_route=vehicle_route)
 
                 if not preprocessed_check_activated:
-                    possible_pickup_nodes = self.generate_possible_nodes(
-                        request, vehicle_route, None)
 
-                    s = S_W if request["Wheelchair"] else S_P
-                    dropoff_time = request["Requested Pickup Time"] + self.heuristic.travel_time(
-                        rid-1, self.heuristic.n + rid-1, True) + 2*timedelta(minutes=s)
-                    pickup_time = request["Requested Pickup Time"] + \
-                        timedelta(minutes=s)
+                    if introduced_vehicle == index_removed[0][1]:
+                        # try to add nodes both with initial requested times (i=0) and with deviation from initial route plan (i=1)
+                        pickup_removal = index_removed[0] if not (
+                            index_removed[0][0] % int(index_removed[0][0])) else index_removed[1]
+                        dropoff_removal = index_removed[0] if index_removed[0][0] % int(
+                            index_removed[0][0]) else index_removed[1]
+                        pickup_removal_dev = initial_route_plan[pickup_removal[1]][pickup_removal[2]
+                                                                                   ][2] if initial_route_plan[pickup_removal[1]][pickup_removal[2]][2] != timedelta(0) else None
+                        dropoff_removal_dev = initial_route_plan[dropoff_removal[1]][dropoff_removal[2]
+                                                                                     ][2] if initial_route_plan[dropoff_removal[1]][dropoff_removal[2]][2] != timedelta(0) else None
+                        iterations = 1 if not dropoff_removal_dev and not pickup_removal_dev else 2
+                    else:
+                        iterations = 1
 
-                    for start_idx in possible_pickup_nodes:
+                    for i in range(iterations):
+                        # will be set to True if both pickup and dropoff of the request have been added
+                        feasible_request = False
+                        activated_checks = False  # will be set to True if there is a test that fails
                         temp_route_plan = copy.deepcopy(route_plan)
+
+                        s = S_W if request["Wheelchair"] else S_P
+                        pickup_time = request["Requested Pickup Time"] + timedelta(minutes=s) if i == 0 else initial_route_plan[
+                            pickup_removal[1]][pickup_removal[2]][1]
+                        dropoff_time = request["Requested Pickup Time"] + self.heuristic.travel_time(
+                            rid-1, self.heuristic.n + rid-1, True) + 2*timedelta(minutes=s)if i == 0 else initial_route_plan[dropoff_removal[1]][dropoff_removal[2]][1]
+
+                        start_idx = 0
+                        vehicle_route = temp_route_plan[introduced_vehicle]
                         test_vehicle_route = copy.deepcopy(vehicle_route)
+                        for idx, (node, time, deviation, passenger, wheelchair, _) in enumerate(vehicle_route):
+                            if time <= pickup_time:
+                                start_idx = idx
 
                         s_p_node, s_p_time, s_p_d, s_p_p, s_p_w, _ = vehicle_route[start_idx]
                         if start_idx == len(vehicle_route) - 1:
                             # there is no other end node, and we only need to check the travel time from start to the node
-                            s_p = s_p_node % int(s_p_node)
+                            s_p = s_p_node % int(
+                                s_p_node) if s_p_node > 0 else 0
                             start_id = int(
                                 s_p_node - 0.5 - 1 + self.heuristic.n if s_p else s_p_node - 1)
+                            start_id = 2*self.heuristic.n + introduced_vehicle if s_p_node == 0 else start_id
                             s_p_travel_time = self.heuristic.travel_time(
                                 rid-1, start_id, True)
 
-                            if s_p_time + (L_D-s_p_d) + s_p_travel_time <= pickup_time:
+                            dev = self.get_bound_dev(
+                                depot=(s_p_node == 0), upper=False) - s_p_d if s_p_d is not None else self.get_bound_dev(depot=(s_p_node == 0), upper=False)
+                            if s_p_time + dev + s_p_travel_time <= pickup_time:
                                 push_back = s_p_time + s_p_travel_time - pickup_time if pickup_time - \
                                     s_p_time - s_p_travel_time < timedelta(0) else 0
 
@@ -74,7 +102,7 @@ class InsertionGenerator:
                                 activated_checks = self.check_capacities(
                                     vehicle_route=temp_route_plan[introduced_vehicle], request=request, rid=rid,
                                     start_id=start_idx + 1, dropoff_id=start_idx + 2,
-                                    activated_checks=activated_checks)
+                                    activated_checks=activated_checks, infeasible_set=infeasible_set)
 
                                 if not activated_checks:
 
@@ -123,18 +151,23 @@ class InsertionGenerator:
 
                                         feasible_request = True
 
-                                        self.check_remove(rid, request)
+                                        self.check_remove(
+                                            rid, request, infeasible_set)
 
                                         # calculate change in objective
-                                        new_objective = self.heuristic.new_objective(
-                                            temp_route_plan, self.heuristic.infeasible_set)
-                                        possible_insertions[new_objective] = temp_route_plan
+                                        change_objective = self.heuristic.new_objective(
+                                            temp_route_plan, infeasible_set)
+                                        possible_insertions[change_objective] = temp_route_plan
                         else:
                             e_p_node, e_p_time, e_p_d, e_p_p, e_p_w, _ = vehicle_route[start_idx + 1]
-                            s_p = s_p_node % int(s_p_node)
+                            s_p = s_p_node % int(
+                                s_p_node) if s_p_node > 0 else 0
                             e_p = e_p_node % int(e_p_node)
                             start_id_p = int(
                                 s_p_node - 0.5 - 1 + self.heuristic.n if s_p else s_p_node - 1)
+                            start_id_p = 2*self.heuristic.n + \
+                                introduced_vehicle if s_p_node == 0 else start_id_p
+
                             end_id_p = int(
                                 e_p_node - 0.5 - 1 + self.heuristic.n if e_p else e_p_node - 1)
 
@@ -143,11 +176,14 @@ class InsertionGenerator:
                             p_e_travel_time = self.heuristic.travel_time(
                                 rid - 1, end_id_p, True)
 
-                            if s_p_time + (L_D - s_p_d) + s_p_travel_time <= pickup_time and \
-                                    pickup_time + p_e_travel_time <= e_p_time + (U_D - e_p_d):
-                                push_forward_p = pickup_time + p_e_travel_time - e_p_time if e_p_time - pickup_time - p_e_travel_time < timedelta(
-                                    0) else 0
+                            lower_dev = self.get_bound_dev(
+                                depot=(s_p_node == 0), upper=False) - s_p_d if s_p_d is not None else self.get_bound_dev(depot=(s_p_node == 0), upper=False)
+                            upper_dev = self.get_bound_dev(
+                                depot=False, upper=True) - e_p_d
+                            if s_p_time + lower_dev + s_p_travel_time <= pickup_time and pickup_time + p_e_travel_time <= e_p_time + upper_dev:
                                 push_back_p = s_p_time + s_p_travel_time - pickup_time if pickup_time - s_p_time - s_p_travel_time < timedelta(
+                                    0) else 0
+                                push_forward_p = pickup_time + p_e_travel_time - e_p_time if e_p_time - pickup_time - p_e_travel_time < timedelta(
                                     0) else 0
 
                                 # update forward
@@ -173,61 +209,65 @@ class InsertionGenerator:
                                 s_p_node, s_p_time, s_p_d, s_p_p, s_p_w, _ = test_vehicle_route[
                                     start_idx]
                                 e_p_node, e_p_time, e_p_d, e_p_p, e_p_w, _ = test_vehicle_route[
-                                    start_idx + 1]
+                                    start_idx + 2]
+                                end_idx = 0
+                                for idx, (node, time, deviation, passenger, wheelchair, _) in enumerate(test_vehicle_route):
+                                    if time <= dropoff_time:
+                                        end_idx = idx
 
-                                before_depot_test = copy.deepcopy(
-                                    test_vehicle_route)
-                                before_depot_temp = copy.deepcopy(
-                                    temp_route_plan)
-                                possible_dropoff_nodes = self.generate_possible_nodes(
-                                    request, vehicle_route, dropoff_time)
+                                s_d_node, s_d_time, s_d_d, s_d_p, s_d_w, _ = test_vehicle_route[
+                                    end_idx]
 
-                                for end_idx in possible_dropoff_nodes:
-                                    temp_route_plan = copy.deepcopy(
-                                        before_depot_temp)
-                                    test_vehicle_route = copy.deepcopy(
-                                        before_depot_test)
-                                    s_d_node, s_d_time, s_d_d, s_d_p, s_d_w, _ = test_vehicle_route[
-                                        end_idx]
+                                if end_idx == len(test_vehicle_route) - 1:
+                                    # there is no other end node, and we only need to check the travel time from start to the node
+                                    e_d_node = None
+                                else:
+                                    e_d_node, e_d_time, e_d_d, e_d_p, e_d_w, _ = test_vehicle_route[
+                                        end_idx + 1]
 
-                                    if end_idx == len(test_vehicle_route) - 1:
-                                        # there is no other end node, and we only need to check the travel time from start to the node
-                                        e_d_node = None
-                                    else:
-                                        e_d_node, e_d_time, e_d_d, e_d_p, e_d_w, _ = test_vehicle_route[
-                                            end_idx + 1]
+                                s_d = s_d_node % int(
+                                    s_d_node) if s_d_node > 0 else 0
+                                e_d = e_d_node % int(
+                                    e_d_node) if e_d_node else None
 
-                                    s_d = s_d_node % int(s_d_node)
-                                    e_d = e_d_node % int(
-                                        e_d_node) if e_d_node else None
+                                start_id_d = int(
+                                    s_d_node - 0.5 - 1 + self.heuristic.n if s_d else s_d_node - 1)
+                                start_id_d = 2*self.heuristic.n + \
+                                    introduced_vehicle if s_d_node == 0 else start_id_d
 
-                                    start_id_d = int(
-                                        s_d_node - 0.5 - 1 + self.heuristic.n if s_d else s_d_node - 1)
+                                if e_d_node:
+                                    end_id_d = int(
+                                        e_d_node - 0.5 - 1 + self.heuristic.n if e_d else e_d_node - 1)
+
+                                s_d_travel_time = self.heuristic.travel_time(
+                                    rid - 1 + self.heuristic.n, start_id_d, True)
+                                d_e_travel_time = self.heuristic.travel_time(
+                                    rid - 1 + self.heuristic.n, end_id_d, True) if e_d_node else None
+
+                                lower_dev_p = self.get_bound_dev(
+                                    depot=(s_p_node == 0), upper=False) - s_p_d if s_p_d is not None else self.get_bound_dev(depot=(s_p_node == 0), upper=False)
+                                upper_dev_p = self.get_bound_dev(
+                                    depot=False, upper=True) - e_p_d
+                                lower_dev_d = self.get_bound_dev(
+                                    depot=(s_d_node == 0), upper=False) - s_d_d if s_d_d is not None else self.get_bound_dev(depot=(s_d_node == 0), upper=False)
+
+                                if s_p_time + lower_dev_p + s_p_travel_time <= pickup_time and pickup_time + p_e_travel_time <= e_p_time + upper_dev_p and s_d_time + lower_dev_d + s_d_travel_time <= dropoff_time:
+                                    push_back_d = s_d_time + s_d_travel_time - dropoff_time if \
+                                        dropoff_time - \
+                                        s_d_time - s_d_travel_time < timedelta(
+                                            0) else 0
                                     if e_d_node:
-                                        end_id_d = int(
-                                            e_d_node - 0.5 - 1 + self.heuristic.n if e_d else e_d_node - 1)
+                                        upper_dev_d = self.get_bound_dev(
+                                            depot=False, upper=True) - e_d_d
+                                        if dropoff_time + d_e_travel_time <= e_d_time + upper_dev_d:
+                                            push_forward_d = dropoff_time + d_e_travel_time - e_d_time if e_d_time - \
+                                                dropoff_time - d_e_travel_time < timedelta(
+                                                    0) else 0
+                                        else:
+                                            activated_checks = True
+                                            push_forward_d = None
 
-                                    s_d_travel_time = self.heuristic.travel_time(
-                                        rid - 1 + self.heuristic.n, start_id_d, True)
-                                    d_e_travel_time = self.heuristic.travel_time(
-                                        rid - 1 + self.heuristic.n, end_id_d, True) if e_d_node else None
-
-                                    if s_p_time + (L_D - s_p_d) + s_p_travel_time <= pickup_time and pickup_time + p_e_travel_time <= e_p_time + (U_D - e_p_d) and s_d_time + (
-                                            L_D - s_d_d) + s_d_travel_time <= dropoff_time:
-                                        push_back_d = s_d_time + s_d_travel_time - dropoff_time if \
-                                            dropoff_time - \
-                                            s_d_time - s_d_travel_time < timedelta(
-                                                0) else 0
-                                        if e_d_node:
-                                            if dropoff_time + d_e_travel_time <= e_d_time + (
-                                                    U_D - e_d_d):
-                                                push_forward_d = dropoff_time + d_e_travel_time - e_d_time if e_d_time - \
-                                                    dropoff_time - d_e_travel_time < timedelta(
-                                                        0) else 0
-                                            else:
-                                                activated_checks = True
-                                                push_forward_d = None
-
+                                    if not activated_checks:
                                         # update forward
                                         if e_d_node:
                                             if push_forward_d:
@@ -256,7 +296,7 @@ class InsertionGenerator:
                                             vehicle_route=test_vehicle_route, request=request,
                                             rid=rid,
                                             start_id=start_idx + 1, dropoff_id=end_idx + 1,
-                                            activated_checks=activated_checks)
+                                            activated_checks=activated_checks, infeasible_set=infeasible_set)
 
                                         # check max ride time between nodes
                                         activated_checks = self.check_max_ride_time(
@@ -318,12 +358,12 @@ class InsertionGenerator:
                                             feasible_request = True
 
                                             self.check_remove(
-                                                rid, request)
+                                                rid, request, infeasible_set)
 
                                             # calculate change in objective
-                                            new_objective = self.heuristic.new_objective(
-                                                temp_route_plan, self.heuristic.infeasible_set)
-                                            possible_insertions[new_objective] = temp_route_plan
+                                            change_objective = self.heuristic.new_objective(
+                                                temp_route_plan, infeasible_set)
+                                            possible_insertions[change_objective] = temp_route_plan
 
                         # update capacity between pickup and dropoff
                         if feasible_request:
@@ -332,53 +372,40 @@ class InsertionGenerator:
                                 start_id=pickup_id, dropoff_id=dropoff_id)
 
         # check if no possible insertions have been made and introduce a new vehicle
-
         if not len(possible_insertions):
-            if self.heuristic.vehicles:
+            if self.vehicles:
                 temp_route_plan = copy.deepcopy(route_plan)
-                new_vehicle = self.heuristic.vehicles.pop(0)
+                new_vehicle = self.vehicles.pop(0)
                 temp_route_plan.append([])
-                self.heuristic.introduced_vehicles.add(new_vehicle)
+                self.introduced_vehicles.add(new_vehicle)
                 temp_route_plan[new_vehicle] = self.add_initial_nodes(
-                    request=request, introduced_vehicle=new_vehicle, rid=rid, vehicle_route=temp_route_plan[new_vehicle])
+                    request=request, introduced_vehicle=new_vehicle, rid=rid, vehicle_route=temp_route_plan[new_vehicle], depot=False)
 
                 # calculate change in objective
-                new_objective = self.heuristic.new_objective(
-                    temp_route_plan, self.heuristic.infeasible_set)
-                possible_insertions[new_objective] = temp_route_plan
+                change_objective = self.heuristic.new_objective(
+                    temp_route_plan, infeasible_set)
+                possible_insertions[change_objective] = temp_route_plan
 
             # if no new vehicles available, append the request in an infeasible set
             else:
-                if (rid, request) not in self.heuristic.infeasible_set:
-                    self.heuristic.infeasible_set.append((rid, request))
+                if (rid, request) not in infeasible_set:
+                    infeasible_set.append((rid, request))
 
-        return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else timedelta(0)
+        if objectives:
+            return sorted(possible_insertions.keys())[0] if len(possible_insertions) else timedelta(minutes=gamma), sorted(possible_insertions.keys())[objectives-1] if len(possible_insertions) > objectives-1 else timedelta(minutes=gamma)
 
-    def generate_possible_nodes(self, request, vehicle_route, dropoff_time):
-        s = S_W if request["Wheelchair"] else S_P
-        pickup_time = request["Requested Pickup Time"] + timedelta(minutes=s)
-        upper_window = pickup_time +\
-            U_D if not dropoff_time else dropoff_time + \
-            U_D
-        lower_window = pickup_time - \
-            L_D if not dropoff_time else dropoff_time - L_D
-        possible_nodes = []
-        for idx, (node, time, deviation, passenger, wheelchair, _) in enumerate(vehicle_route):
-            if time >= lower_window and time <= upper_window:
-                possible_nodes.append(idx)
+        return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else timedelta(0), infeasible_set
 
-        if not possible_nodes:
-            node_time = pickup_time if not dropoff_time else dropoff_time
-            start_idx = 0
-            for idx, (node, time, deviation, passenger, wheelchair, _) in enumerate(vehicle_route):
-                if time <= node_time:
-                    start_idx = idx
-            possible_nodes.append(start_idx)
-        return possible_nodes
+    def get_bound_dev(self, depot, upper):
+        if upper:
+            dev = U_D_N if not depot else U_D_D
+        else:
+            dev = L_D_N if not depot else L_D_D
+        return dev
 
-    def check_remove(self, rid, request):
-        if (rid, request) in self.heuristic.infeasible_set:
-            self.heuristic.infeasible_set.remove((rid, request))
+    def check_remove(self, rid, request, infeasible_set):
+        if (rid, request) in infeasible_set:
+            infeasible_set.remove((rid, request))
 
     def update_check_backward(self, vehicle_route, start_idx, push_back, activated_checks, rid, request, introduced_vehicle):
         for idx in range(start_idx, -1, -1):
@@ -398,7 +425,7 @@ class InsertionGenerator:
                 push_back = t + travel_time - t_next if t_next - \
                     t - travel_time < timedelta(0) else timedelta(0)
 
-            if d is not None and d - push_back < L_D and (rid, request) not in self.heuristic.infeasible_set:
+            if d is not None and d - push_back < L_D_N and (rid, request) not in self.heuristic.infeasible_set:
                 activated_checks = True
                 break
 
@@ -412,7 +439,6 @@ class InsertionGenerator:
             else:
                 t = t - push_back
                 vehicle_route[idx] = (n, t, d, p, w, r)
-
         return vehicle_route, activated_checks
 
     def update_check_forward(self, vehicle_route, start_idx, push_forward, activated_checks, rid, request):
@@ -435,7 +461,7 @@ class InsertionGenerator:
             if d is not None and push_forward == timedelta(0):
                 break
 
-            if d + push_forward > U_D and (rid, request) not in self.heuristic.infeasible_set:
+            if d + push_forward > U_D_N and (rid, request) not in self.heuristic.infeasible_set:
                 activated_checks = True
                 break
             t = t + push_forward
@@ -497,31 +523,46 @@ class InsertionGenerator:
             idx += 1
         return vehicle_route
 
-    def check_capacities(self, vehicle_route, start_id, dropoff_id, request, rid, activated_checks):
+    def check_capacities(self, vehicle_route, start_id, dropoff_id, request, rid, activated_checks, infeasible_set):
         for n, t, d, p, w, _ in vehicle_route[start_id+1:dropoff_id]:
-            if p + request["Number of Passengers"] > P and (rid, request) not in self.heuristic.infeasible_set or w + request["Wheelchair"] > W and (rid, request) not in self.heuristic.infeasible_set:
+            if p + request["Number of Passengers"] > P and (rid, request) not in infeasible_set or w + request["Wheelchair"] > W and (rid, request) not in infeasible_set:
                 activated_checks = True
                 break
         return activated_checks
 
-    def add_initial_nodes(self, request, introduced_vehicle, rid, vehicle_route):
-        service_time = request["Requested Pickup Time"] - self.heuristic.travel_time(
-            rid-1, 2*self.heuristic.n + introduced_vehicle, True)
-
+    def add_initial_nodes(self, request, introduced_vehicle, rid, vehicle_route, depot):
+        vehicle_route = copy.deepcopy(vehicle_route)
         s = S_W if request["Wheelchair"] else S_P
+        if not depot:
+            service_time = request["Requested Pickup Time"] + timedelta(minutes=s) - self.heuristic.travel_time(
+                rid-1, 2*self.heuristic.n + introduced_vehicle, True)
+            vehicle_route.append(
+                (0, service_time, None, 0, 0, None))
+            vehicle_route.append(
+                (rid,
+                    request["Requested Pickup Time"] + timedelta(minutes=s), timedelta(0), request["Number of Passengers"], request["Wheelchair"], request)
+            )
+            travel_time = self.heuristic.travel_time(
+                rid-1, self.heuristic.n + rid - 1, True)
+            vehicle_route.append(
+                (rid + 0.5,
+                    request["Requested Pickup Time"]+travel_time+2 * timedelta(minutes=s), timedelta(0), 0, 0, request)
+            )
+        else:
+            service_time = request["Requested Pickup Time"] + timedelta(minutes=s) - self.heuristic.travel_time(
+                rid-1, 2*self.heuristic.n + introduced_vehicle, True)
+            vehicle_route[0] = (0, service_time, None, 0, 0, None)
+            vehicle_route.insert(1,
+                                 (rid,
+                                  request["Requested Pickup Time"] + timedelta(minutes=s), timedelta(0), request["Number of Passengers"], request["Wheelchair"], request)
+                                 )
+            travel_time = self.heuristic.travel_time(
+                rid-1, self.heuristic.n + rid - 1, True)
+            vehicle_route.insert(2,
+                                 (rid + 0.5,
+                                  request["Requested Pickup Time"]+travel_time+2 * timedelta(minutes=s), timedelta(0), 0, 0, request)
+                                 )
 
-        vehicle_route.append(
-            (0, service_time, None, 0, 0, None))
-        vehicle_route.append(
-            (rid,
-                request["Requested Pickup Time"]+timedelta(minutes=s), timedelta(0), request["Number of Passengers"], request["Wheelchair"], request)
-        )
-        travel_time = self.heuristic.travel_time(
-            rid-1, self.heuristic.n + rid - 1, True)
-        vehicle_route.append(
-            (rid + 0.5,
-                request["Requested Pickup Time"]+travel_time+2*timedelta(minutes=s), timedelta(0), 0, 0, request)
-        )
         return vehicle_route
 
     def preprocess_check(self, rid, vehicle_route):

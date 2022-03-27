@@ -9,11 +9,16 @@ F = 1
 V = 16
 
 # Allowed deviaiton from Requested service time (either pickup or dropoff)
-U_D = timedelta(minutes=5)
-L_D = timedelta(minutes=-5)
+U_D = timedelta(minutes=15)
+L_D = timedelta(minutes=-15)
+P_S = timedelta(minutes=7.5)  # penalized soft time windows
+
+# Rush hour factor
+R_F = 1.5
 
 # Estimated time to serve a node
-S = 2
+S_P = 2  # standard seats
+S_W = 5  # wheelchairs
 
 # Vehicle standard seats capacity
 P = 15
@@ -21,11 +26,14 @@ P = 15
 # Vehicle wheelchair seats capacity
 W = 1
 
-# Weight of deviation in objective function
+# Weight of ride time in objective function
 alpha = 1
 
-# Weight of ride time in objective function
-beta = 1
+# Weight of deviation in objective function
+beta = 5
+
+# Weight of infeasible set in objective function
+gamma = 10000
 
 chosen_columns = [
     "Request Creation Time",
