@@ -584,15 +584,19 @@ class ReOptOperators:
         infeasible_set = []
         unassigned_requests = pd.DataFrame(unassigned_requests)
         regret_values = []
+        initial_vehicle_clocks = copy.deepcopy(self.vehicle_clocks)
         for i in range(unassigned_requests.shape[0]):
             rid = unassigned_requests.iloc[i][0]
             request = unassigned_requests.iloc[i][1]
             index_removal = [
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
-            first_objective, second_objective = self.reopt_repair_generator.generate_insertions(
+            first_objective, second_objective, vehicle_clocks = self.reopt_repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set,
-                initial_route_plan=current_route_plan, index_removed=index_removal, sim_clock=self.sim_clock, objectives=2, delayed=delayed, still_delayed_nodes=still_delayed_nodes)
+                initial_route_plan=current_route_plan, index_removed=index_removal, sim_clock=self.sim_clock, objectives=2, delayed=delayed, still_delayed_nodes=still_delayed_nodes,
+                vehicle_clocks=self.vehicle_clocks)
+
+            self.vehicle_clocks = vehicle_clocks
 
             regret_values.append(
                 (rid, request, second_objective-first_objective))
@@ -600,15 +604,20 @@ class ReOptOperators:
         regret_values.sort(key=lambda x: x[2])
 
         # iterate through requests in order of regret k value
+        self.vehicle_clocks = initial_vehicle_clocks
+
         for i in reversed(regret_values):
             rid = i[0]
             request = i[1]
             index_removal = [
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
-            route_plan, new_objective, infeasible_set = self.reopt_repair_generator.generate_insertions(
+            route_plan, new_objective, infeasible_set, vehicle_clocks = self.reopt_repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set,
-                initial_route_plan=current_route_plan, index_removed=index_removal, sim_clock=self.sim_clock, objectives=0, delayed=delayed, still_delayed_nodes=still_delayed_nodes)
+                initial_route_plan=current_route_plan, index_removed=index_removal, sim_clock=self.sim_clock, objectives=0, delayed=delayed, still_delayed_nodes=still_delayed_nodes,
+                vehicle_clocks=self.vehicle_clocks)
+
+            self.vehicle_clocks = vehicle_clocks
 
             # update current objective
             current_objective = new_objective
@@ -623,15 +632,19 @@ class ReOptOperators:
         infeasible_set = []
         unassigned_requests = pd.DataFrame(unassigned_requests)
         regret_values = []
+        initial_vehicle_clocks = copy.deepcopy(self.vehicle_clocks)
         for i in range(unassigned_requests.shape[0]):
             rid = unassigned_requests.iloc[i][0]
             request = unassigned_requests.iloc[i][1]
             index_removal = [
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
-            first_objective, third_objective = self.reopt_repair_generator.generate_insertions(
+            first_objective, third_objective, vehicle_clocks = self.reopt_repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set,
-                initial_route_plan=current_route_plan, index_removed=index_removal, sim_clock=self.sim_clock, objectives=3, delayed=delayed, still_delayed_nodes=still_delayed_nodes)
+                initial_route_plan=current_route_plan, index_removed=index_removal, sim_clock=self.sim_clock, objectives=3, delayed=delayed, still_delayed_nodes=still_delayed_nodes,
+                vehicle_clocks=self.vehicle_clocks)
+
+            self.vehicle_clocks = vehicle_clocks
 
             regret_values.append(
                 (rid, request, third_objective-first_objective))
@@ -639,15 +652,19 @@ class ReOptOperators:
         regret_values.sort(key=lambda x: x[2])
 
         # iterate through requests in order of regret k value
+        self.vehicle_clocks = initial_vehicle_clocks
         for i in reversed(regret_values):
             rid = i[0]
             request = i[1]
             index_removal = [
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
-            route_plan, new_objective, infeasible_set = self.reopt_repair_generator.generate_insertions(
+            route_plan, new_objective, infeasible_set, vehicle_clocks = self.reopt_repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set,
-                initial_route_plan=current_route_plan, index_removed=index_removal, sim_clock=self.sim_clock, objectives=0, delayed=delayed, still_delayed_nodes=still_delayed_nodes)
+                initial_route_plan=current_route_plan, index_removed=index_removal, sim_clock=self.sim_clock, objectives=0, delayed=delayed, still_delayed_nodes=still_delayed_nodes,
+                vehicle_clocks=self.vehicle_clocks)
+
+            self.vehicle_clocks = vehicle_clocks
 
             # update current objective
             current_objective = new_objective
