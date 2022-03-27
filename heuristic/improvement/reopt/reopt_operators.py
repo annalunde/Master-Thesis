@@ -13,12 +13,13 @@ from heuristic.improvement.reopt.reopt_repair_generator import ReOptRepairGenera
 
 
 class ReOptOperators:
-    def __init__(self, alns, sim_clock):
+    def __init__(self, alns, sim_clock, vehicle_clocks):
         self.destruction_degree = alns.destruction_degree
         self.constructor = alns.constructor
         self.T_ij = self.constructor.T_ij
         self.reopt_repair_generator = ReOptRepairGenerator(self.constructor)
         self.sim_clock = sim_clock
+        self.vehicle_clocks = vehicle_clocks
 
     # Find number of requests to remove based on degree of destruction
     def nodes_to_remove(self, route_plan):
@@ -563,9 +564,12 @@ class ReOptOperators:
             index_removal = [
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
-            route_plan, new_objective, infeasible_set = self.reopt_repair_generator.generate_insertions(
+            route_plan, new_objective, infeasible_set, vehicle_clocks = self.reopt_repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set,
-                initial_route_plan=current_route_plan, index_removed=index_removal, sim_clock=self.sim_clock)
+                initial_route_plan=current_route_plan, index_removed=index_removal, sim_clock=self.sim_clock,
+                vehicle_clocks=self.vehicle_clocks)
+
+            self.vehicle_clocks = vehicle_clocks
 
             # update current objective
             current_objective = new_objective
@@ -695,7 +699,7 @@ class ReOptOperators:
     def find_possible_removals(self, route_plan):
 
         possible_removals = [[(rid, t, d, p, w, request, idx + 1) for idx, (rid, t, d, p, w, request) in
-                              enumerate(route_plan[vehicle][1:]) if t >= self.sim_clock] for vehicle in
+                              enumerate(route_plan[vehicle][1:]) if t > self.vehicle_clocks[vehicle]] for vehicle in
                              range(0, len(route_plan))]
 
         vehicles = [vehicle for vehicle in possible_removals if len(vehicle) > 0]
@@ -715,4 +719,5 @@ class ReOptOperators:
                 possible_removals[possible_removals.index(
                     vehicle)].remove(node)
 
+        tid = 2
         return possible_removals

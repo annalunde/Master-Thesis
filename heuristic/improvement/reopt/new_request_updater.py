@@ -114,33 +114,34 @@ class NewRequestUpdater:
                     P_ij[n_j].add(n_i+1)
         return np.array(P_ij)
 
-    def greedy_insertion_new_request(self, current_route_plan, current_infeasible_set, new_request, sim_clock):
+    def greedy_insertion_new_request(self, current_route_plan, current_infeasible_set, new_request, sim_clock, vehicle_clocks):
         rid = len(self.requests.index)
         route_plan = copy.deepcopy(current_route_plan)
         infeasible_set = copy.deepcopy(current_infeasible_set)
         request = new_request.iloc[0]
 
-        route_plan, new_objective, infeasible_set = self.re_opt_repair_generator.generate_insertions(
+        route_plan, new_objective, infeasible_set, vehicle_clocks = self.re_opt_repair_generator.generate_insertions(
             route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=None,
-            index_removed=None, sim_clock=sim_clock)
+            index_removed=None, sim_clock=sim_clock, vehicle_clocks=vehicle_clocks)
 
         # update current objective
         self.current_objective = new_objective
 
-        return route_plan, self.current_objective, infeasible_set
+        return route_plan, self.current_objective, infeasible_set, vehicle_clocks
 
     def new_objective(self, new_routeplan, new_infeasible_set):
         total_deviation = timedelta(minutes=0)
         total_travel_time = timedelta(minutes=0)
         total_infeasible = timedelta(minutes=len(new_infeasible_set))
         for vehicle_route in new_routeplan:
-            diff = (pd.to_datetime(
-                vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
-            total_travel_time += timedelta(minutes=diff)
-            for n, t, d, p, w, _ in vehicle_route:
-                if d is not None:
-                    d = d if d > timedelta(0) else -d
-                    total_deviation += d
+            if len(vehicle_route) < 2:
+                diff = (pd.to_datetime(
+                    vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
+                total_travel_time += timedelta(minutes=diff)
+                for n, t, d, p, w, _ in vehicle_route:
+                    if d is not None:
+                        d = d if d > timedelta(0) else -d
+                        total_deviation += d
 
         updated = alpha*total_travel_time + beta * \
             total_deviation + gamma*total_infeasible

@@ -54,7 +54,7 @@ def main():
         # SIMULATION
         print("Start simulation")
         sim_clock = datetime.strptime(
-            "2021-05-10 16:00:00", "%Y-%m-%d %H:%M:%S")
+            "2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
         simulator = Simulator(sim_clock)
         new_request_updater = NewRequestUpdater(
             df.head(R), V, initial_infeasible_set)
@@ -79,15 +79,16 @@ def main():
             # updates before heuristic
             disrupt = (False, None)
             if disruption_type == 'request':
-                disruption_updater.update_new_request(disruption_info)
-                current_route_plan, current_objective, current_infeasible_set = new_request_updater.\
+                current_route_plan, vehicle_clocks = disruption_updater.update_route_plan(
+                    current_route_plan, disruption_type, disruption_info, disruption_time)
+                current_route_plan, current_objective, current_infeasible_set, vehicle_clocks = new_request_updater.\
                     greedy_insertion_new_request(
-                        current_route_plan, current_infeasible_set, disruption_info, disruption_time)
+                        current_route_plan, current_infeasible_set, disruption_info, disruption_time, vehicle_clocks)
             elif disruption_type == 'no disruption':
                 continue
             else:
-                current_route_plan = disruption_updater.update_route_plan(
-                    current_route_plan, disruption_type, disruption_info)
+                current_route_plan, vehicle_clocks = disruption_updater.update_route_plan(
+                    current_route_plan, disruption_type, disruption_info, disruption_time)
                 current_objective = new_request_updater.new_objective(
                     current_route_plan, current_infeasible_set)
                 if disruption_type == 'cancel' or disruption_type == 'no show':
@@ -100,7 +101,7 @@ def main():
                         criterion,
                         destruction_degree, new_request_updater, random_state)
 
-            operators = ReOptOperators(alns, disruption_time)
+            operators = ReOptOperators(alns, disruption_time, vehicle_clocks)
 
             alns.set_operators(operators)
 
