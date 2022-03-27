@@ -72,16 +72,18 @@ class DisruptionUpdater:
         return route_plan
 
     @staticmethod
-    def recalibrate_solution(current_route_plan, disruption_info):
+    def recalibrate_solution(current_route_plan, disruption_info, still_delayed_nodes):
         delay_duration = disruption_info[2]
         route_plan = copy.deepcopy(current_route_plan)
 
-        start_idx = disruption_info[1]
-        for node in route_plan[disruption_info[0]][disruption_info[1]:]:
-            d = node[2] - delay_duration
-            node = (node[0], node[1], d, node[3], node[4], node[5])
-            route_plan[disruption_info[0]][start_idx] = node
-            start_idx += 1
+        for node in still_delayed_nodes:
+            idx = next(i for i, (node_test, *_)
+                       in enumerate(route_plan[disruption_info[0]]) if node_test == node)
+            node_route = route_plan[disruption_info[0]][idx]
+            d = node_route[2] - delay_duration
+            node_route = (node_route[0], node_route[1], d,
+                          node_route[3], node_route[4], node_route[5])
+            route_plan[disruption_info[0]][idx] = node_route
 
         return route_plan
 

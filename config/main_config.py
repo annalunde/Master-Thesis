@@ -18,4 +18,4 @@ V = 16
 # Simulated annealing temperatures -- NOTE: these must be tuned
 start_temperature = 50
 end_temperature = 10
-step = 5
+cooling_rate = 0.999

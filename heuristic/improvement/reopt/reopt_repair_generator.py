@@ -20,7 +20,7 @@ class ReOptRepairGenerator:
             self.heuristic.introduced_vehicles)
         self.vehicles = copy.deepcopy(self.heuristic.vehicles)
 
-    def generate_insertions(self, route_plan, request, rid, infeasible_set, initial_route_plan, index_removed, sim_clock, vehicle_clocks):
+    def generate_insertions(self, route_plan, request, rid, infeasible_set, initial_route_plan, index_removed, sim_clock, objectives, delayed, still_delayed_nodes, vehicle_clocks):
         possible_insertions = {}  # dict: delta objective --> route plan
         self.introduced_vehicles = set([i for i in range(len(route_plan))])
         self.vehicles = [i for i in range(len(route_plan), V)]
@@ -44,8 +44,11 @@ class ReOptRepairGenerator:
 
             else:
                 # the vehicle already has other nodes in its route
-
+                delayed_vehicle = False
                 vehicle_route = route_plan[introduced_vehicle]
+
+                if introduced_vehicle == delayed[1]:
+                    delayed_vehicle = True
 
                 # check if there are any infeasible matches with current request
                 preprocessed_check_activated = self.preprocess_check(
@@ -56,7 +59,7 @@ class ReOptRepairGenerator:
                     iterations = 1
 
                     if index_removed:
-                        if introduced_vehicle == index_removed[0][1]:
+                        if introduced_vehicle == index_removed[0][1] and not delayed_vehicle:
                             # try to add nodes both with initial requested times (i=0) and with deviation from initial route plan (i=1)
                             pickup_removal = index_removed[0] if not (
                                 index_removed[0][0] % int(index_removed[0][0])) else index_removed[1]
@@ -76,10 +79,11 @@ class ReOptRepairGenerator:
                         activated_checks = False  # will be set to True if there is a test that fails
                         temp_route_plan = copy.deepcopy(route_plan)
 
-                        pickup_time = request["Requested Pickup Time"] + timedelta(minutes=S) if i == 0 else initial_route_plan[
+                        s = S_W if request["Wheelchair"] else S_P
+                        pickup_time = request["Requested Pickup Time"] + timedelta(minutes=s) if i == 0 else initial_route_plan[
                             pickup_removal[1]][pickup_removal[2]][1]
                         dropoff_time = request["Requested Pickup Time"] + self.heuristic.travel_time(
-                            rid-1, self.heuristic.n + rid-1, True) + 2*timedelta(minutes=S)if i == 0 else initial_route_plan[dropoff_removal[1]][dropoff_removal[2]][1]
+                            rid-1, self.heuristic.n + rid-1, True) + 2*timedelta(minutes=s) if i == 0 else initial_route_plan[dropoff_removal[1]][dropoff_removal[2]][1]
 
                         if pickup_time <= vehicle_clocks[introduced_vehicle]:
                             break
@@ -104,6 +108,8 @@ class ReOptRepairGenerator:
 
                             dev = self.get_bound_dev(
                                 depot=(s_p_node == 0), upper=False) - s_p_d if s_p_d is not None else self.get_bound_dev(depot=(s_p_node == 0), upper=False)
+                            dev = timedelta(
+                                0) if s_p_node in still_delayed_nodes else dev
                             if s_p_time + dev + s_p_travel_time <= pickup_time:
                                 push_back = s_p_time + s_p_travel_time - pickup_time if pickup_time - \
                                     s_p_time - s_p_travel_time < timedelta(0) else 0
@@ -134,7 +140,7 @@ class ReOptRepairGenerator:
                                     # check max ride time between nodes on test vehicle route
                                     activated_checks = self.check_max_ride_time(
                                         vehicle_route=test_vehicle_route,
-                                        activated_checks=activated_checks, rid=rid, request=request)
+                                        activated_checks=activated_checks, rid=rid, request=request, still_delayed_nodes=still_delayed_nodes)
 
                                     # check min ride time between nodes on test vehicle route
                                     activated_checks = self.check_min_ride_time(
@@ -193,6 +199,10 @@ class ReOptRepairGenerator:
                                 depot=(s_p_node == 0), upper=False) - s_p_d if s_p_d is not None else self.get_bound_dev(depot=(s_p_node == 0), upper=False)
                             upper_dev = self.get_bound_dev(
                                 depot=False, upper=True) - e_p_d
+                            lower_dev = timedelta(
+                                0) if s_p_node in still_delayed_nodes else lower_dev
+                            upper_dev = timedelta(
+                                0) if e_p_node in still_delayed_nodes else upper_dev
                             if s_p_time + lower_dev + s_p_travel_time <= pickup_time and pickup_time + p_e_travel_time <= e_p_time + upper_dev:
                                 push_back_p = s_p_time + s_p_travel_time - pickup_time if pickup_time - s_p_time - s_p_travel_time < timedelta(
                                     0) else 0
@@ -204,7 +214,7 @@ class ReOptRepairGenerator:
                                     test_vehicle_route, activated_checks = self.update_check_forward(
                                         vehicle_route=test_vehicle_route, start_idx=start_idx,
                                         push_forward=push_forward_p, activated_checks=activated_checks, rid=rid,
-                                        request=request)
+                                        request=request, still_delayed_nodes=still_delayed_nodes)
 
                                 # update backward
                                 if push_back_p:
@@ -264,6 +274,12 @@ class ReOptRepairGenerator:
                                     depot=False, upper=True) - e_p_d
                                 lower_dev_d = self.get_bound_dev(
                                     depot=(s_d_node == 0), upper=False) - s_d_d if s_d_d is not None else self.get_bound_dev(depot=(s_d_node == 0), upper=False)
+                                upper_dev_p = timedelta(
+                                    0) if e_p_node in still_delayed_nodes else upper_dev_p
+                                lower_dev_d = timedelta(
+                                    0) if s_d_node in still_delayed_nodes else lower_dev_d
+                                lower_dev_p = timedelta(
+                                    0) if s_p_node in still_delayed_nodes else lower_dev_p
 
                                 if s_p_time + lower_dev_p + s_p_travel_time <= pickup_time and pickup_time + p_e_travel_time <= e_p_time + upper_dev_p and s_d_time + lower_dev_d + s_d_travel_time <= dropoff_time:
                                     push_back_d = s_d_time + s_d_travel_time - dropoff_time if \
@@ -289,7 +305,7 @@ class ReOptRepairGenerator:
                                                     vehicle_route=test_vehicle_route, start_idx=start_idx,
                                                     push_forward=push_forward_d, activated_checks=activated_checks,
                                                     rid=rid,
-                                                    request=request)
+                                                    request=request, still_delayed_nodes=still_delayed_nodes)
 
                                         # update backward
                                         if push_back_d:
@@ -316,7 +332,7 @@ class ReOptRepairGenerator:
                                         # check max ride time between nodes
                                         activated_checks = self.check_max_ride_time(
                                             vehicle_route=test_vehicle_route,
-                                            activated_checks=activated_checks, rid=rid, request=request)
+                                            activated_checks=activated_checks, rid=rid, request=request, still_delayed_nodes=still_delayed_nodes)
 
                                         # check min ride time between nodes on test vehicle route
                                         activated_checks = self.check_min_ride_time(
@@ -332,7 +348,7 @@ class ReOptRepairGenerator:
                                                     start_idx=start_idx,
                                                     push_forward=push_forward_p, activated_checks=activated_checks,
                                                     rid=rid,
-                                                    request=request)
+                                                    request=request, still_delayed_nodes=still_delayed_nodes)
 
                                             # update backward
                                             if push_back_p:
@@ -354,7 +370,7 @@ class ReOptRepairGenerator:
                                                         push_forward=push_forward_d,
                                                         activated_checks=activated_checks,
                                                         rid=rid,
-                                                        request=request)
+                                                        request=request, still_delayed_nodes=still_delayed_nodes)
 
                                             # update backward
                                             if push_back_d:
@@ -423,6 +439,9 @@ class ReOptRepairGenerator:
                 if (rid, request) not in infeasible_set:
                     infeasible_set.append((rid, request))
 
+        if objectives:
+            return sorted(possible_insertions.keys())[0] if len(possible_insertions) else timedelta(minutes=gamma), sorted(possible_insertions.keys())[objectives-1] if len(possible_insertions) > objectives-1 else timedelta(minutes=gamma), vehicle_clocks
+
         return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else timedelta(0), infeasible_set, vehicle_clocks
 
     def get_bound_dev(self, depot, upper):
@@ -479,7 +498,7 @@ class ReOptRepairGenerator:
                 vehicle_route[idx] = (n, t, d, p, w, r)
         return vehicle_route, activated_checks
 
-    def update_check_forward(self, vehicle_route, start_idx, push_forward, activated_checks, rid, request):
+    def update_check_forward(self, vehicle_route, start_idx, push_forward, activated_checks, rid, request, still_delayed_nodes):
         idx = start_idx + 1
         for n, t, d, p, w, r in vehicle_route[start_idx+1:]:
             # since updating happens at start_idx + 1, there is no need to check for depot
@@ -500,33 +519,38 @@ class ReOptRepairGenerator:
                 break
 
             if d + push_forward > U_D_N and (rid, request) not in self.heuristic.infeasible_set:
-                activated_checks = True
-                break
+                if n not in still_delayed_nodes:
+                    activated_checks = True
+                    break
             t = t + push_forward
             d = d + push_forward
             vehicle_route[idx] = (n, t, d, p, w, r)
             idx += 1
         return vehicle_route, activated_checks
 
-    def check_max_ride_time(self, vehicle_route, activated_checks, rid, request):
+    def check_max_ride_time(self, vehicle_route, activated_checks, rid, request, still_delayed_nodes):
         nodes = [int(n) for n, t, d, p, w, _ in vehicle_route]
         nodes.remove(0)
         nodes_set = []
         [nodes_set.append(i) for i in nodes if i not in nodes_set]
+        break_delay = [int(i) for i in still_delayed_nodes if int(
+            i) not in still_delayed_nodes]
+        nodes_set.remove(
+            break_delay) if break_delay in nodes_set else nodes_set
+        print("nodes set", nodes_set)
+        print("vehicle route", vehicle_route)
         for n in nodes_set:
-            print(vehicle_route)
-            print(nodes_set)
-            print(n)
             p_idx = next(i for i, (node, *_)
-                     in enumerate(vehicle_route) if node == n)
+                         in enumerate(vehicle_route) if node == n)
             d_idx = next((i for i, (node, *_)
                          in enumerate(vehicle_route) if node == n+0.5), None)
             if d_idx is None:
                 continue
             pn, pickup_time, pd, pp, pw, _ = vehicle_route[p_idx]
             dn, dropoff_time, dd, dp, dw, _ = vehicle_route[d_idx]
+            s = S_W if request["Wheelchair"] else S_P
             total_time = (dropoff_time - pickup_time).seconds - \
-                timedelta(minutes=S).seconds
+                timedelta(minutes=s).seconds
             max_time = self.heuristic.get_max_travel_time(
                 n-1, n-1 + self.heuristic.n)
             if total_time > max_time.total_seconds():
@@ -573,24 +597,25 @@ class ReOptRepairGenerator:
         return activated_checks
 
     def add_initial_nodes(self, request, introduced_vehicle, rid, vehicle_route, depot, sim_clock):
+        s = S_W if request["Wheelchair"] else S_P
         depot_check = False
         if not depot:
             # add new vehicle
-            service_time = request["Requested Pickup Time"] + timedelta(minutes=S) - self.heuristic.travel_time(
+            service_time = request["Requested Pickup Time"] + timedelta(minutes=s) - self.heuristic.travel_time(
                 rid-1, 2*self.heuristic.n + introduced_vehicle, True)
             if service_time >= sim_clock:
                 vehicle_route.append(
                     (0, service_time, None, 0, 0, None))
                 vehicle_route.append(
                     (rid,
-                     request["Requested Pickup Time"] + timedelta(minutes=S), timedelta(0),
+                     request["Requested Pickup Time"] + timedelta(minutes=s), timedelta(0),
                      request["Number of Passengers"], request["Wheelchair"], request)
                 )
                 travel_time = self.heuristic.travel_time(
                     rid-1, self.heuristic.n + rid - 1, True)
                 vehicle_route.append(
                     (rid + 0.5,
-                     request["Requested Pickup Time"]+travel_time+2 * timedelta(minutes=S),
+                     request["Requested Pickup Time"]+travel_time+2 * timedelta(minutes=s),
                      timedelta(0), 0, 0, request)
                 )
             else:
@@ -603,30 +628,30 @@ class ReOptRepairGenerator:
                         (0, sim_clock, None, 0, 0, None))
                     vehicle_route.append(
                         (rid,
-                         request["Requested Pickup Time"] + push_forward + timedelta(minutes=S), push_forward,
+                         request["Requested Pickup Time"] + push_forward + timedelta(minutes=s), push_forward,
                          request["Number of Passengers"], request["Wheelchair"], request)
                     )
                     travel_time = self.heuristic.travel_time(
                         rid - 1, self.heuristic.n + rid - 1, True)
                     vehicle_route.append(
                         (rid + 0.5,
-                         request["Requested Pickup Time"] + push_forward + travel_time + 2 * timedelta(minutes=S),
+                         request["Requested Pickup Time"] + push_forward + travel_time + 2 * timedelta(minutes=s),
                          push_forward, 0, 0, request)
                     )
         else:
             # update depot service time
-            service_time = request["Requested Pickup Time"] + timedelta(minutes=S) - self.heuristic.travel_time(
+            service_time = request["Requested Pickup Time"] + timedelta(minutes=s) - self.heuristic.travel_time(
                 rid-1, 2*self.heuristic.n + introduced_vehicle, True)
             if service_time >= sim_clock:
                 vehicle_route[0] = (0, service_time, None, 0, 0, None)
                 vehicle_route.insert(
-                    1, (rid, request["Requested Pickup Time"] + timedelta(minutes=S), timedelta(0),
+                    1, (rid, request["Requested Pickup Time"] + timedelta(minutes=s), timedelta(0),
                         request["Number of Passengers"], request["Wheelchair"], request)
                 )
                 travel_time = self.heuristic.travel_time(
                     rid - 1, self.heuristic.n + rid - 1, True)
                 vehicle_route.insert(
-                    2, (rid + 0.5, request["Requested Pickup Time"] + travel_time + 2 * timedelta(minutes=S),
+                    2, (rid + 0.5, request["Requested Pickup Time"] + travel_time + 2 * timedelta(minutes=s),
                         timedelta(0), 0, 0, request)
                 )
             else:
@@ -637,14 +662,14 @@ class ReOptRepairGenerator:
                 else:
                     vehicle_route[0] = (0, sim_clock, None, 0, 0, None)
                     vehicle_route.insert(
-                        1, (rid, request["Requested Pickup Time"] + push_forward + timedelta(minutes=S), push_forward,
+                        1, (rid, request["Requested Pickup Time"] + push_forward + timedelta(minutes=s), push_forward,
                             request["Number of Passengers"], request["Wheelchair"], request)
                     )
                     travel_time = self.heuristic.travel_time(
                         rid - 1, self.heuristic.n + rid - 1, True)
                     vehicle_route.insert(
                         2, (rid + 0.5,
-                            request["Requested Pickup Time"] + push_forward + travel_time + 2 * timedelta(minutes=S),
+                            request["Requested Pickup Time"] + push_forward + travel_time + 2 * timedelta(minutes=s),
                             push_forward, 0, 0, request)
                     )
 

@@ -52,19 +52,19 @@ class Simulator:
                 disruption_info = None
 
         elif disruption_type == 'cancel':
-            cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index, node_d, node_p = self.cancel(
+            cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index, node_p, node_d = self.cancel(
                 disruption_time, current_route_plan)
             disruption_info = (
-                cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index, node_d, node_p)
+                cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index, node_p, node_d)
             if cancel_pickup_rid_index < 0:
                 disruption_type = 'no disruption'
                 disruption_info = None
 
         else:
-            no_show_vehicle_index, no_show_pickup_rid_index, no_show_dropoff_rid_index, node_d, node_p, actual_no_show = self.no_show(
+            no_show_vehicle_index, no_show_pickup_rid_index, no_show_dropoff_rid_index, node_p, node_d, actual_no_show = self.no_show(
                 disruption_time, current_route_plan)
             disruption_info = (
-                no_show_vehicle_index, no_show_pickup_rid_index, no_show_dropoff_rid_index, node_d, node_p)
+                no_show_vehicle_index, no_show_pickup_rid_index, no_show_dropoff_rid_index, node_p, node_d)
             next_disruption_time = self.disruptions_stack[-1][1] if len(
                 self.disruptions_stack) > 0 else datetime.strptime("2021-05-10 19:00:00", "%Y-%m-%d %H:%M:%S")
             if no_show_pickup_rid_index < 0 or actual_no_show >= next_disruption_time:
@@ -143,7 +143,8 @@ class Simulator:
         vehicle_index = 0
         for row in current_route_plan:
             for col in range(1, len(row)):
-                temp_planned_time = row[col][1] - timedelta(minutes=S)
+                s = S_W if row[col][5]["Wheelchair"] else S_P
+                temp_planned_time = row[col][1] - timedelta(minutes=s)
                 if temp_planned_time >= initial_delay:
                     rids_indices.append(col)
                     planned_departure_times.append(temp_planned_time)
@@ -170,12 +171,13 @@ class Simulator:
         for row in current_route_plan:
             for col in range(1, len(row)):
                 temp_rid = row[col][0]
-                temp_planned_time = row[col][1] - timedelta(minutes=S)
+                s = S_W if row[col][5]["Wheelchair"] else S_P
+                temp_planned_time = row[col][1] - timedelta(minutes=s)
                 if not temp_rid % int(temp_rid) and temp_planned_time >= cancel:
                     for i in range(col, len(row)):
                         if row[i][0] == temp_rid + 0.5:
                             indices.append(
-                                (vehicle_index, col, i, row[i][0], temp_rid))
+                                (vehicle_index, col, i, temp_rid, row[i][0]))
             vehicle_index += 1
 
         # check whether there are any cancellations, if not, another disruption will be chosen
@@ -195,12 +197,13 @@ class Simulator:
         for row in current_route_plan:
             for col in range(1, len(row)):
                 temp_rid = row[col][0]
-                temp_planned_time = row[col][1] - timedelta(minutes=S)
+                s = S_W if row[col][5]["Wheelchair"] else S_P
+                temp_planned_time = row[col][1] - timedelta(minutes=s)
                 if not temp_rid % int(temp_rid) and temp_planned_time >= initial_no_show:
                     for i in range(col, len(row)):
                         if row[i][0] == temp_rid + 0.5:
                             indices.append(
-                                (vehicle_index, col, i, row[i][0], temp_rid))
+                                (vehicle_index, col, i, temp_rid, row[i][0]))
                             planned_pickup_times.append(temp_planned_time)
             vehicle_index += 1
 
@@ -212,6 +215,7 @@ class Simulator:
             return index[0], index[1], index[2], index[3], index[4], actual_disruption_time
         else:
             return -1, -1, -1, -1, -1, -1
+
 
 def main():
     simulator = None
@@ -230,7 +234,8 @@ def main():
         # første runde av simulator må kjøre med new requests fra data_processed_path for å få fullstendig antall
         # requests første runde, deretter skal rundene kjøre med data_simulator_path for å få updated data
         print("Start simulation")
-        sim_clock = datetime.strptime("2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
+        sim_clock = datetime.strptime(
+            "2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
         simulator = Simulator(sim_clock)
         first_iteration = True
         while len(simulator.disruptions_stack) > 0:
@@ -265,6 +270,7 @@ def main():
         '''
     except Exception as e:
         print("ERROR:", e)
+
 
 if __name__ == "__main__":
     main()

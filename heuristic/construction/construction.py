@@ -99,14 +99,15 @@ class ConstructionHeuristic:
         total_travel_time = timedelta(minutes=0)
         total_infeasible = timedelta(minutes=len(new_infeasible_set))
         for vehicle_route in new_routeplan:
-            if len(vehicle_route) < 2:
+            if len(vehicle_route) >= 2:
                 diff = (pd.to_datetime(
                     vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
                 total_travel_time += timedelta(minutes=diff)
-                for n, t, d, p, w, _ in vehicle_route:
-                    if d is not None:
-                        d = d if d > timedelta(0) else -d
-                        total_deviation += d
+            for n, t, d, p, w, _ in vehicle_route:
+                if d is not None:
+                    d = d if d > timedelta(0) else -d
+                    pen_dev = d - P_S if d > P_S else timedelta(0)
+                    total_deviation += pen_dev
 
         updated = alpha*total_travel_time + beta * \
             total_deviation + gamma*total_infeasible
@@ -173,6 +174,16 @@ class ConstructionHeuristic:
                     timedelta(hours=(D_ij[i][j] / speed)
                               ).total_seconds()
                 )
+
+        # rush hour modelling:
+        if not (df.iloc[0]["Requested Pickup Time"].weekday() == 5):
+            for k in range(self.n):
+                for l in range(self.n):
+                    if df.iloc[k]["Requested Pickup Time"].hour >= 15 and df.iloc[k]["Requested Pickup Time"].hour < 17 and df.iloc[l]["Requested Pickup Time"].hour >= 15 and df.iloc[l]["Requested Pickup Time"].hour < 17:
+                        T_ij[k][l] = T_ij[k][l]*R_F
+                        T_ij[k+self.n][l] = T_ij[k+self.n][l]*R_F
+                        T_ij[k][l+self.n] = T_ij[k][l+self.n]*R_F
+                        T_ij[k+self.n][l+self.n] = T_ij[k+self.n][l+self.n]*R_F
 
         return T_ij
 

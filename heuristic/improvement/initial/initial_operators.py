@@ -178,7 +178,7 @@ class Operators:
             # Find associated node - dropoff node
             associated_node = self.get_dropoff(initial_node)
 
-            to_remove = []
+            nodes_to_remove = []
 
         else:
             # Pick random node in route plan to remove and to compare other nodes to
@@ -286,7 +286,7 @@ class Operators:
             # Find associated node - dropoff node
             associated_node = self.get_dropoff(initial_node)
 
-            to_remove = []
+            nodes_to_remove = []
 
         else:
             # Pick random node in route plan to remove and to compare other nodes to
@@ -311,7 +311,7 @@ class Operators:
             associated_node = destroyed_route_plan[row_index][index]
 
             # List of nodes to remove
-            to_remove = [[node, row_index], [associated_node, row_index]]
+            nodes_to_remove = [[node, row_index], [associated_node, row_index]]
 
             # Remaining number of nodes to remove
             num_remove -= 1
@@ -328,7 +328,7 @@ class Operators:
                     temp = destroyed_route_plan[row][col]
 
                     # Skip already added nodes
-                    if [temp, row] in to_remove:
+                    if [temp, row] in nodes_to_remove:
                         continue
 
                     # Find associated drop off/pickup node
@@ -351,14 +351,14 @@ class Operators:
                         nearest_node = [temp, row]
                         nearest_associated_node = [associated_temp, row]
 
-            to_remove.append(nearest_node)
-            to_remove.append(nearest_associated_node)
+            nodes_to_remove.append(nearest_node)
+            nodes_to_remove.append(nearest_associated_node)
 
         # Remove nearest nodes from destroyed route plan
-        for n in to_remove:
+        for n in nodes_to_remove:
             index_removed_requests.append(
                 (n[0][0], n[1], destroyed_route_plan[n[1]].index(n[0])))
-        for n in to_remove:
+        for n in nodes_to_remove:
             destroyed_route_plan[n[1]].remove(n[0])
 
             # Add request id to removed_requests
@@ -386,7 +386,7 @@ class Operators:
             # Find associated node - dropoff node
             associated_node = self.get_dropoff(initial_node)
 
-            to_remove = []
+            nodes_to_remove = []
 
         else:
             # Pick random node in route plan to remove and to compare other nodes to
@@ -411,7 +411,7 @@ class Operators:
             associated_node = destroyed_route_plan[row_index][index]
 
             # List of nodes to remove
-            to_remove = [[node, row_index], [associated_node, row_index]]
+            nodes_to_remove = [[node, row_index], [associated_node, row_index]]
 
             # Remaining number of nodes to remove
             num_remove -= 1
@@ -428,7 +428,7 @@ class Operators:
                     temp = destroyed_route_plan[row][col]
 
                     # Skip already added nodes
-                    if [temp, row] in to_remove:
+                    if [temp, row] in nodes_to_remove:
                         continue
 
                     # Find associated drop off/pickup node
@@ -469,14 +469,14 @@ class Operators:
                         nearest_node = [temp, row]
                         nearest_associated_node = [associated_temp, row]
 
-            to_remove.append(nearest_node)
-            to_remove.append(nearest_associated_node)
+            nodes_to_remove.append(nearest_node)
+            nodes_to_remove.append(nearest_associated_node)
 
         # Remove nearest nodes from destroyed route plan
-        for n in to_remove:
+        for n in nodes_to_remove:
             index_removed_requests.append(
                 (n[0][0], n[1], destroyed_route_plan[n[1]].index(n[0])))
-        for n in to_remove:
+        for n in nodes_to_remove:
             destroyed_route_plan[n[1]].remove(n[0])
 
             # Add request id to removed_requests
@@ -486,7 +486,7 @@ class Operators:
         return destroyed_route_plan, removed_requests, index_removed_requests, True
 
     # Repair operators
-    def greedy_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set, current_route_plan, index_removed_requests):
+    def greedy_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set, current_route_plan, index_removed_requests, delayed, still_delayed):
         unassigned_requests = removed_requests.copy() + initial_infeasible_set.copy()
         unassigned_requests.sort(key=lambda x: x[0])
         route_plan = copy.deepcopy(destroyed_route_plan)
@@ -501,7 +501,85 @@ class Operators:
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
             route_plan, new_objective, infeasible_set = self.repair_generator.generate_insertions(
-                route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=current_route_plan, index_removed=index_removal)
+                route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=current_route_plan, index_removed=index_removal, objectives=0)
+
+            # update current objective
+            current_objective = new_objective
+
+        return route_plan, current_objective, infeasible_set
+
+    def regret_2_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set, current_route_plan, index_removed_requests, delayed, still_delayed):
+        unassigned_requests = removed_requests.copy() + initial_infeasible_set.copy()
+        unassigned_requests.sort(key=lambda x: x[0])
+        route_plan = copy.deepcopy(destroyed_route_plan)
+        current_objective = timedelta(0)
+        infeasible_set = []
+        unassigned_requests = pd.DataFrame(unassigned_requests)
+        regret_values = []
+        for i in range(unassigned_requests.shape[0]):
+            rid = unassigned_requests.iloc[i][0]
+            request = unassigned_requests.iloc[i][1]
+            index_removal = [
+                i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
+
+            first_objective, second_objective = self.repair_generator.generate_insertions(
+                route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set,
+                initial_route_plan=current_route_plan, index_removed=index_removal, objectives=2)
+
+            regret_values.append(
+                (rid, request, second_objective-first_objective))
+
+        regret_values.sort(key=lambda x: x[2])
+
+        # iterate through requests in order of regret k value
+        for i in reversed(regret_values):
+            rid = i[0]
+            request = i[1]
+            index_removal = [
+                i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
+
+            route_plan, new_objective, infeasible_set = self.repair_generator.generate_insertions(
+                route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set,
+                initial_route_plan=current_route_plan, index_removed=index_removal, objectives=0)
+
+            # update current objective
+            current_objective = new_objective
+
+        return route_plan, current_objective, infeasible_set
+
+    def regret_3_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set, current_route_plan, index_removed_requests, delayed, still_delayed):
+        unassigned_requests = removed_requests.copy() + initial_infeasible_set.copy()
+        unassigned_requests.sort(key=lambda x: x[0])
+        route_plan = copy.deepcopy(destroyed_route_plan)
+        current_objective = timedelta(0)
+        infeasible_set = []
+        unassigned_requests = pd.DataFrame(unassigned_requests)
+        regret_values = []
+        for i in range(unassigned_requests.shape[0]):
+            rid = unassigned_requests.iloc[i][0]
+            request = unassigned_requests.iloc[i][1]
+            index_removal = [
+                i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
+
+            first_objective, third_objective = self.repair_generator.generate_insertions(
+                route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set,
+                initial_route_plan=current_route_plan, index_removed=index_removal, objectives=3)
+
+            regret_values.append(
+                (rid, request, third_objective-first_objective))
+
+        regret_values.sort(key=lambda x: x[2])
+
+        # iterate through requests in order of regret k value
+        for i in reversed(regret_values):
+            rid = i[0]
+            request = i[1]
+            index_removal = [
+                i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
+
+            route_plan, new_objective, infeasible_set = self.repair_generator.generate_insertions(
+                route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set,
+                initial_route_plan=current_route_plan, index_removed=index_removal, objectives=0)
 
             # update current objective
             current_objective = new_objective
@@ -509,6 +587,7 @@ class Operators:
         return route_plan, current_objective, infeasible_set
 
     # Function to find random requests to remove if worst deviation removal does not remove enough
+
     def worst_deviation_random_removal(self, destroyed_route_plan, num_remove, to_remove):
 
         # Find the requests to remove
@@ -606,24 +685,27 @@ class Operators:
     def get_pickup(self, node):
         # Node is pickup, find requested pickup time or calculated pickup time
         rid = node[0]
+        s = S_W if request["Wheelchair"] else S_P
+
         if not pd.isnull(node[1]["Requested Pickup Time"]):
-            time = node[1]["Requested Pickup Time"] + timedelta(minutes=S)
+            time = node[1]["Requested Pickup Time"] + timedelta(minutes=s)
         else:
             time = node[1]["Requested Dropoff Time"] - self.constructor.travel_time(
-                rid - 1, self.constructor.n + rid - 1, True) - timedelta(minutes=S)
+                rid - 1, self.constructor.n + rid - 1, True) - timedelta(minutes=s)
 
         node = (rid, time)
         return node
 
     def get_dropoff(self, node):
         # Node is dropoff, find requested dropoff time or calculated dropoff time
+        s = S_W if request["Wheelchair"] else S_P
         rid = node[0]
         d_rid = rid + 0.5
         if not pd.isnull(node[1]["Requested Dropoff Time"]):
-            time = node[1]["Requested Dropoff Time"] + 2*timedelta(minutes=S)
+            time = node[1]["Requested Dropoff Time"] + 2*timedelta(minutes=s)
         else:
             time = node[1]["Requested Pickup Time"] + self.constructor.travel_time(
-                rid - 1, self.constructor.n + rid - 1, True) + 2*timedelta(minutes=S)
+                rid - 1, self.constructor.n + rid - 1, True) + 2*timedelta(minutes=s)
 
         node = (d_rid, time)
         return node
