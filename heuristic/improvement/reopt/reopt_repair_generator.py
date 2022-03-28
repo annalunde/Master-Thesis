@@ -16,9 +16,9 @@ NOTE: we only try to add it after the first node that is closest in time
 class ReOptRepairGenerator:
     def __init__(self, heuristic):
         self.heuristic = heuristic
-        self.introduced_vehicles = copy.deepcopy(
+        self.introduced_vehicles = copy.copy(
             self.heuristic.introduced_vehicles)
-        self.vehicles = copy.deepcopy(self.heuristic.vehicles)
+        self.vehicles = copy.copy(self.heuristic.vehicles)
 
     def generate_insertions(self, route_plan, request, rid, infeasible_set, initial_route_plan, index_removed, sim_clock, objectives, delayed, still_delayed_nodes, vehicle_clocks):
         possible_insertions = {}  # dict: delta objective --> route plan
@@ -90,7 +90,7 @@ class ReOptRepairGenerator:
 
                         start_idx = 0
                         vehicle_route = temp_route_plan[introduced_vehicle]
-                        test_vehicle_route = copy.deepcopy(vehicle_route)
+                        test_vehicle_route = copy.copy(vehicle_route)
                         for idx, (node, time, deviation, passenger, wheelchair, _) in enumerate(vehicle_route):
                             if time <= pickup_time and time >= vehicle_clocks[introduced_vehicle]:
                                 start_idx = idx
@@ -537,8 +537,7 @@ class ReOptRepairGenerator:
             i) not in still_delayed_nodes]
         nodes_set.remove(
             break_delay) if break_delay in nodes_set else nodes_set
-        print("nodes set", nodes_set)
-        print("vehicle route", vehicle_route)
+
         for n in nodes_set:
             p_idx = next(i for i, (node, *_)
                          in enumerate(vehicle_route) if node == n)
@@ -608,14 +607,16 @@ class ReOptRepairGenerator:
                     (0, service_time, None, 0, 0, None))
                 vehicle_route.append(
                     (rid,
-                     request["Requested Pickup Time"] + timedelta(minutes=s), timedelta(0),
+                     request["Requested Pickup Time"] +
+                     timedelta(minutes=s), timedelta(0),
                      request["Number of Passengers"], request["Wheelchair"], request)
                 )
                 travel_time = self.heuristic.travel_time(
                     rid-1, self.heuristic.n + rid - 1, True)
                 vehicle_route.append(
                     (rid + 0.5,
-                     request["Requested Pickup Time"]+travel_time+2 * timedelta(minutes=s),
+                     request["Requested Pickup Time"] +
+                     travel_time+2 * timedelta(minutes=s),
                      timedelta(0), 0, 0, request)
                 )
             else:
@@ -628,14 +629,16 @@ class ReOptRepairGenerator:
                         (0, sim_clock, None, 0, 0, None))
                     vehicle_route.append(
                         (rid,
-                         request["Requested Pickup Time"] + push_forward + timedelta(minutes=s), push_forward,
+                         request["Requested Pickup Time"] + push_forward +
+                         timedelta(minutes=s), push_forward,
                          request["Number of Passengers"], request["Wheelchair"], request)
                     )
                     travel_time = self.heuristic.travel_time(
                         rid - 1, self.heuristic.n + rid - 1, True)
                     vehicle_route.append(
                         (rid + 0.5,
-                         request["Requested Pickup Time"] + push_forward + travel_time + 2 * timedelta(minutes=s),
+                         request["Requested Pickup Time"] + push_forward +
+                         travel_time + 2 * timedelta(minutes=s),
                          push_forward, 0, 0, request)
                     )
         else:
@@ -669,7 +672,8 @@ class ReOptRepairGenerator:
                         rid - 1, self.heuristic.n + rid - 1, True)
                     vehicle_route.insert(
                         2, (rid + 0.5,
-                            request["Requested Pickup Time"] + push_forward + travel_time + 2 * timedelta(minutes=s),
+                            request["Requested Pickup Time"] + push_forward +
+                            travel_time + 2 * timedelta(minutes=s),
                             push_forward, 0, 0, request)
                     )
 

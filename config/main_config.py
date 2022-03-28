@@ -1,16 +1,16 @@
 from datetime import datetime, timedelta
 
 
-reaction_factor = 0.2
+reaction_factor = 0.7
 
-weights = [3, 2, 1, 0.5]
+weights = [15, 10, 5, 0]
 
 iterations = 10
 
-destruction_degree = 0.5
+destruction_degree = 0.4
 
 # Number of requests
-R = 20
+R = 40
 
 # Number of vehicles
 V = 16

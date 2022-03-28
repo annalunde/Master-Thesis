@@ -16,9 +16,9 @@ NOTE: we only try to add it after the first node that is closest in time
 class RepairGenerator:
     def __init__(self, heuristic):
         self.heuristic = heuristic
-        self.introduced_vehicles = copy.deepcopy(
+        self.introduced_vehicles = copy.copy(
             self.heuristic.introduced_vehicles)
-        self.vehicles = copy.deepcopy(self.heuristic.vehicles)
+        self.vehicles = copy.copy(self.heuristic.vehicles)
 
     def generate_insertions(self, route_plan, request, rid, infeasible_set, initial_route_plan, index_removed, objectives):
         possible_insertions = {}  # dict: delta objective --> route plan
@@ -48,19 +48,22 @@ class RepairGenerator:
 
                 if not preprocessed_check_activated:
 
-                    if introduced_vehicle == index_removed[0][1]:
-                        # try to add nodes both with initial requested times (i=0) and with deviation from initial route plan (i=1)
-                        pickup_removal = index_removed[0] if not (
-                            index_removed[0][0] % int(index_removed[0][0])) else index_removed[1]
-                        dropoff_removal = index_removed[0] if index_removed[0][0] % int(
-                            index_removed[0][0]) else index_removed[1]
-                        pickup_removal_dev = initial_route_plan[pickup_removal[1]][pickup_removal[2]
-                                                                                   ][2] if initial_route_plan[pickup_removal[1]][pickup_removal[2]][2] != timedelta(0) else None
-                        dropoff_removal_dev = initial_route_plan[dropoff_removal[1]][dropoff_removal[2]
-                                                                                     ][2] if initial_route_plan[dropoff_removal[1]][dropoff_removal[2]][2] != timedelta(0) else None
-                        iterations = 1 if not dropoff_removal_dev and not pickup_removal_dev else 2
-                    else:
-                        iterations = 1
+                    iterations = 1
+
+                    if index_removed:
+                        if introduced_vehicle == index_removed[0][1]:
+                            # try to add nodes both with initial requested times (i=0) and with deviation from initial route plan (i=1)
+                            pickup_removal = index_removed[0] if not (
+                                index_removed[0][0] % int(index_removed[0][0])) else index_removed[1]
+                            dropoff_removal = index_removed[0] if index_removed[0][0] % int(
+                                index_removed[0][0]) else index_removed[1]
+                            pickup_removal_dev = initial_route_plan[pickup_removal[1]][pickup_removal[2]
+                                                                                       ][2] if initial_route_plan[pickup_removal[1]][pickup_removal[2]][2] != timedelta(0) else None
+                            dropoff_removal_dev = initial_route_plan[dropoff_removal[1]][dropoff_removal[2]
+                                                                                         ][2] if initial_route_plan[dropoff_removal[1]][dropoff_removal[2]][2] != timedelta(0) else None
+                            iterations = 1 if not dropoff_removal_dev and not pickup_removal_dev else 2
+                        else:
+                            iterations = 1
 
                     for i in range(iterations):
                         # will be set to True if both pickup and dropoff of the request have been added
@@ -76,7 +79,7 @@ class RepairGenerator:
 
                         start_idx = 0
                         vehicle_route = temp_route_plan[introduced_vehicle]
-                        test_vehicle_route = copy.deepcopy(vehicle_route)
+                        test_vehicle_route = copy.copy(vehicle_route)
                         for idx, (node, time, deviation, passenger, wheelchair, _) in enumerate(vehicle_route):
                             if time <= pickup_time:
                                 start_idx = idx
@@ -516,6 +519,8 @@ class RepairGenerator:
     def update_capacities(self, vehicle_route, start_id, dropoff_id, request, rid):
         idx = start_id+1
         end_id = dropoff_id if dropoff_id == start_id + 1 else dropoff_id + 1
+        if start_id + 1 < end_id:
+            tid = 2
         for n, t, d, p, w, _ in vehicle_route[start_id+1:end_id]:
             p += request["Number of Passengers"]
             w += request["Wheelchair"]
@@ -531,7 +536,7 @@ class RepairGenerator:
         return activated_checks
 
     def add_initial_nodes(self, request, introduced_vehicle, rid, vehicle_route, depot):
-        vehicle_route = copy.deepcopy(vehicle_route)
+        vehicle_route = copy.copy(vehicle_route)
         s = S_W if request["Wheelchair"] else S_P
         if not depot:
             service_time = request["Requested Pickup Time"] + timedelta(minutes=s) - self.heuristic.travel_time(

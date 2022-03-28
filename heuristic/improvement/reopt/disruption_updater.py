@@ -29,7 +29,8 @@ class DisruptionUpdater:
         elif disruption_type == 'cancel':
             # update capacities
             updated_vehicle_route = self.update_capacities(
-                updated_route_plan[disruption_info[0]], disruption_info[1], disruption_info[2],
+                updated_route_plan[disruption_info[0]
+                                   ], disruption_info[1], disruption_info[2],
                 updated_route_plan[disruption_info[0]][disruption_info[1]][5])
 
             updated_route_plan[disruption_info[0]] = updated_vehicle_route
@@ -47,7 +48,8 @@ class DisruptionUpdater:
             # no show
             # update capacities
             updated_vehicle_route = self.update_capacities(
-                updated_route_plan[disruption_info[0]], disruption_info[1], disruption_info[2],
+                updated_route_plan[disruption_info[0]
+                                   ], disruption_info[1], disruption_info[2],
                 updated_route_plan[disruption_info[0]][disruption_info[1]][5])
 
             updated_route_plan[disruption_info[0]] = updated_vehicle_route
@@ -128,4 +130,3 @@ class DisruptionUpdater:
             vehicle_route[idx] = (n, t, d, p, w, _)
             idx += 1
         return vehicle_route
-

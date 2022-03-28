@@ -6,6 +6,8 @@ import sys
 import numpy.random as rnd
 import numpy as np
 import traceback
+import cProfile
+from profiling.profiler import Profile
 from heuristic.construction.construction import ConstructionHeuristic
 from config.construction_config import *
 from heuristic.improvement.alns import ALNS
@@ -23,6 +25,7 @@ def main():
     simulator = None
 
     try:
+
         # CONSTRUCTION OF INITIAL SOLUTION
         df = pd.read_csv(config("test_data_construction"))
         constructor = ConstructionHeuristic(requests=df.head(R), vehicles=V)
@@ -138,4 +141,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    profile = Profile()
+    cProfile.run('main()', 'profiling/restats')
+    profile.display()
+    # main()

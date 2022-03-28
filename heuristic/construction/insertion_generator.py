@@ -55,7 +55,7 @@ class InsertionGenerator:
 
                     for start_idx in possible_pickup_nodes:
                         temp_route_plan = copy.deepcopy(route_plan)
-                        test_vehicle_route = copy.deepcopy(vehicle_route)
+                        test_vehicle_route = copy.copy(vehicle_route)
 
                         s_p_node, s_p_time, s_p_d, s_p_p, s_p_w, _ = vehicle_route[start_idx]
                         if start_idx == len(vehicle_route) - 1:
@@ -175,7 +175,7 @@ class InsertionGenerator:
                                 e_p_node, e_p_time, e_p_d, e_p_p, e_p_w, _ = test_vehicle_route[
                                     start_idx + 1]
 
-                                before_depot_test = copy.deepcopy(
+                                before_depot_test = copy.copy(
                                     test_vehicle_route)
                                 before_depot_temp = copy.deepcopy(
                                     temp_route_plan)

@@ -7,7 +7,7 @@ F = 1
 # Number of vehicles
 V = 16
 
-N_U = 100
+N_U = 5
 
 # Allowed deviaiton from Requested service time (either pickup or dropoff)
 U_D_N = timedelta(minutes=15)

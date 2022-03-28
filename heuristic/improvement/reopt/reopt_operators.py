@@ -1,7 +1,6 @@
 import copy
 import math
 import sys
-
 import numpy.random as rnd
 from datetime import datetime
 import pandas as pd
@@ -55,7 +54,8 @@ class ReOptOperators:
         while len(to_remove)/2 < num_remove:
 
             # Pick random node in route plan to remove and to compare other nodes to
-            rows = [i for i in range(0, len(possible_removals)) if len(possible_removals[i]) > 0]
+            rows = [i for i in range(0, len(possible_removals)) if len(
+                possible_removals[i]) > 0]
             rnd.shuffle(rows)
 
             for row in rows:
@@ -118,7 +118,8 @@ class ReOptOperators:
             worst_deviation = timedelta(0)
             worst_node = None
 
-            rows = [i for i in range(0, len(possible_removals)) if len(possible_removals[i]) > 0]
+            rows = [i for i in range(0, len(possible_removals)) if len(
+                possible_removals[i]) > 0]
 
             for row in rows:
                 for col in range(0, len(possible_removals[row])):
@@ -214,7 +215,8 @@ class ReOptOperators:
 
         else:
             # Pick random node in route plan to remove and to compare other nodes to
-            rows = [i for i in range(0, len(possible_removals)) if len(possible_removals[i]) > 0]
+            rows = [i for i in range(0, len(possible_removals)) if len(
+                possible_removals[i]) > 0]
             rnd.shuffle(rows)
 
             for row_index in rows:
@@ -246,7 +248,8 @@ class ReOptOperators:
 
             # To do: finne ut hva denne initielt skal settes som
             best_diff = 48 * 60 * 60
-            rows = [i for i in range(0, len(possible_removals)) if len(possible_removals[i]) > 0]
+            rows = [i for i in range(0, len(possible_removals)) if len(
+                possible_removals[i]) > 0]
 
             for row in rows:
                 for col in range(0, len(possible_removals[row])):
@@ -335,7 +338,8 @@ class ReOptOperators:
 
         else:
             # Pick random node in route plan to remove and to compare other nodes to
-            rows = [i for i in range(0, len(possible_removals)) if len(possible_removals[i]) > 0]
+            rows = [i for i in range(0, len(possible_removals)) if len(
+                possible_removals[i]) > 0]
             rnd.shuffle(rows)
 
             for row_index in rows:
@@ -367,7 +371,8 @@ class ReOptOperators:
 
             # To do: finne ut hva denne initielt skal settes som
             best_diff = 48 * 60 * 60
-            rows = [i for i in range(0, len(possible_removals)) if len(possible_removals[i]) > 0]
+            rows = [i for i in range(0, len(possible_removals)) if len(
+                possible_removals[i]) > 0]
 
             for row in rows:
                 for col in range(0, len(possible_removals[row])):
@@ -448,7 +453,8 @@ class ReOptOperators:
 
         else:
             # Pick random node in route plan to remove and to compare other nodes to
-            rows = [i for i in range(0, len(possible_removals)) if len(possible_removals[i]) > 0]
+            rows = [i for i in range(0, len(possible_removals)) if len(
+                possible_removals[i]) > 0]
             rnd.shuffle(rows)
 
             for row_index in rows:
@@ -480,7 +486,8 @@ class ReOptOperators:
 
             # To do: finne ut hva denne initielt skal settes som
             best_diff = 48 * 60 * 60
-            rows = [i for i in range(0, len(possible_removals)) if len(possible_removals[i]) > 0]
+            rows = [i for i in range(0, len(possible_removals)) if len(
+                possible_removals[i]) > 0]
 
             for row in rows:
                 for col in range(0, len(possible_removals[row])):
@@ -584,7 +591,7 @@ class ReOptOperators:
         infeasible_set = []
         unassigned_requests = pd.DataFrame(unassigned_requests)
         regret_values = []
-        initial_vehicle_clocks = copy.deepcopy(self.vehicle_clocks)
+        initial_vehicle_clocks = copy.copy(self.vehicle_clocks)
         for i in range(unassigned_requests.shape[0]):
             rid = unassigned_requests.iloc[i][0]
             request = unassigned_requests.iloc[i][1]
@@ -632,7 +639,7 @@ class ReOptOperators:
         infeasible_set = []
         unassigned_requests = pd.DataFrame(unassigned_requests)
         regret_values = []
-        initial_vehicle_clocks = copy.deepcopy(self.vehicle_clocks)
+        initial_vehicle_clocks = copy.copy(self.vehicle_clocks)
         for i in range(unassigned_requests.shape[0]):
             rid = unassigned_requests.iloc[i][0]
             request = unassigned_requests.iloc[i][1]
@@ -679,7 +686,8 @@ class ReOptOperators:
         while len(to_remove)/2 < num_remove:
 
             # Pick random node in route plan to remove and to compare other nodes to
-            rows = [i for i in range(0, len(possible_removals)) if len(possible_removals[i]) > 0]
+            rows = [i for i in range(0, len(possible_removals)) if len(
+                possible_removals[i]) > 0]
             rnd.shuffle(rows)
 
             for row in rows:
@@ -770,24 +778,27 @@ class ReOptOperators:
     def get_pickup(self, node):
         # Node is pickup, find requested pickup time or calculated pickup time
         rid = node[0]
+        s = S_W if node[1]["Wheelchair"] else S_P
+
         if not pd.isnull(node[1]["Requested Pickup Time"]):
-            time = node[1]["Requested Pickup Time"]
+            time = node[1]["Requested Pickup Time"] + timedelta(minutes=s)
         else:
             time = node[1]["Requested Dropoff Time"] - self.constructor.travel_time(
-                rid - 1, self.constructor.n + rid - 1, True)
+                rid - 1, self.constructor.n + rid - 1, True) - timedelta(minutes=s)
 
         node = (rid, time)
         return node
 
     def get_dropoff(self, node):
         # Node is dropoff, find requested dropoff time or calculated dropoff time
+        s = S_W if node[1]["Wheelchair"] else S_P
         rid = node[0]
         d_rid = rid + 0.5
         if not pd.isnull(node[1]["Requested Dropoff Time"]):
-            time = node[1]["Requested Dropoff Time"]
+            time = node[1]["Requested Dropoff Time"] + 2*timedelta(minutes=s)
         else:
             time = node[1]["Requested Pickup Time"] + self.constructor.travel_time(
-                rid - 1, self.constructor.n + rid - 1, True)
+                rid - 1, self.constructor.n + rid - 1, True) + 2*timedelta(minutes=s)
 
         node = (d_rid, time)
         return node
@@ -798,7 +809,8 @@ class ReOptOperators:
                               enumerate(route_plan[vehicle][1:]) if t > self.vehicle_clocks[vehicle]] for vehicle in
                              range(0, len(route_plan))]
 
-        vehicles = [vehicle for vehicle in possible_removals if len(vehicle) > 0]
+        vehicles = [
+            vehicle for vehicle in possible_removals if len(vehicle) > 0]
 
         for vehicle in vehicles:
             rids = [rid for (rid, t, d, p, w, request, idx) in vehicle]

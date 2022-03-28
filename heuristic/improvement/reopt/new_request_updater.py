@@ -40,7 +40,7 @@ class NewRequestUpdater:
         )
         self.current_objective = timedelta(0)
         self.T_ij = self.travel_matrix(self.requests)
-        self.infeasible_set = copy.deepcopy(infeasible_set)
+        self.infeasible_set = copy.copy(infeasible_set)
         self.re_opt_repair_generator = ReOptRepairGenerator(self)
         self.preprocessed = self.preprocess_requests()
 
@@ -117,7 +117,7 @@ class NewRequestUpdater:
     def greedy_insertion_new_request(self, current_route_plan, current_infeasible_set, new_request, sim_clock, vehicle_clocks):
         rid = len(self.requests.index)
         route_plan = copy.deepcopy(current_route_plan)
-        infeasible_set = copy.deepcopy(current_infeasible_set)
+        infeasible_set = copy.copy(current_infeasible_set)
         request = new_request.iloc[0]
 
         route_plan, new_objective, infeasible_set, vehicle_clocks = self.re_opt_repair_generator.generate_insertions(
@@ -136,7 +136,6 @@ class NewRequestUpdater:
         total_infeasible = timedelta(minutes=len(new_infeasible_set))
         for vehicle_route in new_routeplan:
             if len(vehicle_route) >= 2:
-                print("objective route", vehicle_route)
                 diff = (pd.to_datetime(
                     vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
                 total_travel_time += timedelta(minutes=diff)
