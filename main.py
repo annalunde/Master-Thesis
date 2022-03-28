@@ -55,7 +55,7 @@ def main():
         # SIMULATION
         print("Start simulation")
         sim_clock = datetime.strptime(
-            "2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
+            "2021-05-10 12:00:00", "%Y-%m-%d %H:%M:%S")
         simulator = Simulator(sim_clock)
         new_request_updater = NewRequestUpdater(
             df.head(R), V, initial_infeasible_set)
@@ -123,6 +123,8 @@ def main():
 
             if disruption_type == 'request' and not(len(current_infeasible_set) > prev_inf_len):
                 print("New request inserted")
+
+        print("End simulation")
 
     except Exception as e:
         print("ERROR:", e)

@@ -770,24 +770,27 @@ class ReOptOperators:
     def get_pickup(self, node):
         # Node is pickup, find requested pickup time or calculated pickup time
         rid = node[0]
+        s = S_W if node[1]["Wheelchair"] else S_P
+
         if not pd.isnull(node[1]["Requested Pickup Time"]):
-            time = node[1]["Requested Pickup Time"]
+            time = node[1]["Requested Pickup Time"] + timedelta(minutes=s)
         else:
             time = node[1]["Requested Dropoff Time"] - self.constructor.travel_time(
-                rid - 1, self.constructor.n + rid - 1, True)
+                rid - 1, self.constructor.n + rid - 1, True) - timedelta(minutes=s)
 
         node = (rid, time)
         return node
 
     def get_dropoff(self, node):
         # Node is dropoff, find requested dropoff time or calculated dropoff time
+        s = S_W if node[1]["Wheelchair"] else S_P
         rid = node[0]
         d_rid = rid + 0.5
         if not pd.isnull(node[1]["Requested Dropoff Time"]):
-            time = node[1]["Requested Dropoff Time"]
+            time = node[1]["Requested Dropoff Time"] + 2*timedelta(minutes=s)
         else:
             time = node[1]["Requested Pickup Time"] + self.constructor.travel_time(
-                rid - 1, self.constructor.n + rid - 1, True)
+                rid - 1, self.constructor.n + rid - 1, True) + 2*timedelta(minutes=s)
 
         node = (d_rid, time)
         return node

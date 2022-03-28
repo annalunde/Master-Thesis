@@ -226,3 +226,22 @@ class Destroy_Repair_Updater:
         not_zero_dev_rows = [idx for idx, row in enumerate(route_plan) if not all(
             r[2] == timedelta(0) or r[2] == None for r in row)]
         return dict(filter(lambda x: x[0][0] in not_zero_dev_rows, index_removed_requests.items()))
+
+    def update_capacities(self, trunc_route_plan):
+        for row in range(len(trunc_route_plan)):
+            vehicle_route = trunc_route_plan[row]
+            start_idx = 1
+            for n, t, d, p, w, r in vehicle_route[1:]:
+                p_prev = vehicle_route[start_idx-1][3]
+                w_prev = vehicle_route[start_idx-1][4]
+                p = p_prev + \
+                    r["Number of Passengers"] if not(
+                        n % int(n)) else p_prev - r["Number of Passengers"]
+                w = w_prev + \
+                    r["Wheelchair"] if not(
+                        n % int(n)) else w_prev - r["Wheelchair"]
+                vehicle_route[start_idx] = (n, t, d, p, w, r)
+                start_idx += 1
+            trunc_route_plan[row] = vehicle_route
+        return trunc_route_plan
+

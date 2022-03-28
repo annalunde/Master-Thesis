@@ -48,19 +48,22 @@ class RepairGenerator:
 
                 if not preprocessed_check_activated:
 
-                    if introduced_vehicle == index_removed[0][1]:
-                        # try to add nodes both with initial requested times (i=0) and with deviation from initial route plan (i=1)
-                        pickup_removal = index_removed[0] if not (
-                            index_removed[0][0] % int(index_removed[0][0])) else index_removed[1]
-                        dropoff_removal = index_removed[0] if index_removed[0][0] % int(
-                            index_removed[0][0]) else index_removed[1]
-                        pickup_removal_dev = initial_route_plan[pickup_removal[1]][pickup_removal[2]
-                                                                                   ][2] if initial_route_plan[pickup_removal[1]][pickup_removal[2]][2] != timedelta(0) else None
-                        dropoff_removal_dev = initial_route_plan[dropoff_removal[1]][dropoff_removal[2]
-                                                                                     ][2] if initial_route_plan[dropoff_removal[1]][dropoff_removal[2]][2] != timedelta(0) else None
-                        iterations = 1 if not dropoff_removal_dev and not pickup_removal_dev else 2
-                    else:
-                        iterations = 1
+                    iterations = 1
+
+                    if index_removed:
+                        if introduced_vehicle == index_removed[0][1]:
+                            # try to add nodes both with initial requested times (i=0) and with deviation from initial route plan (i=1)
+                            pickup_removal = index_removed[0] if not (
+                                index_removed[0][0] % int(index_removed[0][0])) else index_removed[1]
+                            dropoff_removal = index_removed[0] if index_removed[0][0] % int(
+                                index_removed[0][0]) else index_removed[1]
+                            pickup_removal_dev = initial_route_plan[pickup_removal[1]][pickup_removal[2]
+                                                                                       ][2] if initial_route_plan[pickup_removal[1]][pickup_removal[2]][2] != timedelta(0) else None
+                            dropoff_removal_dev = initial_route_plan[dropoff_removal[1]][dropoff_removal[2]
+                                                                                         ][2] if initial_route_plan[dropoff_removal[1]][dropoff_removal[2]][2] != timedelta(0) else None
+                            iterations = 1 if not dropoff_removal_dev and not pickup_removal_dev else 2
+                        else:
+                            iterations = 1
 
                     for i in range(iterations):
                         # will be set to True if both pickup and dropoff of the request have been added

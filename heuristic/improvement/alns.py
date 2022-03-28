@@ -77,8 +77,10 @@ class ALNS:
                     delayed, current_route_plan, initial_route_plan)
 
             # Update solution
-            updated_route_plan = self.destroy_repair_updater.update_solution(
+            trunc_route_plan = self.destroy_repair_updater.update_solution(
                 destroyed_route_plan, index_removed, disruption_time)
+            updated_route_plan = self.destroy_repair_updater.update_capacities(
+                trunc_route_plan)
 
             # Fix solution
             r_operator = self.repair_operators[repair]
@@ -108,11 +110,15 @@ class ALNS:
             if (i+1) % N_U == 0:
                 # Update weights with scores
                 for destroy in range(len(d_weights)):
+                    if d_count[destroy] == 0:
+                        continue
                     d_weights[destroy] = d_weights[destroy] * \
                         (1 - self.reaction_factor) + \
                         (self.reaction_factor *
                          d_scores[destroy] / d_count[destroy])
                 for repair in range(len(r_weights)):
+                    if r_count[repair] == 0:
+                        continue
                     r_weights[repair] = r_weights[repair] * \
                         (1 - self.reaction_factor) + \
                         (self.reaction_factor *
@@ -122,6 +128,10 @@ class ALNS:
                 d_scores = np.ones(
                     len(self.destroy_operators), dtype=np.float16)
                 r_scores = np.ones(
+                    len(self.repair_operators), dtype=np.float16)
+                d_count = np.zeros(
+                    len(self.destroy_operators), dtype=np.float16)
+                r_count = np.zeros(
                     len(self.repair_operators), dtype=np.float16)
 
         return best, best_objective, best_infeasible_set, still_delayed_nodes
