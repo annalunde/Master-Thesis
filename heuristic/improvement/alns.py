@@ -11,8 +11,7 @@ class ALNS:
                  criterion, destruction_degree, constructor, rnd_state=rnd.RandomState()):
         # Reaction_factor (r) is a parameter that controls how fast weights adjust.
         # Weights is array of four elements, index 0 highest, 3 lowest
-        self.destroy_operators = []
-        self.repair_operators = []
+        self.destroy_operators, self.repair_operators = [], []
         self.rnd_state = rnd_state
         self.reaction_factor = reaction_factor
         self.initial_infeasible_set = initial_infeasible_set
@@ -27,21 +26,20 @@ class ALNS:
     # Run ALNS algorithm
     def iterate(self, num_iterations, disrupted, index_removed, disruption_time, delayed):
         weights = np.asarray(self.weights, dtype=np.float16)
-        current_route_plan = list(map(list, self.route_plan))
-        best = list(map(list, self.route_plan))
-        current_objective = copy(self.objective)
-        best_objective = copy(self.objective)
-        current_infeasible_set = copy(self.initial_infeasible_set)
-        best_infeasible_set = copy(self.initial_infeasible_set)
+        best, current_route_plan, initial_route_plan = list(map(list, self.route_plan)), list(
+            map(list, self.route_plan)), list(map(list, self.route_plan))
+        current_objective, best_objective = copy(
+            self.objective), copy(self.objective)
+        current_infeasible_set, best_infeasible_set = copy(
+            self.initial_infeasible_set), copy(self.initial_infeasible_set)
         found_solutions = {}
-        initial_route_plan = list(map(list, self.route_plan))
 
-        d_weights = np.ones(len(self.destroy_operators), dtype=np.float16)
-        r_weights = np.ones(len(self.repair_operators), dtype=np.float16)
-        d_scores = np.ones(len(self.destroy_operators), dtype=np.float16)
-        r_scores = np.ones(len(self.repair_operators), dtype=np.float16)
-        d_count = np.zeros(len(self.destroy_operators), dtype=np.float16)
-        r_count = np.zeros(len(self.repair_operators), dtype=np.float16)
+        d_weights, r_weights = np.ones(len(self.destroy_operators), dtype=np.float16), np.ones(
+            len(self.repair_operators), dtype=np.float16)
+        d_scores, r_scores = np.ones(len(self.destroy_operators), dtype=np.float16), np.ones(
+            len(self.repair_operators), dtype=np.float16)
+        d_count, r_count = np.zeros(len(self.destroy_operators), dtype=np.float16), np.zeros(
+            len(self.repair_operators), dtype=np.float16)
 
         if disrupted:
             # Update disrupted solution
@@ -123,13 +121,11 @@ class ALNS:
                          r_scores[repair] / r_count[repair])
 
                 # Reset scores
-                d_scores = np.ones(
-                    len(self.destroy_operators), dtype=np.float16)
-                r_scores = np.ones(
+                d_scores, r_scores = np.ones(
+                    len(self.destroy_operators), dtype=np.float16), np.ones(
                     len(self.repair_operators), dtype=np.float16)
-                d_count = np.zeros(
-                    len(self.destroy_operators), dtype=np.float16)
-                r_count = np.zeros(
+                d_count, r_count = np.zeros(
+                    len(self.destroy_operators), dtype=np.float16), np.zeros(
                     len(self.repair_operators), dtype=np.float16)
 
         return best, best_objective, best_infeasible_set, still_delayed_nodes
@@ -190,12 +186,11 @@ class ALNS:
 
         if candidate_objective <= best_objective:
             # Solution is new global best
-            current = copy(candidate)
-            current_objective = copy(candidate_objective)
-            current_infeasible_set = copy(candidate_infeasible_set)
-            best = copy(candidate)
-            best_objective = copy(candidate_objective)
-            best_infeasible_set = copy(candidate_infeasible_set)
+            current, best = copy(candidate), copy(candidate)
+            current_objective, best_objective = copy(
+                candidate_objective), copy(candidate_objective)
+            current_infeasible_set, best_infeasible_set = copy(
+                candidate_infeasible_set), copy(candidate_infeasible_set)
             weight_score = 0
 
         return best, best_objective, best_infeasible_set, current, current_objective, current_infeasible_set, weight_score

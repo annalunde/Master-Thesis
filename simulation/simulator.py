@@ -133,9 +133,7 @@ class Simulator:
         delay = timedelta(minutes=beta.rvs(
             delay_fit_a, delay_fit_b, delay_fit_loc, delay_fit_scale))
 
-        rids_indices = []
-        planned_departure_times = []
-        vehicle_indices = []
+        rids_indices, planned_departure_times, vehicle_indices = [], [], []
 
         # potential delays - nodes with planned pickup time after initial_delay
         vehicle_index = 0
@@ -187,8 +185,7 @@ class Simulator:
             return -1, -1, -1, -1, -1
 
     def no_show(self, initial_no_show, current_route_plan):
-        indices = []
-        planned_pickup_times = []
+        indices, planned_pickup_times = [], []
 
         # potential no shows - pickup nodes with planned pickup after initial_no_show
         vehicle_index = 0

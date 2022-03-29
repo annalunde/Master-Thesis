@@ -61,9 +61,9 @@ class RepairGenerator:
                             iterations = 1
 
                     for i in range(iterations):
-                        # will be set to True if both pickup and dropoff of the request have been added
-                        feasible_request = False
-                        activated_checks = False  # will be set to True if there is a test that fails
+                        # feasible request will be set to True if both pickup and dropoff of the request have been added
+                        # activated checks will be set to True if there is a test that fails
+                        feasible_request, activated_checks = False, False
                         temp_route_plan = list(map(list, route_plan))
 
                         s = S_W if request["Wheelchair"] else S_P

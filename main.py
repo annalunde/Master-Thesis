@@ -17,8 +17,7 @@ from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
 
 
 def main():
-    constructor = None
-    simulator = None
+    constructor, simulator = None, None
 
     try:
 

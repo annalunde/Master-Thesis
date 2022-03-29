@@ -18,7 +18,6 @@ class Destroy_Repair_Updater:
             new_dict = {}
             vehicle_route = updated_solution[row]
             first_element = index_removed_requests[row, c][0]
-
             removed_counter = 0
             new_dict = {k: v for k, v in index_removed_requests.items()
                         if k[0] == row and k[1] < c}
