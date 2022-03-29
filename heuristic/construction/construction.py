@@ -1,11 +1,7 @@
 import pandas as pd
 import numpy as np
-import math
-import os
-import sys
 from tqdm import tqdm
 from math import radians
-import sklearn.metrics
 from decouple import config
 from config.construction_config import *
 from heuristic.construction.insertion_generator import InsertionGenerator

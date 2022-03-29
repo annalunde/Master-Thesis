@@ -1,12 +1,7 @@
 from copy import copy
-import math
-import numpy as np
-import pandas
-import sklearn.metrics
-from math import radians
 from config.initial_improvement_config import *
 from decouple import config
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 """
 NOTE: we only try to add it after the first node that is closest in time

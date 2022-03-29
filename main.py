@@ -7,7 +7,6 @@ import traceback
 import cProfile
 from profiling.profiler import Profile
 from heuristic.construction.construction import ConstructionHeuristic
-from config.construction_config import *
 from heuristic.improvement.alns import ALNS
 from config.main_config import *
 from heuristic.improvement.initial.initial_operators import Operators

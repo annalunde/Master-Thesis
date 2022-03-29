@@ -1,7 +1,6 @@
-import math
 import numpy as np
 import numpy.random as rnd
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 
 class SimulatedAnnealing:

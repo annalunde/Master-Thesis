@@ -2,10 +2,8 @@ from copy import copy
 import numpy as np
 import numpy.random as rnd
 from tqdm import tqdm
-from collections import OrderedDict
-from heuristic.improvement.destroy_repair_updater import Destroy_Repair_Updater
-from heuristic.improvement.simulated_annealing import SimulatedAnnealing
 from config.initial_improvement_config import *
+from heuristic.improvement.destroy_repair_updater import Destroy_Repair_Updater
 
 
 class ALNS:

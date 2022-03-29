@@ -1,5 +1,4 @@
 from copy import copy
-import math
 import numpy as np
 import pandas
 import sklearn.metrics

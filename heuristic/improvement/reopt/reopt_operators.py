@@ -1,13 +1,8 @@
 from copy import copy
-import math
-import sys
+from math import ceil
 import numpy.random as rnd
-from datetime import datetime
-import pandas as pd
 from datetime import timedelta
-import traceback
-from heuristic.construction.construction import ConstructionHeuristic
-from config.construction_config import *
+import pandas as pd
 from heuristic.improvement.reopt.reopt_repair_generator import ReOptRepairGenerator
 
 
@@ -31,7 +26,7 @@ class ReOptOperators:
                     total_requests += 0.5
 
         # Calculate number of requests to remove
-        num_remove = math.ceil(total_requests * self.destruction_degree)
+        num_remove = ceil(total_requests * self.destruction_degree)
         return num_remove
 
     def random_removal(self, current_route_plan, current_infeasible_set):
