@@ -2,7 +2,6 @@ import pandas as pd
 from decouple import config
 import sys
 import numpy.random as rnd
-import numpy as np
 import traceback
 import cProfile
 from profiling.profiler import Profile

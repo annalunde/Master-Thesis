@@ -1,8 +1,9 @@
+import pandas as pd
 from copy import copy
 from math import ceil
 import numpy.random as rnd
 from datetime import timedelta
-import pandas as pd
+from config.construction_config import *
 from heuristic.improvement.reopt.reopt_repair_generator import ReOptRepairGenerator
 
 
