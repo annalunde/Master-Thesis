@@ -116,8 +116,6 @@ class NewRequestUpdater:
 
     def greedy_insertion_new_request(self, current_route_plan, current_infeasible_set, new_request, sim_clock, vehicle_clocks):
         rid = len(self.requests.index)
-        if rid == 150:
-            tid = 2
         route_plan = list(map(list, current_route_plan))
         infeasible_set = copy(current_infeasible_set)
         request = new_request.iloc[0]
@@ -127,10 +125,12 @@ class NewRequestUpdater:
             index_removed=None, sim_clock=sim_clock, vehicle_clocks=vehicle_clocks,
             objectives=False, delayed=(False, None, None), still_delayed_nodes=[])
 
+        rejection = False if (rid, request) not in infeasible_set else True
+        infeasible_set = [] if rejection else infeasible_set
         # update current objective
         self.current_objective = new_objective
 
-        return route_plan, self.current_objective, infeasible_set, vehicle_clocks
+        return route_plan, self.current_objective, infeasible_set, vehicle_clocks, rejection, rid
 
     def new_objective(self, new_routeplan, new_infeasible_set):
         total_deviation = timedelta(minutes=0)

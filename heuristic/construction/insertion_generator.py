@@ -352,7 +352,7 @@ class InsertionGenerator:
                 if (rid, request) not in self.heuristic.infeasible_set:
                     self.heuristic.infeasible_set.append((rid, request))
 
-        return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else timedelta(0)
+        return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else timedelta(minutes=gamma*len(self.heuristic.infeasible_set))
 
     def generate_possible_nodes(self, request, vehicle_route, dropoff_time):
         s = S_W if request["Wheelchair"] else S_P

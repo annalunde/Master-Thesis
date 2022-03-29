@@ -558,7 +558,7 @@ class ReOptOperators:
 
     # Repair operators
     def greedy_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set, current_route_plan, index_removed_requests, delayed, still_delayed_nodes):
-        unassigned_requests = removed_requests.copy() + initial_infeasible_set.copy()
+        unassigned_requests = removed_requests.copy()
         unassigned_requests.sort(key=lambda x: x[0])
         route_plan = list(map(list, destroyed_route_plan))
         current_objective = timedelta(0)
@@ -585,7 +585,7 @@ class ReOptOperators:
 
     def regret_2_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set, current_route_plan, index_removed_requests, delayed, still_delayed_nodes):
 
-        unassigned_requests = removed_requests.copy() + initial_infeasible_set.copy()
+        unassigned_requests = removed_requests.copy()
         unassigned_requests.sort(key=lambda x: x[0])
         route_plan = list(map(list, destroyed_route_plan))
         current_objective = timedelta(0)
@@ -633,7 +633,7 @@ class ReOptOperators:
         return route_plan, current_objective, infeasible_set
 
     def regret_3_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set, current_route_plan, index_removed_requests, delayed, still_delayed_nodes):
-        unassigned_requests = removed_requests.copy() + initial_infeasible_set.copy()
+        unassigned_requests = removed_requests.copy()
         unassigned_requests.sort(key=lambda x: x[0])
         route_plan = list(map(list, destroyed_route_plan))
         current_objective = timedelta(0)
