@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import copy
+from copy import copy
 import math
 import os
 import sys
@@ -40,7 +40,7 @@ class NewRequestUpdater:
         )
         self.current_objective = timedelta(0)
         self.T_ij = self.travel_matrix(self.requests)
-        self.infeasible_set = copy.copy(infeasible_set)
+        self.infeasible_set = copy(infeasible_set)
         self.re_opt_repair_generator = ReOptRepairGenerator(self)
         self.preprocessed = self.preprocess_requests()
 
@@ -118,8 +118,8 @@ class NewRequestUpdater:
         rid = len(self.requests.index)
         if rid == 150:
             tid = 2
-        route_plan = copy.deepcopy(current_route_plan)
-        infeasible_set = copy.copy(current_infeasible_set)
+        route_plan = list(map(list, current_route_plan))
+        infeasible_set = copy(current_infeasible_set)
         request = new_request.iloc[0]
 
         route_plan, new_objective, infeasible_set, vehicle_clocks = self.re_opt_repair_generator.generate_insertions(

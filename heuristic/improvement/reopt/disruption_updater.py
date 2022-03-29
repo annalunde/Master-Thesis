@@ -1,4 +1,3 @@
-import copy
 import pandas as pd
 from decouple import config
 from heuristic.construction.construction import ConstructionHeuristic
@@ -18,7 +17,7 @@ class DisruptionUpdater:
             vehicle_clocks, artificial_depot = self.update_vehicle_clocks(
                 current_route_plan, sim_clock, disruption_type, disruption_info)
 
-            updated_route_plan = copy.deepcopy(current_route_plan)
+            updated_route_plan = list(map(list, current_route_plan))
 
             self.new_request_updater.set_parameters(disruption_info)
 
@@ -35,7 +34,7 @@ class DisruptionUpdater:
             vehicle_clocks, artificial_depot = self.update_vehicle_clocks(
                 current_route_plan, sim_clock, disruption_type, disruption_info)
 
-            updated_route_plan = copy.deepcopy(current_route_plan)
+            updated_route_plan = list(map(list, current_route_plan))
 
             # update capacities
             updated_vehicle_route = self.update_capacities(
@@ -60,7 +59,7 @@ class DisruptionUpdater:
             vehicle_clocks, artificial_depot = self.update_vehicle_clocks(
                 current_route_plan, sim_clock, disruption_type, disruption_info)
 
-            updated_route_plan = copy.deepcopy(current_route_plan)
+            updated_route_plan = list(map(list, current_route_plan))
 
             # update capacities
             updated_vehicle_route = self.update_capacities(
@@ -77,7 +76,7 @@ class DisruptionUpdater:
 
     def update_with_delay(self, current_route_plan, disruption_info):
         delay_duration = disruption_info[2]
-        route_plan = copy.deepcopy(current_route_plan)
+        route_plan = list(map(list, current_route_plan))
 
         start_idx = disruption_info[1]
         for node in route_plan[disruption_info[0]][disruption_info[1]:]:
@@ -91,7 +90,7 @@ class DisruptionUpdater:
 
     @staticmethod
     def recalibrate_solution(current_route_plan, disruption_info, still_delayed_nodes):
-        route_plan = copy.deepcopy(current_route_plan)
+        route_plan = list(map(list, current_route_plan))
 
         for node in still_delayed_nodes:
             idx = next(i for i, (node_test, *_)

@@ -1,4 +1,4 @@
-import copy
+from copy import copy
 import numpy as np
 import numpy.random as rnd
 from tqdm import tqdm
@@ -29,14 +29,14 @@ class ALNS:
     # Run ALNS algorithm
     def iterate(self, num_iterations, disrupted, index_removed, disruption_time, delayed):
         weights = np.asarray(self.weights, dtype=np.float16)
-        current_route_plan = copy.deepcopy(self.route_plan)
-        best = copy.deepcopy(self.route_plan)
-        current_objective = copy.copy(self.objective)
-        best_objective = copy.copy(self.objective)
-        current_infeasible_set = copy.copy(self.initial_infeasible_set)
-        best_infeasible_set = copy.copy(self.initial_infeasible_set)
+        current_route_plan = list(map(list, self.route_plan))
+        best = list(map(list, self.route_plan))
+        current_objective = copy(self.objective)
+        best_objective = copy(self.objective)
+        current_infeasible_set = copy(self.initial_infeasible_set)
+        best_infeasible_set = copy(self.initial_infeasible_set)
         found_solutions = {}
-        initial_route_plan = copy.deepcopy(self.route_plan)
+        initial_route_plan = list(map(list, self.route_plan))
 
         d_weights = np.ones(len(self.destroy_operators), dtype=np.float16)
         r_weights = np.ones(len(self.repair_operators), dtype=np.float16)
@@ -80,7 +80,7 @@ class ALNS:
             trunc_route_plan = self.destroy_repair_updater.update_solution(
                 destroyed_route_plan, index_removed, disruption_time)
             updated_route_plan = self.destroy_repair_updater.update_capacities(
-                trunc_route_plan)
+                trunc_route_plan, index_removed)
 
             # Fix solution
             r_operator = self.repair_operators[repair]
@@ -183,21 +183,21 @@ class ALNS:
             else:
                 # Solution is not better, but accepted
                 weight_score = 2
-            current = copy.copy(candidate)
-            current_objective = copy.copy(candidate_objective)
-            current_infeasible_set = copy.copy(candidate_infeasible_set)
+            current = copy(candidate)
+            current_objective = copy(candidate_objective)
+            current_infeasible_set = copy(candidate_infeasible_set)
         else:
             # Solution is rejected
             weight_score = 3
 
         if candidate_objective <= best_objective:
             # Solution is new global best
-            current = copy.copy(candidate)
-            current_objective = copy.copy(candidate_objective)
-            current_infeasible_set = copy.copy(candidate_infeasible_set)
-            best = copy.copy(candidate)
-            best_objective = copy.copy(candidate_objective)
-            best_infeasible_set = copy.copy(candidate_infeasible_set)
+            current = copy(candidate)
+            current_objective = copy(candidate_objective)
+            current_infeasible_set = copy(candidate_infeasible_set)
+            best = copy(candidate)
+            best_objective = copy(candidate_objective)
+            best_infeasible_set = copy(candidate_infeasible_set)
             weight_score = 0
 
         return best, best_objective, best_infeasible_set, current, current_objective, current_infeasible_set, weight_score

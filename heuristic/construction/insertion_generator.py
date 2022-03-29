@@ -1,4 +1,4 @@
-import copy
+from copy import copy
 import math
 import numpy as np
 import pandas
@@ -20,7 +20,7 @@ class InsertionGenerator:
 
             if not route_plan[introduced_vehicle]:
                 # it is trivial to add the new request
-                temp_route_plan = copy.deepcopy(route_plan)
+                temp_route_plan = list(map(list, route_plan))
 
                 temp_route_plan[introduced_vehicle] = self.add_initial_nodes(
                     request=request, introduced_vehicle=introduced_vehicle, rid=rid, vehicle_route=temp_route_plan[introduced_vehicle])
@@ -35,7 +35,7 @@ class InsertionGenerator:
                 # will be set to True if both pickup and dropoff of the request have been added
                 feasible_request = False
                 activated_checks = False  # will be set to True if there is a test that fails
-                temp_route_plan = copy.deepcopy(route_plan)
+                temp_route_plan = list(map(list, route_plan))
 
                 vehicle_route = route_plan[introduced_vehicle]
 
@@ -54,8 +54,8 @@ class InsertionGenerator:
                         timedelta(minutes=s)
 
                     for start_idx in possible_pickup_nodes:
-                        temp_route_plan = copy.deepcopy(route_plan)
-                        test_vehicle_route = copy.copy(vehicle_route)
+                        temp_route_plan = list(map(list, route_plan))
+                        test_vehicle_route = copy(vehicle_route)
 
                         s_p_node, s_p_time, s_p_d, s_p_p, s_p_w, _ = vehicle_route[start_idx]
                         if start_idx == len(vehicle_route) - 1:
@@ -175,18 +175,18 @@ class InsertionGenerator:
                                 e_p_node, e_p_time, e_p_d, e_p_p, e_p_w, _ = test_vehicle_route[
                                     start_idx + 1]
 
-                                before_depot_test = copy.copy(
+                                before_depot_test = copy(
                                     test_vehicle_route)
-                                before_depot_temp = copy.deepcopy(
-                                    temp_route_plan)
+                                before_depot_temp = list(
+                                    map(list, temp_route_plan))
                                 possible_dropoff_nodes = self.generate_possible_nodes(
                                     request, vehicle_route, dropoff_time)
 
                                 for end_idx in possible_dropoff_nodes:
-                                    temp_route_plan = copy.deepcopy(
-                                        before_depot_temp)
-                                    test_vehicle_route = copy.deepcopy(
-                                        before_depot_test)
+                                    temp_route_plan = list(
+                                        map(list, before_depot_temp))
+                                    test_vehicle_route = list(
+                                        map(list, before_depot_test))
                                     s_d_node, s_d_time, s_d_d, s_d_p, s_d_w, _ = test_vehicle_route[
                                         end_idx]
 
@@ -214,16 +214,12 @@ class InsertionGenerator:
 
                                     if s_p_time + (L_D - s_p_d) + s_p_travel_time <= pickup_time and pickup_time + p_e_travel_time <= e_p_time + (U_D - e_p_d) and s_d_time + (
                                             L_D - s_d_d) + s_d_travel_time <= dropoff_time:
-                                        push_back_d = s_d_time + s_d_travel_time - dropoff_time if \
-                                            dropoff_time - \
-                                            s_d_time - s_d_travel_time < timedelta(
-                                                0) else 0
+                                        push_back_d = s_d_time + s_d_travel_time - dropoff_time if dropoff_time - \
+                                            s_d_time - s_d_travel_time < timedelta(0) else 0
                                         if e_d_node:
-                                            if dropoff_time + d_e_travel_time <= e_d_time + (
-                                                    U_D - e_d_d):
+                                            if dropoff_time + d_e_travel_time <= e_d_time + (U_D - e_d_d):
                                                 push_forward_d = dropoff_time + d_e_travel_time - e_d_time if e_d_time - \
-                                                    dropoff_time - d_e_travel_time < timedelta(
-                                                        0) else 0
+                                                    dropoff_time - d_e_travel_time < timedelta(0) else 0
                                             else:
                                                 activated_checks = True
                                                 push_forward_d = None
@@ -272,7 +268,8 @@ class InsertionGenerator:
                                             # update forward
                                             if push_forward_p:
                                                 temp_route_plan[introduced_vehicle], activated_checks = self.update_check_forward(
-                                                    vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx,
+                                                    vehicle_route=temp_route_plan[
+                                                        introduced_vehicle], start_idx=start_idx,
                                                     push_forward=push_forward_p, activated_checks=activated_checks,
                                                     rid=rid,
                                                     request=request)
@@ -280,7 +277,8 @@ class InsertionGenerator:
                                             # update backward
                                             if push_back_p:
                                                 temp_route_plan[introduced_vehicle], activated_checks = self.update_check_backward(
-                                                    vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx,
+                                                    vehicle_route=temp_route_plan[
+                                                        introduced_vehicle], start_idx=start_idx,
                                                     push_back=push_back_p, activated_checks=activated_checks, rid=rid,
                                                     request=request, introduced_vehicle=introduced_vehicle)
 
@@ -288,7 +286,8 @@ class InsertionGenerator:
                                             if e_d_node:
                                                 if push_forward_d:
                                                     temp_route_plan[introduced_vehicle], activated_checks = self.update_check_forward(
-                                                        vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx,
+                                                        vehicle_route=temp_route_plan[
+                                                            introduced_vehicle], start_idx=start_idx,
                                                         push_forward=push_forward_d,
                                                         activated_checks=activated_checks,
                                                         rid=rid,
@@ -297,7 +296,8 @@ class InsertionGenerator:
                                             # update backward
                                             if push_back_d:
                                                 temp_route_plan[introduced_vehicle], activated_checks = self.update_check_backward(
-                                                    vehicle_route=temp_route_plan[introduced_vehicle], start_idx=start_idx,
+                                                    vehicle_route=temp_route_plan[
+                                                        introduced_vehicle], start_idx=start_idx,
                                                     push_back=push_back_d, activated_checks=activated_checks,
                                                     rid=rid,
                                                     request=request, introduced_vehicle=introduced_vehicle)
@@ -335,7 +335,7 @@ class InsertionGenerator:
 
         if not len(possible_insertions):
             if self.heuristic.vehicles:
-                temp_route_plan = copy.deepcopy(route_plan)
+                temp_route_plan = list(map(list, route_plan))
                 new_vehicle = self.heuristic.vehicles.pop(0)
                 temp_route_plan.append([])
                 self.heuristic.introduced_vehicles.add(new_vehicle)

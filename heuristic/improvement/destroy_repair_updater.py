@@ -1,5 +1,4 @@
 import math
-import copy
 import numpy as np
 import numpy.random as rnd
 from itertools import groupby
@@ -13,7 +12,7 @@ class Destroy_Repair_Updater:
         self.heuristic = heuristic
 
     def update_solution(self, route_plan, index_removed_requests, disruption_time):
-        updated_solution = copy.deepcopy(route_plan)
+        updated_solution = list(map(list, route_plan))
         # (row, counter) --> sequences([(node,row,col),...])
         index_removed_requests = self.filter_indexes(index_removed_requests)
         # remove rows where there is no deviation to remove unnecessary computations
@@ -227,8 +226,9 @@ class Destroy_Repair_Updater:
             r[2] == timedelta(0) or r[2] == None for r in row)]
         return dict(filter(lambda x: x[0][0] in not_zero_dev_rows, index_removed_requests.items()))
 
-    def update_capacities(self, trunc_route_plan):
-        for row in range(len(trunc_route_plan)):
+    def update_capacities(self, trunc_route_plan, index_removed):
+        rows = set([i[1] for i in index_removed])
+        for row in rows:
             vehicle_route = trunc_route_plan[row]
             start_idx = 1
             for n, t, d, p, w, r in vehicle_route[1:]:
