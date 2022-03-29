@@ -70,7 +70,7 @@ class ALNS:
 
             if delayed[0]:
                 still_delayed_nodes = self.filter_still_delayed(
-                    delayed, current_route_plan, initial_route_plan)
+                    delayed, current_route_plan=destroyed_route_plan, initial_route_plan=initial_route_plan)
 
             # Update solution
             trunc_route_plan = self.destroy_repair_updater.update_solution(

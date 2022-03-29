@@ -86,9 +86,6 @@ class DisruptionUpdater:
     @staticmethod
     def recalibrate_solution(current_route_plan, disruption_info, still_delayed_nodes):
         route_plan = list(map(list, current_route_plan))
-        print("still delayed", still_delayed_nodes)
-        print("vehicle route", route_plan[disruption_info[0]])
-
         for node in still_delayed_nodes:
             idx = next(i for i, (node_test, *_)
                        in enumerate(route_plan[disruption_info[0]]) if node_test == node)
