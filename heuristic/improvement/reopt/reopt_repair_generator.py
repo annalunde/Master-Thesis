@@ -1,4 +1,4 @@
-import copy
+from copy import copy
 import math
 import numpy as np
 import pandas
@@ -16,9 +16,9 @@ NOTE: we only try to add it after the first node that is closest in time
 class ReOptRepairGenerator:
     def __init__(self, heuristic):
         self.heuristic = heuristic
-        self.introduced_vehicles = copy.copy(
+        self.introduced_vehicles = copy(
             self.heuristic.introduced_vehicles)
-        self.vehicles = copy.copy(self.heuristic.vehicles)
+        self.vehicles = copy(self.heuristic.vehicles)
 
     def generate_insertions(self, route_plan, request, rid, infeasible_set, initial_route_plan, index_removed, sim_clock, objectives, delayed, still_delayed_nodes, vehicle_clocks):
         possible_insertions = {}  # dict: delta objective --> route plan
@@ -29,7 +29,7 @@ class ReOptRepairGenerator:
             # generate all possible insertions
             if len(route_plan[introduced_vehicle]) == 1:
                 # it is trivial to add the new request
-                temp_route_plan = copy.deepcopy(route_plan)
+                temp_route_plan = list(map(list, route_plan))
                 temp_route_plan[introduced_vehicle], depot_check = self.add_initial_nodes(
                     request=request, introduced_vehicle=introduced_vehicle, rid=rid,
                     vehicle_route=temp_route_plan[introduced_vehicle], depot=True, sim_clock=sim_clock)
@@ -77,7 +77,7 @@ class ReOptRepairGenerator:
                         # will be set to True if both pickup and dropoff of the request have been added
                         feasible_request = False
                         activated_checks = False  # will be set to True if there is a test that fails
-                        temp_route_plan = copy.deepcopy(route_plan)
+                        temp_route_plan = list(map(list, route_plan))
 
                         s = S_W if request["Wheelchair"] else S_P
                         pickup_time = request["Requested Pickup Time"] + timedelta(minutes=s) if i == 0 else initial_route_plan[
@@ -90,7 +90,7 @@ class ReOptRepairGenerator:
 
                         start_idx = 0
                         vehicle_route = temp_route_plan[introduced_vehicle]
-                        test_vehicle_route = copy.copy(vehicle_route)
+                        test_vehicle_route = copy(vehicle_route)
                         for idx, (node, time, deviation, passenger, wheelchair, _) in enumerate(vehicle_route):
                             if time <= pickup_time and time >= vehicle_clocks[introduced_vehicle]:
                                 start_idx = idx
@@ -415,7 +415,7 @@ class ReOptRepairGenerator:
         # check if no possible insertions have been made and introduce a new vehicle
         if not len(possible_insertions):
             if self.vehicles:
-                temp_route_plan = copy.deepcopy(route_plan)
+                temp_route_plan = list(map(list, route_plan))
                 new_vehicle = self.vehicles.pop(0)
                 temp_route_plan.append([])
                 self.introduced_vehicles.add(new_vehicle)

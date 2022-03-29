@@ -1,5 +1,3 @@
-import copy
-
 import pandas as pd
 from decouple import config
 import sys

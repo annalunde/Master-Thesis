@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import copy
 import math
 import os
 import sys
@@ -78,7 +77,7 @@ class ConstructionHeuristic:
 
     def construct_initial(self):
         rid = 1
-        unassigned_requests = self.requests.copy()
+        unassigned_requests = self.requests.copy(deep=False)
         self.introduced_vehicles.add(self.vehicles.pop(0))
         route_plan = [[]]
         for i in tqdm(range(unassigned_requests.shape[0]), colour='#39ff14'):

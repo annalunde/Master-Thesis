@@ -1,4 +1,4 @@
-import copy
+from copy import copy
 import math
 import sys
 import numpy.random as rnd
@@ -35,7 +35,7 @@ class ReOptOperators:
         return num_remove
 
     def random_removal(self, current_route_plan, current_infeasible_set):
-        destroyed_route_plan = copy.deepcopy(current_route_plan)
+        destroyed_route_plan = list(map(list, current_route_plan))
         to_remove = []
         removed_requests = []
         index_removed_requests = []
@@ -98,7 +98,7 @@ class ReOptOperators:
         return destroyed_route_plan, removed_requests, index_removed_requests, True
 
     def worst_deviation_removal(self, current_route_plan, current_infeasible_set):
-        destroyed_route_plan = copy.deepcopy(current_route_plan)
+        destroyed_route_plan = list(map(list, current_route_plan))
         to_remove = []
         removed_requests = []
         index_removed_requests = []
@@ -187,7 +187,7 @@ class ReOptOperators:
 
     # Related in travel time
     def distance_related_removal(self, current_route_plan, current_infeasible_set):
-        destroyed_route_plan = copy.deepcopy(current_route_plan)
+        destroyed_route_plan = list(map(list, current_route_plan))
         removed_requests = []
         index_removed_requests = []
         possible_removals = self.find_possible_removals(destroyed_route_plan)
@@ -310,7 +310,7 @@ class ReOptOperators:
 
     # Related in service time
     def time_related_removal(self, current_route_plan, current_infeasible_set):
-        destroyed_route_plan = copy.deepcopy(current_route_plan)
+        destroyed_route_plan = list(map(list, current_route_plan))
         removed_requests = []
         index_removed_requests = []
         possible_removals = self.find_possible_removals(destroyed_route_plan)
@@ -425,7 +425,7 @@ class ReOptOperators:
 
     # Related in both service time and travel time
     def related_removal(self, current_route_plan, current_infeasible_set):
-        destroyed_route_plan = copy.deepcopy(current_route_plan)
+        destroyed_route_plan = list(map(list, current_route_plan))
         removed_requests = []
         index_removed_requests = []
         possible_removals = self.find_possible_removals(destroyed_route_plan)
@@ -560,7 +560,7 @@ class ReOptOperators:
     def greedy_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set, current_route_plan, index_removed_requests, delayed, still_delayed_nodes):
         unassigned_requests = removed_requests.copy() + initial_infeasible_set.copy()
         unassigned_requests.sort(key=lambda x: x[0])
-        route_plan = copy.deepcopy(destroyed_route_plan)
+        route_plan = list(map(list, destroyed_route_plan))
         current_objective = timedelta(0)
         infeasible_set = []
         unassigned_requests = pd.DataFrame(unassigned_requests)
@@ -584,14 +584,15 @@ class ReOptOperators:
         return route_plan, current_objective, infeasible_set
 
     def regret_2_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set, current_route_plan, index_removed_requests, delayed, still_delayed_nodes):
+
         unassigned_requests = removed_requests.copy() + initial_infeasible_set.copy()
         unassigned_requests.sort(key=lambda x: x[0])
-        route_plan = copy.deepcopy(destroyed_route_plan)
+        route_plan = list(map(list, destroyed_route_plan))
         current_objective = timedelta(0)
         infeasible_set = []
         unassigned_requests = pd.DataFrame(unassigned_requests)
         regret_values = []
-        initial_vehicle_clocks = copy.copy(self.vehicle_clocks)
+        initial_vehicle_clocks = copy(self.vehicle_clocks)
         for i in range(unassigned_requests.shape[0]):
             rid = unassigned_requests.iloc[i][0]
             request = unassigned_requests.iloc[i][1]
@@ -608,12 +609,12 @@ class ReOptOperators:
             regret_values.append(
                 (rid, request, second_objective-first_objective))
 
-        regret_values.sort(key=lambda x: x[2])
+        regret_values.sort(key=lambda x: x[2], reverse=True)
 
         # iterate through requests in order of regret k value
         self.vehicle_clocks = initial_vehicle_clocks
 
-        for i in reversed(regret_values):
+        for i in regret_values:
             rid = i[0]
             request = i[1]
             index_removal = [
@@ -634,12 +635,12 @@ class ReOptOperators:
     def regret_3_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set, current_route_plan, index_removed_requests, delayed, still_delayed_nodes):
         unassigned_requests = removed_requests.copy() + initial_infeasible_set.copy()
         unassigned_requests.sort(key=lambda x: x[0])
-        route_plan = copy.deepcopy(destroyed_route_plan)
+        route_plan = list(map(list, destroyed_route_plan))
         current_objective = timedelta(0)
         infeasible_set = []
         unassigned_requests = pd.DataFrame(unassigned_requests)
         regret_values = []
-        initial_vehicle_clocks = copy.copy(self.vehicle_clocks)
+        initial_vehicle_clocks = copy(self.vehicle_clocks)
         for i in range(unassigned_requests.shape[0]):
             rid = unassigned_requests.iloc[i][0]
             request = unassigned_requests.iloc[i][1]
@@ -656,11 +657,11 @@ class ReOptOperators:
             regret_values.append(
                 (rid, request, third_objective-first_objective))
 
-        regret_values.sort(key=lambda x: x[2])
+        regret_values.sort(key=lambda x: x[2], reverse=True)
 
         # iterate through requests in order of regret k value
         self.vehicle_clocks = initial_vehicle_clocks
-        for i in reversed(regret_values):
+        for i in regret_values:
             rid = i[0]
             request = i[1]
             index_removal = [
