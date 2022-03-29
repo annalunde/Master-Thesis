@@ -529,10 +529,10 @@ class Operators:
             regret_values.append(
                 (rid, request, second_objective-first_objective))
 
-        regret_values.sort(key=lambda x: x[2])
+        regret_values.sort(key=lambda x: x[2], reverse=True)
 
         # iterate through requests in order of regret k value
-        for i in reversed(regret_values):
+        for i in regret_values:
             rid = i[0]
             request = i[1]
             index_removal = [
@@ -568,10 +568,10 @@ class Operators:
             regret_values.append(
                 (rid, request, third_objective-first_objective))
 
-        regret_values.sort(key=lambda x: x[2])
+        regret_values.sort(key=lambda x: x[2], reverse=True)
 
         # iterate through requests in order of regret k value
-        for i in reversed(regret_values):
+        for i in regret_values:
             rid = i[0]
             request = i[1]
             index_removal = [

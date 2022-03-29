@@ -143,7 +143,9 @@ def main():
 
 
 if __name__ == "__main__":
+    '''
     profile = Profile()
     cProfile.run('main()', 'profiling/restats')
     profile.display()
-    # main()
+    '''
+    main()

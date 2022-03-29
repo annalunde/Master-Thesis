@@ -116,6 +116,8 @@ class NewRequestUpdater:
 
     def greedy_insertion_new_request(self, current_route_plan, current_infeasible_set, new_request, sim_clock, vehicle_clocks):
         rid = len(self.requests.index)
+        if rid == 150:
+            tid = 2
         route_plan = copy.deepcopy(current_route_plan)
         infeasible_set = copy.copy(current_infeasible_set)
         request = new_request.iloc[0]
