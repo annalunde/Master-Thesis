@@ -13,15 +13,22 @@ class Simulator:
         self.disruptions_stack = self.create_disruption_stack()
 
     def create_disruption_stack(self):
-        # get disruption times for each disruption type
+        """
+        Get disruption times for each disruption type, indexed as follows:
+            request: 0
+            delay: 1
+            cancel: 2
+            no show: 3
+            no disruption: 4
+        """
         request = self.poisson.disruption_times(
-            arrival_rate_request, self.sim_clock, 'request')
+            arrival_rate_request, self.sim_clock, 0)
         delay = self.poisson.disruption_times(
-            arrival_rate_delay, self.sim_clock, 'delay')
+            arrival_rate_delay, self.sim_clock, 1)
         cancel = self.poisson.disruption_times(
-            arrival_rate_cancel, self.sim_clock, 'cancel')
+            arrival_rate_cancel, self.sim_clock, 2)
         initial_no_show = self.poisson.disruption_times(
-            arrival_rate_no_show, self.sim_clock, 'no show')
+            arrival_rate_no_show, self.sim_clock, 3)
         disruption_stack = request + delay + cancel + initial_no_show
         disruption_stack.sort(reverse=True, key=lambda x: x[1])
         return disruption_stack
@@ -33,29 +40,29 @@ class Simulator:
         disruption_time = disruption[1]
 
         # find which disruption type it is
-        if disruption_type == 'request':
+        if disruption_type == 0:
             add_request, disruption_info = self.new_request(
                 disruption_time, data_path)
             if add_request < 0:
-                disruption_type = 'no disruption'
+                disruption_type = 4
                 disruption_info = None
 
-        elif disruption_type == 'delay':
+        elif disruption_type == 1:
             delay_vehicle_index, delay_rid_index, duration_delay = self.delay(
                 disruption_time, current_route_plan)
             disruption_info = (delay_vehicle_index,
                                delay_rid_index, duration_delay)
             if delay_rid_index < 0:
-                disruption_type = 'no disruption'
+                disruption_type = 3
                 disruption_info = None
 
-        elif disruption_type == 'cancel':
+        elif disruption_type == 2:
             cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index, node_p, node_d = self.cancel(
                 disruption_time, current_route_plan)
             disruption_info = (
                 cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index, node_p, node_d)
             if cancel_pickup_rid_index < 0:
-                disruption_type = 'no disruption'
+                disruption_type = 3
                 disruption_info = None
 
         else:
@@ -66,7 +73,7 @@ class Simulator:
             next_disruption_time = self.disruptions_stack[-1][1] if len(
                 self.disruptions_stack) > 0 else datetime.strptime("2021-05-10 19:00:00", "%Y-%m-%d %H:%M:%S")
             if no_show_pickup_rid_index < 0 or actual_no_show >= next_disruption_time:
-                disruption_type = 'no disruption'
+                disruption_type = 3
                 disruption_info = None
             else:
                 disruption_time = actual_no_show

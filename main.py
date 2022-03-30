@@ -60,7 +60,7 @@ def main():
         disruption_updater = DisruptionUpdater(new_request_updater)
         first_iteration = True
         rejected = []
-
+        print("Length of disruption stack", len(simulator.disruptions_stack))
         while len(simulator.disruptions_stack) > 0:
             prev_inf_len = len(current_infeasible_set)
             delayed = (False, None, None)
@@ -81,9 +81,9 @@ def main():
             print()
             # updates before heuristic
             disrupt = (False, None)
-            if disruption_type == 'no disruption':
+            if disruption_type == 4:  # No disruption
                 continue
-            elif disruption_type == 'request':
+            elif disruption_type == 0:  # Disruption: new request
                 current_route_plan, vehicle_clocks = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
                 current_route_plan, current_objective, current_infeasible_set, vehicle_clocks, rejection, rid = new_request_updater.\
@@ -99,11 +99,11 @@ def main():
                 current_objective = new_request_updater.new_objective(
                     current_route_plan, current_infeasible_set)
 
-                if disruption_type == 'cancel' or disruption_type == 'no show':
+                if disruption_type == 2 or disruption_type == 3:  # Disruption: cancel or no show
                     index_removed = [(disruption_info[3], disruption_info[0], disruption_info[1]),
                                      (disruption_info[4], disruption_info[0], disruption_info[2])]
                     disrupt = (True, index_removed)
-                elif disruption_type == 'delay':
+                elif disruption_type == 1:  # Disruption: delay
                     delayed = (True, disruption_info[0], disruption_info[1])
                     delay_deltas.append(current_objective)
 
@@ -129,7 +129,7 @@ def main():
                 current_route_plan = disruption_updater.recalibrate_solution(
                     current_route_plan, disruption_info, still_delayed_nodes)
 
-            if disruption_type == 'request' and not(len(current_infeasible_set) > prev_inf_len):
+            if disruption_type == 0 and not(len(current_infeasible_set) > prev_inf_len):
                 print("New request inserted")
 
             new_request_updater.print_new_objective(

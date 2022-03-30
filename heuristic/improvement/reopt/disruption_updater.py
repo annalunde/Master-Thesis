@@ -7,7 +7,7 @@ class DisruptionUpdater:
 
     def update_route_plan(self, current_route_plan, disruption_type, disruption_info, sim_clock):
 
-        if disruption_type == 'request':
+        if disruption_type == 0:
             # adding current position for each vehicle
             vehicle_clocks, artificial_depot = self.update_vehicle_clocks(
                 current_route_plan, sim_clock, disruption_type, disruption_info)
@@ -16,7 +16,7 @@ class DisruptionUpdater:
 
             self.new_request_updater.set_parameters(disruption_info)
 
-        elif disruption_type == 'delay':
+        elif disruption_type == 1:
             updated_route_plan = self.update_with_delay(
                 current_route_plan, disruption_info)
 
@@ -24,7 +24,7 @@ class DisruptionUpdater:
             vehicle_clocks, artificial_depot = self.update_vehicle_clocks(
                 updated_route_plan, sim_clock, disruption_type, disruption_info)
 
-        elif disruption_type == 'cancel':
+        elif disruption_type == 2:
             # adding current position for each vehicle
             vehicle_clocks, artificial_depot = self.update_vehicle_clocks(
                 current_route_plan, sim_clock, disruption_type, disruption_info)
@@ -111,7 +111,7 @@ class DisruptionUpdater:
                         next_idx = prev_idx + 1
                         vehicle_clocks.append(vehicle_route[next_idx][1])
 
-                        if disruption_type == 'cancel':
+                        if disruption_type == 2:
                             # check whether next node after sim_clock is the request that is cancelled
                             if current_route_plan[disruption_info[0]][disruption_info[1]] == vehicle_route[next_idx]:
                                 artificial_depot = True
