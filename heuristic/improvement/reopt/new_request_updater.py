@@ -118,7 +118,7 @@ class NewRequestUpdater:
         rid = len(self.requests.index)
         route_plan = list(map(list, current_route_plan))
         infeasible_set = copy(current_infeasible_set)
-        request = new_request.iloc[0]
+        request = self.requests.iloc[-1]
 
         route_plan, new_objective, infeasible_set, vehicle_clocks = self.re_opt_repair_generator.generate_insertions(
             route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=None,
