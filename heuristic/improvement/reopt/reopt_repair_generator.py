@@ -82,12 +82,12 @@ class ReOptRepairGenerator:
                         if pickup_time <= vehicle_clocks[introduced_vehicle]:
                             break
 
-                        start_idx = 0
                         vehicle_route = temp_route_plan[introduced_vehicle]
                         test_vehicle_route = copy(vehicle_route)
-                        for idx, (node, time, deviation, passenger, wheelchair, _) in enumerate(vehicle_route):
-                            if time <= pickup_time and time >= vehicle_clocks[introduced_vehicle]:
-                                start_idx = idx
+                        start_idx = [i for i in range(len(vehicle_route)) if vehicle_route[i][1] <=
+                                     pickup_time and vehicle_route[i][1] >= vehicle_clocks[introduced_vehicle]]
+                        start_idx = start_idx[-1] if len(
+                            start_idx) else 0
 
                         s_p_node, s_p_time, s_p_d, s_p_p, s_p_w, _ = vehicle_route[start_idx]
                         if start_idx == len(vehicle_route) - 1:
@@ -229,13 +229,8 @@ class ReOptRepairGenerator:
                                 e_p_node, e_p_time, e_p_d, e_p_p, e_p_w, _ = test_vehicle_route[
                                     start_idx + 2]
                                 end_idx = 0
-                                for idx, (node, time, deviation, passenger, wheelchair, _) in enumerate(test_vehicle_route):
-                                    if time <= dropoff_time:
-                                        end_idx = idx
-                                end_idx2 = [i for i in range(
+                                end_idx = [i for i in range(
                                     len(test_vehicle_route)) if test_vehicle_route[i][1] <= dropoff_time][-1]
-                                print("end_idx", end_idx)
-                                print("end_idx2", end_idx2)
 
                                 s_d_node, s_d_time, s_d_d, s_d_p, s_d_w, _ = test_vehicle_route[
                                     end_idx]
@@ -527,8 +522,7 @@ class ReOptRepairGenerator:
         return vehicle_route, activated_checks
 
     def check_max_ride_time(self, vehicle_route, activated_checks, rid, request, still_delayed_nodes):
-        nodes = [int(n) for n, t, d, p, w, _ in vehicle_route]
-        nodes = [n for n in nodes if n != 0]
+        nodes = [int(n) for n, t, d, p, w, _ in vehicle_route if n > 0]
         nodes_set = []
         [nodes_set.append(i) for i in nodes if i not in nodes_set]
         break_delay = [int(i) for i in still_delayed_nodes if int(
@@ -576,14 +570,12 @@ class ReOptRepairGenerator:
         return activated_checks
 
     def update_capacities(self, vehicle_route, start_id, dropoff_id, request, rid):
-        idx = start_id+1
         end_id = dropoff_id if dropoff_id == start_id + 1 else dropoff_id + 1
-        for n, t, d, p, w, _ in vehicle_route[start_id+1:end_id]:
-            p += request["Number of Passengers"]
-            w += request["Wheelchair"]
-            vehicle_route[idx] = (n, t, d, p, w, _)
-            idx += 1
-        return vehicle_route
+        vehicle_route_temp = [(i[0], i[1], i[2], i[3]+request["Number of Passengers"],
+                               i[4]+request["Wheelchair"], i[5]) for i in vehicle_route[start_id+1:end_id]]
+        vehicle_route_result = vehicle_route[:start_id+1] + \
+            vehicle_route_temp + vehicle_route[end_id:]
+        return vehicle_route_result
 
     def check_capacities(self, vehicle_route, start_id, dropoff_id, request, rid, activated_checks, infeasible_set):
         for n, t, d, p, w, _ in vehicle_route[start_id+1:dropoff_id]:

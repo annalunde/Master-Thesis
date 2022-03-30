@@ -357,18 +357,17 @@ class InsertionGenerator:
             U_D
         lower_window = pickup_time - \
             L_D if not dropoff_time else dropoff_time - L_D
-        possible_nodes = []
-        for idx, (node, time, deviation, passenger, wheelchair, _) in enumerate(vehicle_route):
-            if time >= lower_window and time <= upper_window:
-                possible_nodes.append(idx)
+        possible_nodes = [i for i, node in enumerate(
+            vehicle_route) if node[1] >= lower_window and node[1] <= upper_window]
 
         if not possible_nodes:
             node_time = pickup_time if not dropoff_time else dropoff_time
-            start_idx = 0
-            for idx, (node, time, deviation, passenger, wheelchair, _) in enumerate(vehicle_route):
-                if time <= node_time:
-                    start_idx = idx
+            start_idx = [i for i in range(
+                len(vehicle_route)) if vehicle_route[i][1] <= node_time]
+            start_idx = start_idx[-1] if len(
+                start_idx) else 0
             possible_nodes.append(start_idx)
+
         return possible_nodes
 
     def check_remove(self, rid, request):
@@ -440,8 +439,7 @@ class InsertionGenerator:
         return vehicle_route, activated_checks
 
     def check_max_ride_time(self, vehicle_route, activated_checks, rid, request):
-        nodes = [int(n) for n, t, d, p, w, _ in vehicle_route]
-        nodes.remove(0)
+        nodes = [int(n) for n, t, d, p, w, _ in vehicle_route if n > 0]
         nodes_set = []
         [nodes_set.append(i) for i in nodes if i not in nodes_set]
         for n in nodes_set:
@@ -483,14 +481,12 @@ class InsertionGenerator:
         return activated_checks
 
     def update_capacities(self, vehicle_route, start_id, dropoff_id, request, rid):
-        idx = start_id+1
         end_id = dropoff_id if dropoff_id == start_id + 1 else dropoff_id + 1
-        for n, t, d, p, w, _ in vehicle_route[start_id+1:end_id]:
-            p += request["Number of Passengers"]
-            w += request["Wheelchair"]
-            vehicle_route[idx] = (n, t, d, p, w, _)
-            idx += 1
-        return vehicle_route
+        vehicle_route_temp = [(i[0], i[1], i[2], i[3]+request["Number of Passengers"],
+                               i[4]+request["Wheelchair"], i[5]) for i in vehicle_route[start_id+1:end_id]]
+        vehicle_route_result = vehicle_route[:start_id+1] + \
+            vehicle_route_temp + vehicle_route[end_id:]
+        return vehicle_route_result
 
     def check_capacities(self, vehicle_route, start_id, dropoff_id, request, rid, activated_checks):
         for n, t, d, p, w, _ in vehicle_route[start_id+1:dropoff_id]:

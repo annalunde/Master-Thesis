@@ -174,17 +174,9 @@ class NewRequestUpdater:
 
         vehicle_lat_lon = []
 
-        # Origins for each vehicle
-        for i in range(self.vehicles):
-            vehicle_lat_lon.append(
-                (radians(59.946829115276145), radians(10.779841653639243))
-            )
-
-        # Destinations for each vehicle
-        for i in range(self.vehicles):
-            vehicle_lat_lon.append(
-                (radians(59.946829115276145), radians(10.779841653639243))
-            )
+        # Origins and destinations for each vehicle
+        vehicle_lat_lon = [(radians(59.946829115276145), radians(
+            10.779841653639243)) for i in range(2*self.vehicles)]
 
         # Positions
         lat_lon = request_lat_lon + vehicle_lat_lon

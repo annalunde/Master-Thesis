@@ -72,18 +72,12 @@ class DisruptionUpdater:
     def update_with_delay(self, current_route_plan, disruption_info):
         delay_duration = disruption_info[2]
         route_plan = list(map(list, current_route_plan))
-
-        start_idx = disruption_info[1]
-        for node in route_plan[disruption_info[0]][disruption_info[1]:]:
-            t = node[1] + delay_duration
-            d = node[2] + delay_duration
-            node = (node[0], t, d, node[3], node[4], node[5])
-            route_plan[disruption_info[0]][start_idx] = node
-            start_idx += 1
-
+        route_plan[disruption_info[0]] = route_plan[disruption_info[0]][:disruption_info[1]] + \
+            [(i[0], i[1]+delay_duration, i[2]+delay_duration, i[3], i[4], i[5])
+             for i in route_plan[disruption_info[0]][disruption_info[1]:]]
         return route_plan
 
-    @staticmethod
+    @ staticmethod
     def recalibrate_solution(current_route_plan, disruption_info, still_delayed_nodes):
         route_plan = list(map(list, current_route_plan))
         for node in still_delayed_nodes:
@@ -131,13 +125,11 @@ class DisruptionUpdater:
         return vehicle_clocks, artificial_depot
 
     def update_capacities(self, vehicle_route, start_id, dropoff_id, request):
-        idx = start_id
-        for n, t, d, p, w, _ in vehicle_route[start_id:dropoff_id]:
-            p -= request["Number of Passengers"]
-            w -= request["Wheelchair"]
-            vehicle_route[idx] = (n, t, d, p, w, _)
-            idx += 1
-        return vehicle_route
+        vehicle_route_temp = [(i[0], i[1], i[2], i[3]-request["Number of Passengers"],
+                              i[4]-request["Wheelchair"], i[5]) for i in vehicle_route[start_id:dropoff_id]]
+        vehicle_route_result = vehicle_route[:start_id] + \
+            vehicle_route_temp + vehicle_route[dropoff_id:]
+        return vehicle_route_result
 
     def filter_route_plan(self, current_route_plan, vehicle_clocks):
         route_plan = list(map(list, current_route_plan))
@@ -147,8 +139,7 @@ class DisruptionUpdater:
             filtered_vehicle_route = [
                 i for i in vehicle_route if i[1] >= vehicle_clock]
             nodes = [int(n) for n, t, d, p, w,
-                     _ in filtered_vehicle_route]
-            nodes = [n for n in nodes if n != 0]
+                     _ in filtered_vehicle_route if n > 0]
             single_nodes = [i for i in nodes if nodes.count(i) == 1]
             if single_nodes:
                 if len(single_nodes) == 1:

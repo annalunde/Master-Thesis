@@ -21,8 +21,7 @@ class Destroy_Repair_Updater:
             removed_counter = 0
             new_dict = {k: v for k, v in index_removed_requests.items()
                         if k[0] == row and k[1] < c}
-            for item in new_dict.items():
-                removed_counter += len(item[1])
+            removed_counter = sum([len(i[1]) for i in new_dict.items()])
             left_idx = first_element[2] - \
                 1 if c == 0 else first_element[2] - 1 - removed_counter
 
