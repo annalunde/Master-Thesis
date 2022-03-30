@@ -4,6 +4,7 @@ from copy import copy
 from tqdm import tqdm
 from math import radians
 import sklearn.metrics
+from functools import reduce
 from decouple import config
 from config.construction_config import *
 from datetime import datetime, timedelta
@@ -135,12 +136,10 @@ class NewRequestUpdater:
                 diff = (pd.to_datetime(
                     vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
                 total_travel_time += timedelta(minutes=diff)
-            for n, t, d, p, w, _ in vehicle_route:
-                if d is not None:
-                    d = d if d > timedelta(0) else -d
-                    pen_dev = d - P_S if d > P_S else timedelta(0)
-                    total_deviation += pen_dev
-
+            pen_dev = [j if j > timedelta(
+                0) else -j for j in [i[2] for i in vehicle_route if i[2] is not None]]
+            total_deviation += reduce(
+                lambda a, b: a+b, [i-P_S if i > P_S else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(0)
         updated = alpha*total_travel_time + beta * \
             total_deviation + gamma*total_infeasible
         return updated
@@ -153,10 +152,10 @@ class NewRequestUpdater:
             diff = (pd.to_datetime(
                 vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
             total_travel_time += timedelta(minutes=diff)
-            for n, t, d, p, w, _ in vehicle_route:
-                if d is not None:
-                    d = d if d > timedelta(0) else -d
-                    total_deviation += d
+            pen_dev = [j if j > timedelta(
+                0) else -j for j in [i[2] for i in vehicle_route if i[2] is not None]]
+            total_deviation += reduce(
+                lambda a, b: a+b, [i-P_S if i > P_S else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(0)
         print("Total travel time", total_travel_time)
         print("Total deviation", total_deviation)
         print("Total infeasible", total_infeasible)
