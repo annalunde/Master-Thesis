@@ -1,6 +1,5 @@
 from datetime import datetime
-
-import numpy as np
+import numpy.random as rnd
 from config.simulation_config import *
 
 
@@ -15,9 +14,9 @@ class Poisson:
         timestamps = []
 
         for time_step in range(start_poisson, end_poisson):
-            time_step_arrivals = np.random.poisson(arrival_rates[time_step])
+            time_step_arrivals = rnd.poisson(arrival_rates[time_step])
             for t in range(0, time_step_arrivals):
-                timestamps.append(np.random.uniform(
+                timestamps.append(rnd.uniform(
                     time_intervals[time_step], time_intervals[time_step]+1))
 
         timestamps.sort()

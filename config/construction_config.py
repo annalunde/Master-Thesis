@@ -1,6 +1,4 @@
-from decouple import config
 from datetime import datetime, timedelta
-
 
 # Allowed excess ride time
 F = 1

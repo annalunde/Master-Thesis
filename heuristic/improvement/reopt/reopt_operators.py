@@ -1,12 +1,8 @@
-from copy import copy
-import math
-import sys
-import numpy.random as rnd
-from datetime import datetime
 import pandas as pd
+from copy import copy
+from math import ceil
+import numpy.random as rnd
 from datetime import timedelta
-import traceback
-from heuristic.construction.construction import ConstructionHeuristic
 from config.construction_config import *
 from heuristic.improvement.reopt.reopt_repair_generator import ReOptRepairGenerator
 
@@ -31,14 +27,12 @@ class ReOptOperators:
                     total_requests += 0.5
 
         # Calculate number of requests to remove
-        num_remove = math.ceil(total_requests * self.destruction_degree)
+        num_remove = ceil(total_requests * self.destruction_degree)
         return num_remove
 
     def random_removal(self, current_route_plan, current_infeasible_set):
         destroyed_route_plan = list(map(list, current_route_plan))
-        to_remove = []
-        removed_requests = []
-        index_removed_requests = []
+        to_remove, removed_requests, index_removed_requests = [], [], []
         possible_removals = self.find_possible_removals(destroyed_route_plan)
         empty = 0
         for vehicle in possible_removals:
@@ -99,9 +93,7 @@ class ReOptOperators:
 
     def worst_deviation_removal(self, current_route_plan, current_infeasible_set):
         destroyed_route_plan = list(map(list, current_route_plan))
-        to_remove = []
-        removed_requests = []
-        index_removed_requests = []
+        to_remove, removed_requests, index_removed_requests = [], [], []
         possible_removals = self.find_possible_removals(destroyed_route_plan)
         empty = 0
         for vehicle in possible_removals:
@@ -188,8 +180,7 @@ class ReOptOperators:
     # Related in travel time
     def distance_related_removal(self, current_route_plan, current_infeasible_set):
         destroyed_route_plan = list(map(list, current_route_plan))
-        removed_requests = []
-        index_removed_requests = []
+        removed_requests, index_removed_requests = [], []
         possible_removals = self.find_possible_removals(destroyed_route_plan)
         empty = 0
         for vehicle in possible_removals:
@@ -311,8 +302,7 @@ class ReOptOperators:
     # Related in service time
     def time_related_removal(self, current_route_plan, current_infeasible_set):
         destroyed_route_plan = list(map(list, current_route_plan))
-        removed_requests = []
-        index_removed_requests = []
+        removed_requests, index_removed_requests = [], []
         possible_removals = self.find_possible_removals(destroyed_route_plan)
         empty = 0
         for vehicle in possible_removals:
@@ -426,8 +416,7 @@ class ReOptOperators:
     # Related in both service time and travel time
     def related_removal(self, current_route_plan, current_infeasible_set):
         destroyed_route_plan = list(map(list, current_route_plan))
-        removed_requests = []
-        index_removed_requests = []
+        removed_requests, index_removed_requests = [], []
         possible_removals = self.find_possible_removals(destroyed_route_plan)
         empty = 0
         for vehicle in possible_removals:
@@ -589,9 +578,8 @@ class ReOptOperators:
         unassigned_requests.sort(key=lambda x: x[0])
         route_plan = list(map(list, destroyed_route_plan))
         current_objective = timedelta(0)
-        infeasible_set = []
+        infeasible_set, regret_values = [], []
         unassigned_requests = pd.DataFrame(unassigned_requests)
-        regret_values = []
         initial_vehicle_clocks = copy(self.vehicle_clocks)
         for i in range(unassigned_requests.shape[0]):
             rid = unassigned_requests.iloc[i][0]
@@ -637,9 +625,8 @@ class ReOptOperators:
         unassigned_requests.sort(key=lambda x: x[0])
         route_plan = list(map(list, destroyed_route_plan))
         current_objective = timedelta(0)
-        infeasible_set = []
+        infeasible_set, regret_values = [], []
         unassigned_requests = pd.DataFrame(unassigned_requests)
-        regret_values = []
         initial_vehicle_clocks = copy(self.vehicle_clocks)
         for i in range(unassigned_requests.shape[0]):
             rid = unassigned_requests.iloc[i][0]

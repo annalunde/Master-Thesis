@@ -1,11 +1,7 @@
 import pandas as pd
 import numpy as np
-import math
-import os
-import sys
 from tqdm import tqdm
 from math import radians
-import sklearn.metrics
 from decouple import config
 from config.construction_config import *
 from heuristic.construction.insertion_generator import InsertionGenerator
@@ -94,8 +90,8 @@ class ConstructionHeuristic:
         return route_plan, self.current_objective, self.infeasible_set
 
     def new_objective(self, new_routeplan, new_infeasible_set):
-        total_deviation = timedelta(minutes=0)
-        total_travel_time = timedelta(minutes=0)
+        total_deviation, total_travel_time = timedelta(
+            minutes=0), timedelta(minutes=0)
         total_infeasible = timedelta(minutes=len(new_infeasible_set))
         for vehicle_route in new_routeplan:
             if len(vehicle_route) >= 2:
@@ -113,8 +109,8 @@ class ConstructionHeuristic:
         return updated
 
     def print_new_objective(self, new_routeplan, new_infeasible_set):
-        total_deviation = timedelta(minutes=0)
-        total_travel_time = timedelta(minutes=0)
+        total_deviation, total_travel_time = timedelta(
+            minutes=0), timedelta(minutes=0)
         total_infeasible = timedelta(minutes=len(new_infeasible_set))
         for vehicle_route in new_routeplan:
             diff = (pd.to_datetime(

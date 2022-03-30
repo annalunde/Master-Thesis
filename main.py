@@ -2,12 +2,10 @@ import pandas as pd
 from decouple import config
 import sys
 import numpy.random as rnd
-import numpy as np
 import traceback
 import cProfile
 from profiling.profiler import Profile
 from heuristic.construction.construction import ConstructionHeuristic
-from config.construction_config import *
 from heuristic.improvement.alns import ALNS
 from config.main_config import *
 from heuristic.improvement.initial.initial_operators import Operators
@@ -19,8 +17,7 @@ from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
 
 
 def main():
-    constructor = None
-    simulator = None
+    constructor, simulator = None, None
 
     try:
 

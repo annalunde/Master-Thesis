@@ -1,9 +1,4 @@
-import pandas as pd
-from decouple import config
-from heuristic.construction.construction import ConstructionHeuristic
-from config.construction_config import *
-from simulation.simulator import Simulator
-from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
+from datetime import timedelta
 
 
 class DisruptionUpdater:
@@ -91,7 +86,6 @@ class DisruptionUpdater:
     @staticmethod
     def recalibrate_solution(current_route_plan, disruption_info, still_delayed_nodes):
         route_plan = list(map(list, current_route_plan))
-
         for node in still_delayed_nodes:
             idx = next(i for i, (node_test, *_)
                        in enumerate(route_plan[disruption_info[0]]) if node_test == node)

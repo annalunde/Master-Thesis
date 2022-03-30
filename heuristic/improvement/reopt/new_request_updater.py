@@ -1,21 +1,13 @@
 import pandas as pd
 import numpy as np
 from copy import copy
-import math
-import os
-import sys
-from tqdm import tqdm
 from math import radians
-import sklearn.metrics
-from decouple import config
-
-from heuristic.construction.construction import ConstructionHeuristic
+from datetime import timedelta
 from config.construction_config import *
-from datetime import datetime, timedelta
+from heuristic.construction.construction import ConstructionHeuristic
 from sklearn.metrics.pairwise import haversine_distances
 from heuristic.improvement.reopt.reopt_repair_generator import ReOptRepairGenerator
 from simulation.simulator import Simulator
-
 pd.options.mode.chained_assignment = None
 
 
@@ -133,11 +125,13 @@ class NewRequestUpdater:
         return route_plan, self.current_objective, infeasible_set, vehicle_clocks, rejection, rid
 
     def new_objective(self, new_routeplan, new_infeasible_set):
-        total_deviation = timedelta(minutes=0)
-        total_travel_time = timedelta(minutes=0)
+        total_deviation, total_travel_time = timedelta(
+            minutes=0), timedelta(minutes=0)
         total_infeasible = timedelta(minutes=len(new_infeasible_set))
         for vehicle_route in new_routeplan:
             if len(vehicle_route) >= 2:
+                print(vehicle_route[0])
+                print(vehicle_route[-1])
                 diff = (pd.to_datetime(
                     vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
                 total_travel_time += timedelta(minutes=diff)
@@ -152,8 +146,8 @@ class NewRequestUpdater:
         return updated
 
     def print_new_objective(self, new_routeplan, new_infeasible_set):
-        total_deviation = timedelta(minutes=0)
-        total_travel_time = timedelta(minutes=0)
+        total_deviation, total_travel_time = timedelta(
+            minutes=0), timedelta(minutes=0)
         total_infeasible = timedelta(minutes=len(new_infeasible_set))
         for vehicle_route in new_routeplan:
             diff = (pd.to_datetime(
