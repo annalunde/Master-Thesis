@@ -3,6 +3,7 @@ import numpy as np
 from tqdm import tqdm
 from math import radians
 from decouple import config
+from functools import reduce
 from config.construction_config import *
 from heuristic.construction.insertion_generator import InsertionGenerator
 from datetime import datetime, timedelta
