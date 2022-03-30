@@ -110,17 +110,19 @@ class NewRequestUpdater:
         rid = len(self.requests.index)
         route_plan = list(map(list, current_route_plan))
         infeasible_set = copy(current_infeasible_set)
-        request = new_request.iloc[0]
+        request = self.requests.iloc[-1]
 
         route_plan, new_objective, infeasible_set, vehicle_clocks = self.re_opt_repair_generator.generate_insertions(
             route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=None,
             index_removed=None, sim_clock=sim_clock, vehicle_clocks=vehicle_clocks,
             objectives=False, delayed=(False, None, None), still_delayed_nodes=[])
 
+        rejection = False if (rid, request) not in infeasible_set else True
+        infeasible_set = [] if rejection else infeasible_set
         # update current objective
         self.current_objective = new_objective
 
-        return route_plan, self.current_objective, infeasible_set, vehicle_clocks
+        return route_plan, self.current_objective, infeasible_set, vehicle_clocks, rejection, rid
 
     def new_objective(self, new_routeplan, new_infeasible_set):
         total_deviation, total_travel_time = timedelta(

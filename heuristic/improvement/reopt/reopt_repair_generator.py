@@ -436,7 +436,8 @@ class ReOptRepairGenerator:
         if objectives:
             return sorted(possible_insertions.keys())[0] if len(possible_insertions) else timedelta(minutes=gamma), sorted(possible_insertions.keys())[objectives-1] if len(possible_insertions) > objectives-1 else timedelta(minutes=gamma), vehicle_clocks
 
-        return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else timedelta(0), infeasible_set, vehicle_clocks
+        return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else self.heuristic.new_objective(route_plan, infeasible_set), infeasible_set, vehicle_clocks
+
 
     def get_bound_dev(self, depot, upper):
         if upper:
@@ -531,7 +532,6 @@ class ReOptRepairGenerator:
             i) not in still_delayed_nodes]
         nodes_set.remove(
             break_delay) if break_delay in nodes_set else nodes_set
-
         for n in nodes_set:
             p_idx = next(i for i, (node, *_)
                          in enumerate(vehicle_route) if node == n)

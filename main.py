@@ -53,17 +53,19 @@ def main():
         # SIMULATION
         print("Start simulation")
         sim_clock = datetime.strptime(
-            "2021-05-10 12:00:00", "%Y-%m-%d %H:%M:%S")
+            "2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
         simulator = Simulator(sim_clock)
         new_request_updater = NewRequestUpdater(
             df.head(R), V, initial_infeasible_set)
         disruption_updater = DisruptionUpdater(new_request_updater)
         first_iteration = True
+        rejected = []
 
         while len(simulator.disruptions_stack) > 0:
             prev_inf_len = len(current_infeasible_set)
             delayed = (False, None, None)
             delay_deltas = []
+            prev_objective = current_objective
 
             # use correct data path
             if not first_iteration:
@@ -82,9 +84,13 @@ def main():
             if disruption_type == 'request':
                 current_route_plan, vehicle_clocks = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
-                current_route_plan, current_objective, current_infeasible_set, vehicle_clocks = new_request_updater.\
+                current_route_plan, current_objective, current_infeasible_set, vehicle_clocks, rejection, rid = new_request_updater.\
                     greedy_insertion_new_request(
                         current_route_plan, current_infeasible_set, disruption_info, disruption_time, vehicle_clocks)
+                if rejection:
+                    rejected.append(rid)
+                    current_objective = prev_objective
+                    continue
             elif disruption_type == 'no disruption':
                 continue
             else:
@@ -122,7 +128,11 @@ def main():
             if disruption_type == 'request' and not(len(current_infeasible_set) > prev_inf_len):
                 print("New request inserted")
 
+            new_request_updater.print_new_objective(
+                current_route_plan, current_infeasible_set)
+
         print("End simulation")
+        print("Rejected rids", rejected)
 
     except Exception as e:
         print("ERROR:", e)
@@ -138,7 +148,9 @@ def main():
 
 
 if __name__ == "__main__":
+    '''
     profile = Profile()
     cProfile.run('main()', 'profiling/restats')
     profile.display()
-    # main()
+    '''
+    main()
