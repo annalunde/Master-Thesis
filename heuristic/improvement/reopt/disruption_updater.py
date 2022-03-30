@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 
 class DisruptionUpdater:
@@ -138,3 +138,34 @@ class DisruptionUpdater:
             vehicle_route[idx] = (n, t, d, p, w, _)
             idx += 1
         return vehicle_route
+
+    def filter_route_plan(self, current_route_plan, vehicle_clocks):
+        route_plan = list(map(list, current_route_plan))
+        for idx in range(len(route_plan)):
+            vehicle_route = route_plan[idx]
+            vehicle_clock = vehicle_clocks[idx]
+            filtered_vehicle_route = [
+                i for i in vehicle_route if i[1] >= vehicle_clock]
+            nodes = [int(n) for n, t, d, p, w,
+                     _ in filtered_vehicle_route]
+            nodes = [n for n in nodes if n != 0]
+            single_nodes = [i for i in nodes if nodes.count(i) == 1]
+            if single_nodes:
+                if len(single_nodes) == 1:
+                    el_idx = next(i for i, (node_test, *_)
+                                  in enumerate(route_plan[idx]) if node_test == single_nodes[0])
+                    filtered_vehicle_route.insert(0, route_plan[idx][el_idx])
+                else:
+                    ordered_insertion_singles = []
+                    for single in single_nodes:
+                        el_idx = next(i for i, (node_test, *_)
+                                      in enumerate(route_plan[idx]) if node_test == single)
+                        ordered_insertion_singles.append(
+                            (el_idx, route_plan[idx][el_idx]))
+                    ordered_insertion_singles.sort(
+                        key=lambda x: x[0], reverse=True)
+                    for i in ordered_insertion_singles:
+                        filtered_vehicle_route.insert(0, i[1])
+            route_plan[idx] = filtered_vehicle_route if len(
+                filtered_vehicle_route) else [(0, vehicle_clock, None, 0, 0, None)]
+        return route_plan

@@ -1,13 +1,15 @@
 import pandas as pd
 import numpy as np
 from copy import copy
+from tqdm import tqdm
 from math import radians
-from datetime import timedelta
+import sklearn.metrics
+from decouple import config
 from config.construction_config import *
-from heuristic.construction.construction import ConstructionHeuristic
+from datetime import datetime, timedelta
 from sklearn.metrics.pairwise import haversine_distances
 from heuristic.improvement.reopt.reopt_repair_generator import ReOptRepairGenerator
-from simulation.simulator import Simulator
+
 pd.options.mode.chained_assignment = None
 
 
@@ -130,8 +132,6 @@ class NewRequestUpdater:
         total_infeasible = timedelta(minutes=len(new_infeasible_set))
         for vehicle_route in new_routeplan:
             if len(vehicle_route) >= 2:
-                print(vehicle_route[0])
-                print(vehicle_route[-1])
                 diff = (pd.to_datetime(
                     vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
                 total_travel_time += timedelta(minutes=diff)

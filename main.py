@@ -81,7 +81,9 @@ def main():
             print()
             # updates before heuristic
             disrupt = (False, None)
-            if disruption_type == 'request':
+            if disruption_type == 'no disruption':
+                continue
+            elif disruption_type == 'request':
                 current_route_plan, vehicle_clocks = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
                 current_route_plan, current_objective, current_infeasible_set, vehicle_clocks, rejection, rid = new_request_updater.\
@@ -91,8 +93,6 @@ def main():
                     rejected.append(rid)
                     current_objective = prev_objective
                     continue
-            elif disruption_type == 'no disruption':
-                continue
             else:
                 current_route_plan, vehicle_clocks = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
@@ -106,6 +106,10 @@ def main():
                 elif disruption_type == 'delay':
                     delayed = (True, disruption_info[0], disruption_info[1])
                     delay_deltas.append(current_objective)
+
+            # filter route plan
+            current_route_plan = disruption_updater.filter_route_plan(
+                current_route_plan, vehicle_clocks)
 
             # heuristic
             alns = ALNS(weights, reaction_factor, current_route_plan, current_objective, current_infeasible_set,

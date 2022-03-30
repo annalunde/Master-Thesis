@@ -232,6 +232,10 @@ class ReOptRepairGenerator:
                                 for idx, (node, time, deviation, passenger, wheelchair, _) in enumerate(test_vehicle_route):
                                     if time <= dropoff_time:
                                         end_idx = idx
+                                end_idx2 = [i for i in range(
+                                    len(test_vehicle_route)) if test_vehicle_route[i][1] <= dropoff_time][-1]
+                                print("end_idx", end_idx)
+                                print("end_idx2", end_idx2)
 
                                 s_d_node, s_d_time, s_d_d, s_d_p, s_d_w, _ = test_vehicle_route[
                                     end_idx]
@@ -438,7 +442,6 @@ class ReOptRepairGenerator:
 
         return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else self.heuristic.new_objective(route_plan, infeasible_set), infeasible_set, vehicle_clocks
 
-
     def get_bound_dev(self, depot, upper):
         if upper:
             dev = U_D_N if not depot else U_D_D
@@ -525,7 +528,7 @@ class ReOptRepairGenerator:
 
     def check_max_ride_time(self, vehicle_route, activated_checks, rid, request, still_delayed_nodes):
         nodes = [int(n) for n, t, d, p, w, _ in vehicle_route]
-        nodes.remove(0)
+        nodes = [n for n in nodes if n != 0]
         nodes_set = []
         [nodes_set.append(i) for i in nodes if i not in nodes_set]
         break_delay = [int(i) for i in still_delayed_nodes if int(
@@ -553,7 +556,7 @@ class ReOptRepairGenerator:
 
     def check_min_ride_time(self, vehicle_route, activated_checks, rid, request):
         nodes = [n for n, t, d, p, w, _ in vehicle_route]
-        nodes.remove(0)
+        nodes = [n for n in nodes if n != 0]
         for i in range(2, len(nodes)):
             s_idx = i
             e_idx = i-1
