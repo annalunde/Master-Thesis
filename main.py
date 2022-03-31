@@ -28,7 +28,6 @@ def main():
         initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
         constructor.print_new_objective(
             initial_route_plan, initial_infeasible_set)
-        delayed = (False, None, None)
 
         # IMPROVEMENT OF INITIAL SOLUTION
         random_state = rnd.RandomState()
@@ -44,11 +43,28 @@ def main():
         alns.set_operators(operators)
 
         # Run ALNS
+        delayed = (False, None, None)
+
         current_route_plan, current_objective, current_infeasible_set, _ = alns.iterate(
             iterations, None, None, None, delayed)
 
+        if current_infeasible_set:
+            print(
+                "Error: The service cannot serve the number of initial requests required")
+            current_infeasible_set = []
+
         constructor.print_new_objective(
             current_route_plan, current_infeasible_set)
+
+        # Recalibrate current solution
+        current_route_plan = constructor.recalibrate_solution(
+            current_route_plan)
+
+        delta_dev_objective = constructor.get_delta_objective(
+            current_route_plan, [], current_objective)
+
+        print("Change in objective based on recalibration of deviation",
+              delta_dev_objective)
 
         # SIMULATION
         print("Start simulation")
@@ -58,13 +74,12 @@ def main():
         new_request_updater = NewRequestUpdater(
             df.head(R), V, initial_infeasible_set)
         disruption_updater = DisruptionUpdater(new_request_updater)
-        first_iteration = True
-        rejected = []
-
+        first_iteration, rejected = True, []
+        print("Length of disruption stack", len(simulator.disruptions_stack))
         while len(simulator.disruptions_stack) > 0:
             prev_inf_len = len(current_infeasible_set)
-            delayed = (False, None, None)
-            delay_deltas = []
+            delayed, delay_deltas = (False, None, None), []
+            i = 0
             prev_objective = current_objective
 
             # use correct data path
@@ -81,33 +96,44 @@ def main():
             print()
             # updates before heuristic
             disrupt = (False, None)
-            if disruption_type == 'request':
+            if disruption_type == 4:  # No disruption
+                continue
+            elif disruption_type == 0:  # Disruption: new request
                 current_route_plan, vehicle_clocks = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
                 current_route_plan, current_objective, current_infeasible_set, vehicle_clocks, rejection, rid = new_request_updater.\
                     greedy_insertion_new_request(
-                        current_route_plan, current_infeasible_set, disruption_info, disruption_time, vehicle_clocks)
+                        current_route_plan, current_infeasible_set, disruption_info, disruption_time, vehicle_clocks, i)
                 if rejection:
                     rejected.append(rid)
                     current_objective = prev_objective
-                    continue
-            elif disruption_type == 'no disruption':
-                continue
+                    for i in range(1, N_R+1):
+                        current_route_plan, current_objective, current_infeasible_set, vehicle_clocks, rejection, rid = new_request_updater.\
+                            greedy_insertion_new_request(
+                                current_route_plan, current_infeasible_set, disruption_info, disruption_time, vehicle_clocks, i)
+                        if not rejection:
+                            rejected.remove(rid)
+                            break
+
             else:
                 current_route_plan, vehicle_clocks = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
                 current_objective = new_request_updater.new_objective(
                     current_route_plan, current_infeasible_set)
 
-                if disruption_type == 'cancel' or disruption_type == 'no show':
+                if disruption_type == 2 or disruption_type == 3:  # Disruption: cancel or no show
                     index_removed = [(disruption_info[3], disruption_info[0], disruption_info[1]),
                                      (disruption_info[4], disruption_info[0], disruption_info[2])]
                     disrupt = (True, index_removed)
-                elif disruption_type == 'delay':
+                elif disruption_type == 1:  # Disruption: delay
                     delayed = (True, disruption_info[0], disruption_info[1])
                     delay_deltas.append(current_objective)
 
-            # heuristic
+            # Filter route plan
+            current_route_plan = disruption_updater.filter_route_plan(
+                current_route_plan, vehicle_clocks)
+
+            # Heuristic
             alns = ALNS(weights, reaction_factor, current_route_plan, current_objective, current_infeasible_set,
                         criterion,
                         destruction_degree, new_request_updater, random_state)
@@ -125,7 +151,7 @@ def main():
                 current_route_plan = disruption_updater.recalibrate_solution(
                     current_route_plan, disruption_info, still_delayed_nodes)
 
-            if disruption_type == 'request' and not(len(current_infeasible_set) > prev_inf_len):
+            if disruption_type == 0 and not(len(current_infeasible_set) > prev_inf_len):
                 print("New request inserted")
 
             new_request_updater.print_new_objective(

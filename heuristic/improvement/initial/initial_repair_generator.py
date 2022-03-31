@@ -72,12 +72,12 @@ class RepairGenerator:
                         dropoff_time = request["Requested Pickup Time"] + self.heuristic.travel_time(
                             rid-1, self.heuristic.n + rid-1, True) + 2*timedelta(minutes=s)if i == 0 else initial_route_plan[dropoff_removal[1]][dropoff_removal[2]][1]
 
-                        start_idx = 0
                         vehicle_route = temp_route_plan[introduced_vehicle]
                         test_vehicle_route = copy(vehicle_route)
-                        for idx, (node, time, deviation, passenger, wheelchair, _) in enumerate(vehicle_route):
-                            if time <= pickup_time:
-                                start_idx = idx
+                        start_idx = [i for i in range(
+                            len(vehicle_route)) if vehicle_route[i][1] <= pickup_time]
+                        start_idx = start_idx[-1] if len(
+                            start_idx) else 0
 
                         s_p_node, s_p_time, s_p_d, s_p_p, s_p_w, _ = vehicle_route[start_idx]
                         if start_idx == len(vehicle_route) - 1:
@@ -209,9 +209,8 @@ class RepairGenerator:
                                 e_p_node, e_p_time, e_p_d, e_p_p, e_p_w, _ = test_vehicle_route[
                                     start_idx + 2]
                                 end_idx = 0
-                                for idx, (node, time, deviation, passenger, wheelchair, _) in enumerate(test_vehicle_route):
-                                    if time <= dropoff_time:
-                                        end_idx = idx
+                                end_idx = [i for i in range(
+                                    len(test_vehicle_route)) if test_vehicle_route[i][1] <= dropoff_time][-1]
 
                                 s_d_node, s_d_time, s_d_d, s_d_p, s_d_w, _ = test_vehicle_route[
                                     end_idx]
@@ -469,13 +468,9 @@ class RepairGenerator:
         return vehicle_route, activated_checks
 
     def check_max_ride_time(self, vehicle_route, activated_checks, rid, request):
-        test_nodes = [n for n, t, d, p, w, _ in vehicle_route]
-        nodes = [int(n) for n, t, d, p, w, _ in vehicle_route]
-        nodes.remove(0)
+        nodes = [int(n) for n, t, d, p, w, _ in vehicle_route if n > 0]
         nodes_set = []
         [nodes_set.append(i) for i in nodes if i not in nodes_set]
-        #print("test_nodes", test_nodes)
-        #print("nodes_set", nodes_set)
         for n in nodes_set:
             p_idx = next(i for i, (node, *_)
                          in enumerate(vehicle_route) if node == n)
@@ -515,14 +510,12 @@ class RepairGenerator:
         return activated_checks
 
     def update_capacities(self, vehicle_route, start_id, dropoff_id, request, rid):
-        idx = start_id+1
         end_id = dropoff_id if dropoff_id == start_id + 1 else dropoff_id + 1
-        for n, t, d, p, w, _ in vehicle_route[start_id+1:end_id]:
-            p += request["Number of Passengers"]
-            w += request["Wheelchair"]
-            vehicle_route[idx] = (n, t, d, p, w, _)
-            idx += 1
-        return vehicle_route
+        vehicle_route_temp = [(i[0], i[1], i[2], i[3]+request["Number of Passengers"],
+                               i[4]+request["Wheelchair"], i[5]) for i in vehicle_route[start_id+1:end_id]]
+        vehicle_route_result = vehicle_route[:start_id+1] + \
+            vehicle_route_temp + vehicle_route[end_id:]
+        return vehicle_route_result
 
     def check_capacities(self, vehicle_route, start_id, dropoff_id, request, rid, activated_checks, infeasible_set):
         for n, t, d, p, w, _ in vehicle_route[start_id+1:dropoff_id]:

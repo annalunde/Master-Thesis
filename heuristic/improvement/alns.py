@@ -2,7 +2,7 @@ from copy import copy
 import numpy as np
 import numpy.random as rnd
 from tqdm import tqdm
-from config.initial_improvement_config import *
+from config.reopt_improvement_config import *
 from heuristic.improvement.destroy_repair_updater import Destroy_Repair_Updater
 
 
@@ -105,6 +105,7 @@ class ALNS:
             # After a certain number of iterations, update weight
             if (i+1) % N_U == 0:
                 # Update weights with scores
+
                 for destroy in range(len(d_weights)):
                     if d_count[destroy] == 0:
                         continue

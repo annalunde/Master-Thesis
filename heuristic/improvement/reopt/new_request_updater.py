@@ -1,13 +1,16 @@
 import pandas as pd
 import numpy as np
 from copy import copy
+from tqdm import tqdm
 from math import radians
-from datetime import timedelta
+import sklearn.metrics
+from functools import reduce
+from decouple import config
 from config.construction_config import *
-from heuristic.construction.construction import ConstructionHeuristic
+from datetime import datetime, timedelta
 from sklearn.metrics.pairwise import haversine_distances
 from heuristic.improvement.reopt.reopt_repair_generator import ReOptRepairGenerator
-from simulation.simulator import Simulator
+
 pd.options.mode.chained_assignment = None
 
 
@@ -106,11 +109,13 @@ class NewRequestUpdater:
                     P_ij[n_j].add(n_i+1)
         return np.array(P_ij)
 
-    def greedy_insertion_new_request(self, current_route_plan, current_infeasible_set, new_request, sim_clock, vehicle_clocks):
+    def greedy_insertion_new_request(self, current_route_plan, current_infeasible_set, new_request, sim_clock, vehicle_clocks, i):
         rid = len(self.requests.index)
         route_plan = list(map(list, current_route_plan))
         infeasible_set = copy(current_infeasible_set)
         request = self.requests.iloc[-1]
+        request["Requested Pickup Time"] = request["Requested Pickup Time"] + \
+            i*U_D
 
         route_plan, new_objective, infeasible_set, vehicle_clocks = self.re_opt_repair_generator.generate_insertions(
             route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=None,
@@ -133,12 +138,10 @@ class NewRequestUpdater:
                 diff = (pd.to_datetime(
                     vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
                 total_travel_time += timedelta(minutes=diff)
-            for n, t, d, p, w, _ in vehicle_route:
-                if d is not None:
-                    d = d if d > timedelta(0) else -d
-                    pen_dev = d - P_S if d > P_S else timedelta(0)
-                    total_deviation += pen_dev
-
+            pen_dev = [j if j > timedelta(
+                0) else -j for j in [i[2] for i in vehicle_route if i[2] is not None]]
+            total_deviation += reduce(
+                lambda a, b: a+b, [i-P_S if i > P_S else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(0)
         updated = alpha*total_travel_time + beta * \
             total_deviation + gamma*total_infeasible
         return updated
@@ -151,10 +154,10 @@ class NewRequestUpdater:
             diff = (pd.to_datetime(
                 vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
             total_travel_time += timedelta(minutes=diff)
-            for n, t, d, p, w, _ in vehicle_route:
-                if d is not None:
-                    d = d if d > timedelta(0) else -d
-                    total_deviation += d
+            pen_dev = [j if j > timedelta(
+                0) else -j for j in [i[2] for i in vehicle_route if i[2] is not None]]
+            total_deviation += reduce(
+                lambda a, b: a+b, [i-P_S if i > P_S else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(0)
         print("Total travel time", total_travel_time)
         print("Total deviation", total_deviation)
         print("Total infeasible", total_infeasible)
@@ -172,17 +175,9 @@ class NewRequestUpdater:
 
         vehicle_lat_lon = []
 
-        # Origins for each vehicle
-        for i in range(self.vehicles):
-            vehicle_lat_lon.append(
-                (radians(59.946829115276145), radians(10.779841653639243))
-            )
-
-        # Destinations for each vehicle
-        for i in range(self.vehicles):
-            vehicle_lat_lon.append(
-                (radians(59.946829115276145), radians(10.779841653639243))
-            )
+        # Origins and destinations for each vehicle
+        vehicle_lat_lon = [(radians(59.946829115276145), radians(
+            10.779841653639243)) for i in range(2*self.vehicles)]
 
         # Positions
         lat_lon = request_lat_lon + vehicle_lat_lon

@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 
 class DisruptionUpdater:
@@ -7,7 +7,7 @@ class DisruptionUpdater:
 
     def update_route_plan(self, current_route_plan, disruption_type, disruption_info, sim_clock):
 
-        if disruption_type == 'request':
+        if disruption_type == 0:
             # adding current position for each vehicle
             vehicle_clocks, artificial_depot = self.update_vehicle_clocks(
                 current_route_plan, sim_clock, disruption_type, disruption_info)
@@ -16,7 +16,7 @@ class DisruptionUpdater:
 
             self.new_request_updater.set_parameters(disruption_info)
 
-        elif disruption_type == 'delay':
+        elif disruption_type == 1:
             updated_route_plan = self.update_with_delay(
                 current_route_plan, disruption_info)
 
@@ -24,7 +24,7 @@ class DisruptionUpdater:
             vehicle_clocks, artificial_depot = self.update_vehicle_clocks(
                 updated_route_plan, sim_clock, disruption_type, disruption_info)
 
-        elif disruption_type == 'cancel':
+        elif disruption_type == 2:
             # adding current position for each vehicle
             vehicle_clocks, artificial_depot = self.update_vehicle_clocks(
                 current_route_plan, sim_clock, disruption_type, disruption_info)
@@ -72,18 +72,12 @@ class DisruptionUpdater:
     def update_with_delay(self, current_route_plan, disruption_info):
         delay_duration = disruption_info[2]
         route_plan = list(map(list, current_route_plan))
-
-        start_idx = disruption_info[1]
-        for node in route_plan[disruption_info[0]][disruption_info[1]:]:
-            t = node[1] + delay_duration
-            d = node[2] + delay_duration
-            node = (node[0], t, d, node[3], node[4], node[5])
-            route_plan[disruption_info[0]][start_idx] = node
-            start_idx += 1
-
+        route_plan[disruption_info[0]] = route_plan[disruption_info[0]][:disruption_info[1]] + \
+            [(i[0], i[1]+delay_duration, i[2]+delay_duration, i[3], i[4], i[5])
+             for i in route_plan[disruption_info[0]][disruption_info[1]:]]
         return route_plan
 
-    @staticmethod
+    @ staticmethod
     def recalibrate_solution(current_route_plan, disruption_info, still_delayed_nodes):
         route_plan = list(map(list, current_route_plan))
         for node in still_delayed_nodes:
@@ -117,7 +111,7 @@ class DisruptionUpdater:
                         next_idx = prev_idx + 1
                         vehicle_clocks.append(vehicle_route[next_idx][1])
 
-                        if disruption_type == 'cancel':
+                        if disruption_type == 2:
                             # check whether next node after sim_clock is the request that is cancelled
                             if current_route_plan[disruption_info[0]][disruption_info[1]] == vehicle_route[next_idx]:
                                 artificial_depot = True
@@ -131,10 +125,38 @@ class DisruptionUpdater:
         return vehicle_clocks, artificial_depot
 
     def update_capacities(self, vehicle_route, start_id, dropoff_id, request):
-        idx = start_id
-        for n, t, d, p, w, _ in vehicle_route[start_id:dropoff_id]:
-            p -= request["Number of Passengers"]
-            w -= request["Wheelchair"]
-            vehicle_route[idx] = (n, t, d, p, w, _)
-            idx += 1
-        return vehicle_route
+        vehicle_route_temp = [(i[0], i[1], i[2], i[3]-request["Number of Passengers"],
+                              i[4]-request["Wheelchair"], i[5]) for i in vehicle_route[start_id:dropoff_id]]
+        vehicle_route_result = vehicle_route[:start_id] + \
+            vehicle_route_temp + vehicle_route[dropoff_id:]
+        return vehicle_route_result
+
+    def filter_route_plan(self, current_route_plan, vehicle_clocks):
+        route_plan = list(map(list, current_route_plan))
+        for idx in range(len(route_plan)):
+            vehicle_route = route_plan[idx]
+            vehicle_clock = vehicle_clocks[idx]
+            filtered_vehicle_route = [
+                i for i in vehicle_route if i[1] >= vehicle_clock]
+            nodes = [int(n) for n, t, d, p, w,
+                     _ in filtered_vehicle_route if n > 0]
+            single_nodes = [i for i in nodes if nodes.count(i) == 1]
+            if single_nodes:
+                if len(single_nodes) == 1:
+                    el_idx = next(i for i, (node_test, *_)
+                                  in enumerate(route_plan[idx]) if node_test == single_nodes[0])
+                    filtered_vehicle_route.insert(0, route_plan[idx][el_idx])
+                else:
+                    ordered_insertion_singles = []
+                    for single in single_nodes:
+                        el_idx = next(i for i, (node_test, *_)
+                                      in enumerate(route_plan[idx]) if node_test == single)
+                        ordered_insertion_singles.append(
+                            (el_idx, route_plan[idx][el_idx]))
+                    ordered_insertion_singles.sort(
+                        key=lambda x: x[0], reverse=True)
+                    for i in ordered_insertion_singles:
+                        filtered_vehicle_route.insert(0, i[1])
+            route_plan[idx] = filtered_vehicle_route if len(
+                filtered_vehicle_route) else [(0, vehicle_clock, None, 0, 0, None)]
+        return route_plan

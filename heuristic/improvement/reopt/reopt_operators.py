@@ -3,7 +3,7 @@ from copy import copy
 from math import ceil
 from numpy.random import randint, choice
 from datetime import timedelta
-from config.construction_config import *
+from config.reopt_improvement_config import *
 from heuristic.improvement.reopt.reopt_repair_generator import ReOptRepairGenerator
 
 
@@ -259,7 +259,6 @@ class ReOptOperators:
         return route_plan, current_objective, infeasible_set
 
     def regret_2_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set, current_route_plan, index_removed_requests, delayed, still_delayed_nodes):
-
         unassigned_requests = removed_requests.copy()
         unassigned_requests.sort(key=lambda x: x[0])
         route_plan = list(map(list, destroyed_route_plan))
