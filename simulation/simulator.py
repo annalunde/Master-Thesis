@@ -1,9 +1,16 @@
+import sys
+import traceback
 from datetime import timedelta
+from config.main_config import *
+from timeit import default_timer as timer
+from heuristic.construction.construction import ConstructionHeuristic
 from simulation.poisson import *
-from simulation.new_requests import *
 from config.simulation_config import *
-import random
+from random import choice
 from scipy.stats import gamma, beta
+from numpy.random import rand
+import pandas as pd
+from decouple import config
 
 
 class Simulator:
@@ -33,7 +40,7 @@ class Simulator:
         disruption_stack.sort(reverse=True, key=lambda x: x[1])
         return disruption_stack
 
-    def get_disruption(self, current_route_plan, data_path):
+    def get_disruption(self, current_route_plan, data_path, first_iteration):
         # get disruption from stack
         disruption = self.disruptions_stack.pop()
         disruption_type = disruption[0]
@@ -42,7 +49,7 @@ class Simulator:
         # find which disruption type it is
         if disruption_type == 0:
             add_request, disruption_info = self.new_request(
-                disruption_time, data_path)
+                disruption_time, data_path, first_iteration)
             if add_request < 0:
                 disruption_type = 4
                 disruption_info = None
@@ -82,9 +89,9 @@ class Simulator:
         self.sim_clock = disruption_time
         return disruption_type, disruption_time, disruption_info
 
-    def new_request(self, request_arrival, data_path):
+    def new_request(self, request_arrival, data_path, first_iteration):
         # return new request data
-        random_number = np.random.rand()
+        random_number = rand()
         if random_number > percentage_dropoff:
             # request has requested pickup time - draw random time
             requested_pickup_time = request_arrival + \
@@ -98,8 +105,7 @@ class Simulator:
 
             else:
                 # get random request
-                random_request = NewRequests(
-                    data_path).get_and_drop_random_request()
+                random_request = self.get_and_drop_random_request(data_path, first_iteration)
 
                 # update creation time to request disruption time
                 random_request['Request Creation Time'] = request_arrival
@@ -123,8 +129,7 @@ class Simulator:
 
             else:
                 # get random request
-                random_request = NewRequests(
-                    data_path).get_and_drop_random_request()
+                random_request = self.get_and_drop_random_request(data_path, first_iteration)
 
                 # update creation time to request disruption time
                 random_request['Request Creation Time'] = request_arrival
@@ -140,7 +145,7 @@ class Simulator:
         delay = timedelta(minutes=beta.rvs(
             delay_fit_a, delay_fit_b, delay_fit_loc, delay_fit_scale))
 
-        rids_indices, planned_departure_times, vehicle_indices = [], [], []
+        rids_indices, planned_times, vehicle_indices = [], [], []
 
         # potential delays - nodes with planned pickup time after initial_delay
         vehicle_index = 0
@@ -150,17 +155,17 @@ class Simulator:
                 temp_planned_time = row[col][1] - timedelta(minutes=s)
                 if temp_planned_time >= initial_delay:
                     rids_indices.append(col)
-                    planned_departure_times.append(temp_planned_time)
+                    planned_times.append(temp_planned_time)
                     vehicle_indices.append(vehicle_index)
             vehicle_index += 1
 
         # check whether there are any delays, if not, another disruption type will be chosen
-        # if yes, pick the delay with earliest planned departure time
+        # if yes, pick the delay with earliest planned time
         if len(rids_indices) > 0:
-            temp_actual_disruption_time = min(planned_departure_times)
-            rid_index = rids_indices[planned_departure_times.index(
+            temp_actual_disruption_time = min(planned_times)
+            rid_index = rids_indices[planned_times.index(
                 temp_actual_disruption_time)]
-            vehicle_index = vehicle_indices[planned_departure_times.index(
+            vehicle_index = vehicle_indices[planned_times.index(
                 temp_actual_disruption_time)]
             return vehicle_index, rid_index, delay
         else:
@@ -186,7 +191,7 @@ class Simulator:
         # check whether there are any cancellations, if not, another disruption will be chosen
         # if yes, pick a random pickup node as the cancellation
         if len(indices) > 0:
-            index = random.choice(indices)
+            index = choice(indices)
             return index[0], index[1], index[2], index[3], index[4]
         else:
             return -1, -1, -1, -1, -1
@@ -217,3 +222,58 @@ class Simulator:
             return index[0], index[1], index[2], index[3], index[4], actual_disruption_time
         else:
             return -1, -1, -1, -1, -1, -1
+
+    def get_and_drop_random_request(self, data_path, first_iteration):
+        if first_iteration:
+            df = pd.read_csv(data_path, index_col=0)
+            df['Request Creation Time'] = pd.to_datetime(df['Request Creation Time'],
+                                                         format="%Y-%m-%d %H:%M:%S")
+            df['Requested Pickup Time'] = pd.to_datetime(df['Requested Pickup Time'],
+                                                         format="%Y-%m-%d %H:%M:%S")
+            df['Requested Dropoff Time'] = pd.to_datetime(df['Requested Dropoff Time'],
+                                                          format="%Y-%m-%d %H:%M:%S")
+
+            # request arrives at same day as it is requested to be served
+            df["Requested Pickup/Dropoff Time"] = (df["Requested Pickup Time"]).fillna(
+                df["Requested Dropoff Time"])
+            df['Date Creation'] = df['Request Creation Time'].dt.date
+            df['Time Creation'] = df['Request Creation Time'].dt.hour
+            df['Date Pickup/Dropoff'] = df['Requested Pickup/Dropoff Time'].dt.date
+            df_same_day = df[df['Date Creation'] == df['Date Pickup/Dropoff']]
+
+            # requests arrives after 10am
+            df_same_day_after_10 = df_same_day[
+                (df_same_day['Time Creation'] >= 10)
+            ]
+        else:
+            df_same_day_after_10 = pd.read_csv(data_path, index_col=0)
+
+        # get random request
+        random_request = df_same_day_after_10.sample()
+        random_request.drop(columns=['Request Creation Time',
+                                     'Requested Pickup Time',
+                                     'Actual Pickup Time',
+                                     'Requested Dropoff Time',
+                                     'Actual Dropoff Time',
+                                     'Requested Pickup/Dropoff Time',
+                                     'Date Creation',
+                                     'Time Creation',
+                                     'Date Pickup/Dropoff',
+                                     'Request ID',
+                                     'Request Status',
+                                     'Rider ID',
+                                     'Ride ID',
+                                     'Cancellation Time',
+                                     'No Show Time',
+                                     'Origin Zone',
+                                     'Destination Zone',
+                                     'Reason For Travel'], inplace=True)
+
+        # drop the request
+        df_same_day_after_10_updated = df_same_day_after_10.drop(
+            random_request.index)
+
+        # write updated dataframe to csv
+        df_same_day_after_10_updated.to_csv(config("data_simulator_path"))
+
+        return random_request

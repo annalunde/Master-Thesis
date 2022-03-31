@@ -10,7 +10,7 @@ iterations = 100
 destruction_degree = 0.4
 
 # Number of requests
-R = 40
+R = 106
 
 # Number of vehicles
 V = 16

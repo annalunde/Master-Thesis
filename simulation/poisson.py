@@ -1,5 +1,5 @@
 from datetime import datetime
-import numpy.random as rnd
+from numpy.random import poisson, uniform
 from config.simulation_config import *
 
 
@@ -9,17 +9,10 @@ class Poisson:
 
     def disruption_times(self, arrival_rates, sim_clock, disruption_type):
 
-        time_intervals = [10, 11, 12, 13, 14, 15, 16, 17, 18]
+        timestamps = [uniform(time_intervals[time_step], time_intervals[time_step]+1)
+                      for time_step in range(start_poisson, end_poisson)
+                      for t in range(0, poisson(arrival_rates[time_step]))]
 
-        timestamps = []
-
-        for time_step in range(start_poisson, end_poisson):
-            time_step_arrivals = rnd.poisson(arrival_rates[time_step])
-            for t in range(0, time_step_arrivals):
-                timestamps.append(rnd.uniform(
-                    time_intervals[time_step], time_intervals[time_step]+1))
-
-        timestamps.sort()
 
         # convert timestamps to datetime
         disruption_timestamps = []
@@ -33,3 +26,4 @@ class Poisson:
                 disruption_timestamps.append((disruption_type, date_time))
 
         return disruption_timestamps
+
