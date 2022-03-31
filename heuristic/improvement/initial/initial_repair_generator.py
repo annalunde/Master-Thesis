@@ -469,10 +469,13 @@ class RepairGenerator:
         return vehicle_route, activated_checks
 
     def check_max_ride_time(self, vehicle_route, activated_checks, rid, request):
+        test_nodes = [n for n, t, d, p, w, _ in vehicle_route]
         nodes = [int(n) for n, t, d, p, w, _ in vehicle_route]
         nodes.remove(0)
         nodes_set = []
         [nodes_set.append(i) for i in nodes if i not in nodes_set]
+        #print("test_nodes", test_nodes)
+        #print("nodes_set", nodes_set)
         for n in nodes_set:
             p_idx = next(i for i, (node, *_)
                          in enumerate(vehicle_route) if node == n)
@@ -514,8 +517,6 @@ class RepairGenerator:
     def update_capacities(self, vehicle_route, start_id, dropoff_id, request, rid):
         idx = start_id+1
         end_id = dropoff_id if dropoff_id == start_id + 1 else dropoff_id + 1
-        if start_id + 1 < end_id:
-            tid = 2
         for n, t, d, p, w, _ in vehicle_route[start_id+1:end_id]:
             p += request["Number of Passengers"]
             w += request["Wheelchair"]
