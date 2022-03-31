@@ -4,10 +4,12 @@ from datetime import datetime, timedelta
 # Allowed excess ride time
 F = 1
 
+# Number of destroy/repair pairs before updating weights in initial
+N_U = 10
+
+
 # Number of vehicles
 V = 16
-
-N_U = 5
 
 # Allowed deviaiton from Requested service time (either pickup or dropoff)
 U_D_N = timedelta(minutes=15)

@@ -224,3 +224,10 @@ class ConstructionHeuristic:
 
     def get_max_travel_time(self, to_id, from_id):
         return timedelta(seconds=(1+F) * self.T_ij[to_id, from_id])
+
+    @staticmethod
+    def recalibrate_solution(route_plan):
+        return [[(node[0], node[1], timedelta(0), node[3], node[4], node[5]) for node in vehicle_route] for vehicle_route in route_plan]
+
+    def get_delta_objective(self, new_routeplan, infeasible_set, current_objective):
+        return current_objective - self.new_objective(new_routeplan, infeasible_set)

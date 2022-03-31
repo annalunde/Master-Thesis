@@ -109,11 +109,13 @@ class NewRequestUpdater:
                     P_ij[n_j].add(n_i+1)
         return np.array(P_ij)
 
-    def greedy_insertion_new_request(self, current_route_plan, current_infeasible_set, new_request, sim_clock, vehicle_clocks):
+    def greedy_insertion_new_request(self, current_route_plan, current_infeasible_set, new_request, sim_clock, vehicle_clocks, i):
         rid = len(self.requests.index)
         route_plan = list(map(list, current_route_plan))
         infeasible_set = copy(current_infeasible_set)
         request = self.requests.iloc[-1]
+        request["Requested Pickup Time"] = request["Requested Pickup Time"] + \
+            i*U_D
 
         route_plan, new_objective, infeasible_set, vehicle_clocks = self.re_opt_repair_generator.generate_insertions(
             route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=None,

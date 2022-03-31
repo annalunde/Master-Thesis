@@ -53,7 +53,7 @@ class Simulator:
             disruption_info = (delay_vehicle_index,
                                delay_rid_index, duration_delay)
             if delay_rid_index < 0:
-                disruption_type = 3
+                disruption_type = 4
                 disruption_info = None
 
         elif disruption_type == 2:
@@ -62,7 +62,7 @@ class Simulator:
             disruption_info = (
                 cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index, node_p, node_d)
             if cancel_pickup_rid_index < 0:
-                disruption_type = 3
+                disruption_type = 4
                 disruption_info = None
 
         else:
@@ -73,7 +73,7 @@ class Simulator:
             next_disruption_time = self.disruptions_stack[-1][1] if len(
                 self.disruptions_stack) > 0 else datetime.strptime("2021-05-10 19:00:00", "%Y-%m-%d %H:%M:%S")
             if no_show_pickup_rid_index < 0 or actual_no_show >= next_disruption_time:
-                disruption_type = 3
+                disruption_type = 4
                 disruption_info = None
             else:
                 disruption_time = actual_no_show

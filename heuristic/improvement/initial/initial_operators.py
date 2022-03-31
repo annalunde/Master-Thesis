@@ -3,7 +3,7 @@ from math import ceil
 import numpy.random as rnd
 from datetime import timedelta
 import pandas as pd
-from config.construction_config import *
+from config.initial_improvement_config import *
 from heuristic.improvement.initial.initial_repair_generator import RepairGenerator
 
 
