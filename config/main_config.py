@@ -16,7 +16,7 @@ R = 40
 V = 16
 
 # Number of tries for + 15 minutes for a rejected request:
-N_R = 1
+N_R = 0
 
 # Simulated annealing temperatures -- NOTE: these must be tuned
 start_temperature = 50

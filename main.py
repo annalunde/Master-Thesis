@@ -108,7 +108,6 @@ def main():
                     rejected.append(rid)
                     current_objective = prev_objective
                     for i in range(1, N_R+1):
-                        print("YAY")
                         current_route_plan, current_objective, current_infeasible_set, vehicle_clocks, rejection, rid = new_request_updater.\
                             greedy_insertion_new_request(
                                 current_route_plan, current_infeasible_set, disruption_info, disruption_time, vehicle_clocks, i)
