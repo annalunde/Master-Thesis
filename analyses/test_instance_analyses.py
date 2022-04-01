@@ -171,7 +171,7 @@ class AnalyserInitial:
         print("Mean", np.mean([i for i in small_reopt]))
         print()
         print("Small dates")
-        small_dates = [key for key, value in initial_days.items() if 46 < value[0] <= 110]
+        small_dates = [(key, value[0]) for key, value in initial_days.items() if 46 < value[0] <= 110]
         print(small_dates)
         print()
 
@@ -190,7 +190,7 @@ class AnalyserInitial:
         print("Mean", np.mean([i for i in medium_reopt]))
         print()
         print("Medium dates")
-        medium_dates = [key for key, value in initial_days.items() if 110 < value[0] <= 170]
+        medium_dates = [(key, value[0]) for key, value in initial_days.items() if 110 < value[0] <= 170]
         print(medium_dates)
         print()
 
@@ -209,7 +209,7 @@ class AnalyserInitial:
         print("Mean", np.mean([i for i in large_reopt]))
         print()
         print("Large dates")
-        large_dates = [key for key, value in initial_days.items() if value[0] > 170]
+        large_dates = [(key, value[0]) for key, value in initial_days.items() if value[0] > 170]
         print(large_dates)
         print()
 
