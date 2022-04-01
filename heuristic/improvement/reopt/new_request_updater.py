@@ -15,99 +15,66 @@ pd.options.mode.chained_assignment = None
 
 
 class NewRequestUpdater:
-    def __init__(self, requests, vehicles, infeasible_set):
-        self.vehicles = vehicles
+    def __init__(self, constructor):
+        self.vehicles = [i for i in range(V)]
         self.introduced_vehicles = set()
-        self.temp_temp_requests = self.drop_columns_and_datetime(requests)
-        self.n = len(self.temp_temp_requests.index)
-        self.num_nodes_and_depots = 2 * self.vehicles + 2 * self.n
-        self.temp_requests = self.compute_pickup_time(self.temp_temp_requests)
-        self.requests = self.temp_requests.sort_values(
-            "Requested Pickup Time").reset_index(drop=True)
-        self.requests["Requested Pickup Time"] = pd.to_datetime(
-            self.requests["Requested Pickup Time"], format="%Y-%m-%d %H:%M:%S"
-        )
-        self.requests["Requested Dropoff Time"] = pd.to_datetime(
-            self.requests["Requested Dropoff Time"], format="%Y-%m-%d %H:%M:%S"
-        )
-        self.requests["Request Creation Time"] = pd.to_datetime(
-            self.requests["Request Creation Time"], format="%Y-%m-%d %H:%M:%S"
-        )
+        self.requests = constructor.requests.copy(deep=False)
+        self.n = len(self.requests.index)
+        self.num_nodes_and_depots = len(self.vehicles) + 2 * self.n
         self.current_objective = timedelta(0)
-        self.T_ij = self.travel_matrix(self.requests)
-        self.infeasible_set = copy(infeasible_set)
+        self.T_ij = np.array(constructor.T_ij, copy=True)
+        self.infeasible_set = copy(constructor.infeasible_set)
         self.re_opt_repair_generator = ReOptRepairGenerator(self)
-        self.preprocessed = self.preprocess_requests()
+        self.preprocessed = copy(constructor.preprocessed)
 
     def set_parameters(self, new_request):
-        self.requests = self.requests.append(new_request)
+        updated_new_request = self.compute_pickup_time(new_request)
+        self.requests = self.requests.append(updated_new_request)
         self.n = len(self.requests)
-        self.num_nodes_and_depots = 2 * self.vehicles + 2 * self.n
-        self.requests = self.compute_pickup_time(self.requests)
+        self.num_nodes_and_depots = len(self.vehicles) + 2 * self.n
         self.T_ij = self.travel_matrix(self.requests)
-        self.preprocessed = self.preprocess_requests()
+        self.preprocessed = self.preprocess_requests(updated_new_request)
 
-    def drop_columns_and_datetime(self, requests):
-        requests["Requested Pickup Time"] = pd.to_datetime(
-            requests["Requested Pickup Time"], format="%Y-%m-%d %H:%M:%S"
-        )
-        requests["Requested Dropoff Time"] = pd.to_datetime(
-            requests["Requested Dropoff Time"], format="%Y-%m-%d %H:%M:%S"
-        )
-        requests["Request Creation Time"] = pd.to_datetime(
-            requests["Request Creation Time"], format="%Y-%m-%d %H:%M:%S"
-        )
-        requests.drop(columns=['Unnamed: 0',
-                               'Actual Pickup Time',
-                               'Actual Dropoff Time',
-                               'Request ID',
-                               'Request Status',
-                               'Rider ID',
-                               'Ride ID',
-                               'Cancellation Time',
-                               'No Show Time',
-                               'Origin Zone',
-                               'Destination Zone',
-                               'Reason For Travel'], inplace=True)
-
-        return requests
-
-    def compute_pickup_time(self, requests):
-        requests["Requested Pickup Time"] = pd.to_datetime(
-            requests["Requested Pickup Time"], format="%Y-%m-%d %H:%M:%S"
-        )
-        requests["Requested Dropoff Time"] = pd.to_datetime(
-            requests["Requested Dropoff Time"], format="%Y-%m-%d %H:%M:%S"
-        )
-
-        temp_T_ij = self.travel_matrix(requests)
-
-        nat_pickup = np.isnat(requests["Requested Pickup Time"])
-
-        for i in range(self.n):
-            if nat_pickup.iloc[i]:
-                requests["Requested Pickup Time"].iloc[i] = requests["Requested Dropoff Time"].iloc[i] - self.temp_travel_time(
-                    i, self.n + i, True, temp_T_ij)
-
-        return requests
+    def compute_pickup_time(self, new_request):
+        if pd.isnull(new_request.iloc[0]["Requested Pickup Time"]):
+            origin_lat_lon = list(
+                zip(np.deg2rad(df["Origin Lat"]), np.deg2rad(df["Origin Lng"]))
+            )
+            destination_lat_lon = list(
+                zip(np.deg2rad(df["Destination Lat"]),
+                    np.deg2rad(df["Destination Lng"]))
+            )
+            D_ij = haversine_distances(lat_lon, lat_lon) * 6371
+            speed = 20
+            travel_time = (timedelta(hours=(D_ij[0][0] / speed)
+                                     ).total_seconds())*(1+F/2)
+            # rush hour modelling:
+            if not (df.iloc[0]["Requested Pickup Time"].weekday() == 5):
+                for k in range(1):
+                    for l in range(1):
+                        if new_request.iloc[0]["Requested Pickup Time"].hour >= 15 and new_request.iloc[0]["Requested Pickup Time"].hour < 17:
+                            travel_time = travel_time*R_F
+            new_request.iloc[0]["Requested Pickup Time"] = new_request.iloc[0]["Requested Dropoff Time"] - travel_time
+        return new_request
 
     def temp_travel_time(self, to_id, from_id, fraction, temp_T_ij):
         return timedelta(seconds=(1+F/2) * temp_T_ij[to_id, from_id]) if fraction else timedelta(seconds=temp_T_ij[to_id, from_id])
 
-    def preprocess_requests(self):
+    def preprocess_requests(self, new_request):
         # link requests that are too close in time and space for the same vehicle to serve both requests:
         travel_time = self.T_ij
         request_time = self.requested_time_matrix()
-        P_ij = [set() for _ in range(self.n)]
-
-        for i in range(2 * self.n):
-            n_i = i - self.n if i >= self.n else i
-            for j in range(2 * self.n):
-                if request_time[i][j] is not None and timedelta(seconds=travel_time[i][j]) - 2*U_D > request_time[i][j]:
-                    n_j = j - self.n if j >= self.n else j
-                    P_ij[n_i].add(n_j+1)
-                    P_ij[n_j].add(n_i+1)
-        return np.array(P_ij)
+        infeasible = []
+        for i in range(len(self.preprocessed)):
+            tests = [i, i+self.n]
+            for k in tests:
+                for j in [self.n-1, 2 * self.n-1]:
+                    if request_time[k][j] is not None and timedelta(seconds=travel_time[k][j]) - 2*U_D > request_time[k][j]:
+                        n_j = j+1 - self.n if j >= self.n else j+1
+                        n_k = k - self.n if k >= self.n else k
+                        self.preprocessed[n_k].add(n_j)
+                        infeasible.append(n_k+1)
+        return np.append(self.preprocessed, [set(infeasible)], axis=0)
 
     def greedy_insertion_new_request(self, current_route_plan, current_infeasible_set, new_request, sim_clock, vehicle_clocks, i):
         rid = len(self.requests.index)
@@ -175,9 +142,9 @@ class NewRequestUpdater:
 
         vehicle_lat_lon = []
 
-        # Origins and destinations for each vehicle
+        # Origins for each vehicle
         vehicle_lat_lon = [(radians(59.946829115276145), radians(
-            10.779841653639243)) for i in range(2*self.vehicles)]
+            10.779841653639243)) for i in range(len(self.vehicles))]
 
         # Positions
         lat_lon = request_lat_lon + vehicle_lat_lon

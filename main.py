@@ -72,7 +72,7 @@ def main():
             "2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
         simulator = Simulator(sim_clock)
         new_request_updater = NewRequestUpdater(
-            df.head(R), V, initial_infeasible_set)
+            constructor)
         disruption_updater = DisruptionUpdater(new_request_updater)
         first_iteration, rejected = True, []
         print("Length of disruption stack", len(simulator.disruptions_stack))
@@ -101,6 +101,8 @@ def main():
             elif disruption_type == 0:  # Disruption: new request
                 current_route_plan, vehicle_clocks = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
+                current_route_plan = disruption_updater.filter_route_plan(
+                    current_route_plan, vehicle_clocks)  # Filter route plan
                 current_route_plan, current_objective, current_infeasible_set, vehicle_clocks, rejection, rid = new_request_updater.\
                     greedy_insertion_new_request(
                         current_route_plan, current_infeasible_set, disruption_info, disruption_time, vehicle_clocks, i)
@@ -118,9 +120,10 @@ def main():
             else:
                 current_route_plan, vehicle_clocks = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
+                current_route_plan = disruption_updater.filter_route_plan(
+                    current_route_plan, vehicle_clocks)  # Filter route plan
                 current_objective = new_request_updater.new_objective(
                     current_route_plan, current_infeasible_set)
-
                 if disruption_type == 2 or disruption_type == 3:  # Disruption: cancel or no show
                     index_removed = [(disruption_info[3], disruption_info[0], disruption_info[1]),
                                      (disruption_info[4], disruption_info[0], disruption_info[2])]
@@ -128,10 +131,6 @@ def main():
                 elif disruption_type == 1:  # Disruption: delay
                     delayed = (True, disruption_info[0], disruption_info[1])
                     delay_deltas.append(current_objective)
-
-            # Filter route plan
-            current_route_plan = disruption_updater.filter_route_plan(
-                current_route_plan, vehicle_clocks)
 
             # Heuristic
             alns = ALNS(weights, reaction_factor, current_route_plan, current_objective, current_infeasible_set,
