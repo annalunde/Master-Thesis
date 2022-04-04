@@ -11,7 +11,6 @@ class AnalyserInitial:
 
     def total_filter(self):
         df = pd.read_csv(config("data_processed_path"))
-        #df = df.loc[(df["Request Status"] == "Completed") | (df["Request Status"] == "Seat Unavilable")]
 
         df["Requested Pickup Time"] = pd.to_datetime(
             df["Requested Pickup Time"], format="%Y-%m-%d %H:%M:%S"
@@ -36,7 +35,7 @@ class AnalyserInitial:
             time = datetime(row['Date Pickup/Dropoff'].year,
                             row['Date Pickup/Dropoff'].month,
                             row['Date Pickup/Dropoff'].day, 10)
-            if row['Request Creation Time'] < time and (row['Request Status'] == "Completed" or row['Request Status'] == "Seat Unavilable"):
+            if row['Request Creation Time'] < time and (row['Request Status'] == "Completed" or row['Request Status'] == "Seat Unavailable"):
                 if row['Date Pickup/Dropoff'] in initial_days:
                     initial_days[row['Date Pickup/Dropoff']][0] += 1
                     initial_days[row['Date Pickup/Dropoff']][1] += 1
@@ -114,7 +113,6 @@ class AnalyserInitial:
 
     def initial_filter(self):
         df = pd.read_csv(config("data_processed_path"))
-        #df = df.loc[(df["Request Status"] == "Completed") | (df["Request Status"] == "Seat Unavilable")]
 
         df["Requested Pickup Time"] = pd.to_datetime(
             df["Requested Pickup Time"], format="%Y-%m-%d %H:%M:%S"
@@ -139,7 +137,7 @@ class AnalyserInitial:
             time = datetime(row['Date Pickup/Dropoff'].year,
                             row['Date Pickup/Dropoff'].month,
                             row['Date Pickup/Dropoff'].day, 10)
-            if row['Request Creation Time'] < time and (row['Request Status'] == "Completed" or row['Request Status'] == "Seat Unavilable"):
+            if row['Request Creation Time'] < time and (row['Request Status'] == "Completed" or row['Request Status'] == "Seat Unavailable"):
                 if row['Date Pickup/Dropoff'] in initial_days:
                     initial_days[row['Date Pickup/Dropoff']][0] += 1
                 else:

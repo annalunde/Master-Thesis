@@ -126,7 +126,7 @@ class Preprocessor:
 
     def generate_one_day_completed(self, date):
         df = pd.read_csv(config("data_processed_path"))
-        df = df.loc[(df["Request Status"] == "Completed") | (df["Request Status"] == "Seat Unavilable")]
+        df = df.loc[(df["Request Status"] == "Completed") | (df["Request Status"] == "Seat Unavailable")]
 
         df["Requested Pickup Time"] = pd.to_datetime(
             df["Requested Pickup Time"], format="%Y-%m-%d %H:%M:%S"

@@ -9,9 +9,12 @@ class Instance:
     def __init__(self):
         pass
 
-    def generate_one_day_completed(self, date, file_path):
+    def generate_one_day_completed(self, date, file_path, seat_unavailable):
         df = pd.read_csv(config("data_processed_path"))
-        df = df.loc[(df["Request Status"] == "Completed") | (df["Request Status"] == "Seat Unavilable")]
+        if seat_unavailable:
+            df = df.loc[(df["Request Status"] == "Completed") | (df["Request Status"] == "Seat Unavailable")]
+        else:
+            df = df.loc[(df["Request Status"] == "Completed")]
 
         df["Requested Pickup Time"] = pd.to_datetime(
             df["Requested Pickup Time"], format="%Y-%m-%d %H:%M:%S"
@@ -52,20 +55,32 @@ def main():
 
     try:
         instance = Instance()
+
+        seat_unavailable = True      # True means include both completed and seat unavailable
+
         # SMALL TEST INSTANCES
-        instance.generate_one_day_completed(date=[2021, 7, 3], file_path="test_instance_small_1_20210703")
-        instance.generate_one_day_completed(date=[2021, 7, 24], file_path="test_instance_small_2_20210724")
-        instance.generate_one_day_completed(date=[2021, 9, 18], file_path="test_instance_small_3_20210918")
+        instance.generate_one_day_completed(date=[2021, 7, 3], file_path="test_instance_small_1_20210703",
+                                            seat_unavailable=seat_unavailable)
+        instance.generate_one_day_completed(date=[2021, 7, 24], file_path="test_instance_small_2_20210724",
+                                            seat_unavailable=seat_unavailable)
+        instance.generate_one_day_completed(date=[2021, 9, 18], file_path="test_instance_small_3_20210918",
+                                            seat_unavailable=seat_unavailable)
 
         # MEDIUM TEST INSTANCES
-        instance.generate_one_day_completed(date=[2021, 7, 6], file_path="test_instance_medium_1_20210706")
-        instance.generate_one_day_completed(date=[2021, 10, 15], file_path="test_instance_medium_2_20211015")
-        instance.generate_one_day_completed(date=[2021, 11, 15], file_path="test_instance_medium_3_20211115")
+        instance.generate_one_day_completed(date=[2021, 7, 6], file_path="test_instance_medium_1_20210706",
+                                            seat_unavailable=seat_unavailable)
+        instance.generate_one_day_completed(date=[2021, 8, 30], file_path="test_instance_medium_2_20210830",
+                                            seat_unavailable=seat_unavailable)
+        instance.generate_one_day_completed(date=[2021, 10, 15], file_path="test_instance_medium_3_20211015",
+                                            seat_unavailable=seat_unavailable)
 
         # LARGE TEST INSTANCES
-        instance.generate_one_day_completed(date=[2021, 10, 5], file_path="test_instance_large_1_20211005")
-        instance.generate_one_day_completed(date=[2021, 10, 14], file_path="test_instance_large_2_20211014")
-        instance.generate_one_day_completed(date=[2022, 1, 12], file_path="test_instance_large_3_20220112")
+        instance.generate_one_day_completed(date=[2021, 10, 5], file_path="test_instance_large_1_20211005",
+                                            seat_unavailable=seat_unavailable)
+        instance.generate_one_day_completed(date=[2021, 10, 14], file_path="test_instance_large_2_20211014",
+                                            seat_unavailable=seat_unavailable)
+        instance.generate_one_day_completed(date=[2022, 1, 12], file_path="test_instance_large_3_20220112",
+                                            seat_unavailable=seat_unavailable)
 
     except Exception as e:
         print("ERROR:", e)
