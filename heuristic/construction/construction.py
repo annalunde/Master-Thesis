@@ -15,7 +15,7 @@ class ConstructionHeuristic:
     def __init__(self, requests, vehicles):
         self.vehicles = [i for i in range(vehicles)]
         self.n = len(requests.index)
-        self.num_nodes_and_depots = 2 * vehicles + 2 * self.n
+        self.num_nodes_and_depots = vehicles + 2 * self.n
         self.temp_requests = self.compute_pickup_time(requests)
         self.requests = self.temp_requests.sort_values(
             "Requested Pickup Time").reset_index(drop=True)
@@ -138,16 +138,8 @@ class ConstructionHeuristic:
         vehicle_lat_lon = []
 
         # Origins for each vehicle
-        for i in range(len(self.vehicles)):
-            vehicle_lat_lon.append(
-                (radians(59.946829115276145), radians(10.779841653639243))
-            )
-
-        # Destinations for each vehicle
-        for i in range(len(self.vehicles)):
-            vehicle_lat_lon.append(
-                (radians(59.946829115276145), radians(10.779841653639243))
-            )
+        vehicle_lat_lon = [(radians(59.946829115276145), radians(
+            10.779841653639243)) for i in range(len(self.vehicles))]
 
         # Positions
         lat_lon = request_lat_lon + vehicle_lat_lon

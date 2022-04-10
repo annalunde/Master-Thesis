@@ -72,7 +72,7 @@ def main():
             "2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
         simulator = Simulator(sim_clock)
         new_request_updater = NewRequestUpdater(
-            df.head(R), V, initial_infeasible_set)
+            constructor)
         disruption_updater = DisruptionUpdater(new_request_updater)
         first_iteration, rejected = True, []
         print("Length of disruption stack", len(simulator.disruptions_stack))
