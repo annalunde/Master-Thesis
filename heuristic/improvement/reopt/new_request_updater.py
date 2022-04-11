@@ -37,24 +37,22 @@ class NewRequestUpdater:
 
     def compute_pickup_time(self, new_request):
         if pd.isnull(new_request.iloc[0]["Requested Pickup Time"]):
-            origin_lat_lon = list(
-                zip(np.deg2rad(df["Origin Lat"]), np.deg2rad(df["Origin Lng"]))
-            )
-            destination_lat_lon = list(
-                zip(np.deg2rad(df["Destination Lat"]),
-                    np.deg2rad(df["Destination Lng"]))
-            )
-            D_ij = haversine_distances(lat_lon, lat_lon) * 6371
+            origin_lat_lon = [(np.deg2rad(new_request.iloc[0]["Origin Lat"]),
+                              np.deg2rad(new_request.iloc[0]["Origin Lng"]))]
+            destination_lat_lon = [(np.deg2rad(new_request.iloc[0]["Destination Lat"]),
+                                   np.deg2rad(new_request.iloc[0]["Destination Lng"]))]
+            D_ij = haversine_distances(origin_lat_lon, destination_lat_lon) * 6371
             speed = 20
             travel_time = (timedelta(hours=(D_ij[0][0] / speed)
                                      ).total_seconds())*(1+F/2)
+
             # rush hour modelling:
-            if not (df.iloc[0]["Requested Pickup Time"].weekday() == 5):
-                for k in range(1):
-                    for l in range(1):
-                        if new_request.iloc[0]["Requested Pickup Time"].hour >= 15 and new_request.iloc[0]["Requested Pickup Time"].hour < 17:
-                            travel_time = travel_time*R_F
-            new_request.iloc[0]["Requested Pickup Time"] = new_request.iloc[0]["Requested Dropoff Time"] - travel_time
+            if not (new_request.iloc[0]["Requested Dropoff Time"].weekday() == 5):
+                if new_request.iloc[0]["Requested Dropoff Time"].hour >= 15 and new_request.iloc[0]["Requested Dropoff Time"].hour < 17:
+                    travel_time = travel_time * R_F
+
+            new_request["Requested Pickup Time"].iloc[0] = new_request.iloc[0]["Requested Dropoff Time"] - timedelta(
+                seconds=travel_time)
         return new_request
 
     def temp_travel_time(self, to_id, from_id, fraction, temp_T_ij):
@@ -113,6 +111,38 @@ class NewRequestUpdater:
             total_deviation + gamma*total_infeasible
         return updated
 
+    def print_objective(self, new_routeplan, new_infeasible_set, cumulative_infeasible, recalibration, cumulative):
+        total_deviation, total_travel_time = timedelta(
+            minutes=0), timedelta(minutes=0)
+        total_infeasible = timedelta(minutes=cumulative_infeasible) if cumulative \
+            else timedelta(minutes=len(new_infeasible_set))
+        for vehicle_route in new_routeplan:
+            if len(vehicle_route) >= 2:
+                diff = (pd.to_datetime(
+                    vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
+                total_travel_time += timedelta(minutes=diff)
+            pen_dev = [j if j > timedelta(
+                0) else -j for j in [i[2] for i in vehicle_route if i[2] is not None]]
+            total_deviation += reduce(
+                lambda a, b: a + b, [i - P_S if i > P_S else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(
+                0)
+
+        objective = alpha * total_travel_time + beta * total_deviation + gamma * total_infeasible + recalibration \
+            if cumulative else alpha * total_travel_time + beta * total_deviation + gamma * total_infeasible
+
+        if cumulative:
+            print("Cumulative objective", objective)
+            print("Total travel time", total_travel_time)
+            print("Total deviation", total_deviation)
+            print("Total recalibration", recalibration)
+            print("Total infeasible", total_infeasible)
+
+        else:
+            print("Objective", objective)
+            print("Total travel time", total_travel_time)
+            print("Total deviation", total_deviation)
+            print("Total infeasible", total_infeasible)
+
     def print_new_objective(self, new_routeplan, new_infeasible_set):
         total_deviation, total_travel_time = timedelta(
             minutes=0), timedelta(minutes=0)
@@ -167,6 +197,16 @@ class NewRequestUpdater:
                               ).total_seconds()
                 )
 
+        # rush hour modelling:
+        if not (df.iloc[0]["Requested Pickup Time"].weekday() == 5):
+            for k in range(self.n):
+                for l in range(self.n):
+                    if df.iloc[k]["Requested Pickup Time"].hour >= 15 and df.iloc[k]["Requested Pickup Time"].hour < 17 and df.iloc[l]["Requested Pickup Time"].hour >= 15 and df.iloc[l]["Requested Pickup Time"].hour < 17:
+                        T_ij[k][l] = T_ij[k][l] * R_F
+                        T_ij[k + self.n][l] = T_ij[k + self.n][l] * R_F
+                        T_ij[k][l + self.n] = T_ij[k][l + self.n] * R_F
+                        T_ij[k + self.n][l + self.n] = T_ij[k + self.n][l + self.n] * R_F
+
         return T_ij
 
     def requested_time_matrix(self):
@@ -211,3 +251,6 @@ class NewRequestUpdater:
 
     def get_max_travel_time(self, to_id, from_id):
         return timedelta(seconds=(1+F) * self.T_ij[to_id, from_id])
+
+    def get_delta_objective(self, new_routeplan, infeasible_set, current_objective):
+        return current_objective - self.new_objective(new_routeplan, infeasible_set)

@@ -32,6 +32,9 @@ class ReOptOperators:
                              for d_idx, d_node in enumerate(current_route_plan[vehicle][1:])
                              if d_node[0] == p_node[0] + 0.5]
 
+        if len(possible_removals) == 0:
+            return current_route_plan, None, None, False
+
         # Number of requests to remove
         num_remove = self.nodes_to_remove(possible_removals)
 
@@ -64,6 +67,9 @@ class ReOptOperators:
                              if not p_node[0] % int(p_node[0]) and p_node[1] > self.vehicle_clocks[vehicle]
                              for d_idx, d_node in enumerate(current_route_plan[vehicle][1:])
                              if d_node[0] == p_node[0] + 0.5]
+
+        if len(possible_removals) == 0:
+            return current_route_plan, None, None, False
 
         # Number of requests to remove
         num_remove = self.nodes_to_remove(possible_removals)
@@ -99,6 +105,9 @@ class ReOptOperators:
                              if not p_node[0] % int(p_node[0]) and p_node[1] > self.vehicle_clocks[vehicle]
                              for d_idx, d_node in enumerate(current_route_plan[vehicle][1:])
                              if d_node[0] == p_node[0] + 0.5]
+
+        if len(possible_removals) == 0:
+            return current_route_plan, None, None, False
 
         # Number of requests to remove
         num_remove = self.nodes_to_remove(possible_removals)
@@ -143,6 +152,9 @@ class ReOptOperators:
                              if not p_node[0] % int(p_node[0]) and p_node[1] > self.vehicle_clocks[vehicle]
                              for d_idx, d_node in enumerate(current_route_plan[vehicle][1:])
                              if d_node[0] == p_node[0] + 0.5]
+
+        if len(possible_removals) == 0:
+            return current_route_plan, None, None, False
 
         # Number of requests to remove
         num_remove = self.nodes_to_remove(possible_removals)
@@ -190,6 +202,9 @@ class ReOptOperators:
                              if not p_node[0] % int(p_node[0]) and p_node[1] > self.vehicle_clocks[vehicle]
                              for d_idx, d_node in enumerate(current_route_plan[vehicle][1:])
                              if d_node[0] == p_node[0] + 0.5]
+
+        if len(possible_removals) == 0:
+            return current_route_plan, None, None, False
 
         # Number of requests to remove
         num_remove = self.nodes_to_remove(possible_removals)

@@ -5,12 +5,12 @@ reaction_factor = 0.7
 
 weights = [15, 10, 5, 0]
 
-iterations = 100
+iterations = 10
 
 destruction_degree = 0.4
 
 # Number of requests
-R = 106
+R = 40
 
 # Number of vehicles
 V = 16
