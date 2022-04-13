@@ -49,8 +49,15 @@ class ConstructionHeuristic:
 
         for i in range(self.n):
             if nat_pickup.iloc[i]:
-                requests["Requested Pickup Time"].iloc[i] = requests["Requested Dropoff Time"].iloc[i] - self.temp_travel_time(
-                    i, self.n + i, True, temp_T_ij)
+
+                travel_time = self.temp_travel_time(i, self.n + i, True, temp_T_ij)
+
+                # rush hour modelling:
+                if not (requests.iloc[i]["Requested Dropoff Time"].weekday() == 5):
+                    if requests.iloc[i]["Requested Dropoff Time"].hour >= 15 and requests.iloc[i]["Requested Dropoff Time"].hour < 17:
+                        travel_time = travel_time * R_F
+
+                requests["Requested Pickup Time"].iloc[i] = requests["Requested Dropoff Time"].iloc[i] - travel_time
 
         return requests
 
