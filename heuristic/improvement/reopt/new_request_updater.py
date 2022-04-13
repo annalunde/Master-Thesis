@@ -111,11 +111,10 @@ class NewRequestUpdater:
             total_deviation + gamma*total_infeasible
         return updated
 
-    def print_objective(self, new_routeplan, new_infeasible_set, cumulative_infeasible, recalibration, cumulative):
+    def print_objective(self, new_routeplan, new_infeasible_set):
         total_deviation, total_travel_time = timedelta(
             minutes=0), timedelta(minutes=0)
-        total_infeasible = timedelta(minutes=cumulative_infeasible) if cumulative \
-            else timedelta(minutes=len(new_infeasible_set))
+        total_infeasible = timedelta(minutes=len(new_infeasible_set))
         for vehicle_route in new_routeplan:
             if len(vehicle_route) >= 2:
                 diff = (pd.to_datetime(
@@ -127,37 +126,31 @@ class NewRequestUpdater:
                 lambda a, b: a + b, [i - P_S if i > P_S else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(
                 0)
 
-        objective = alpha * total_travel_time + beta * total_deviation + gamma * total_infeasible + recalibration \
-            if cumulative else alpha * total_travel_time + beta * total_deviation + gamma * total_infeasible
+        objective = alpha * total_travel_time + beta * total_deviation + gamma * total_infeasible
 
-        if cumulative:
-            print("Cumulative objective", objective)
-            print("Total travel time", total_travel_time)
-            print("Total deviation", total_deviation)
-            print("Total recalibration", recalibration)
-            print("Total infeasible", total_infeasible)
-
-        else:
-            print("Objective", objective)
-            print("Total travel time", total_travel_time)
-            print("Total deviation", total_deviation)
-            print("Total infeasible", total_infeasible)
-
-    def print_new_objective(self, new_routeplan, new_infeasible_set):
-        total_deviation, total_travel_time = timedelta(
-            minutes=0), timedelta(minutes=0)
-        total_infeasible = timedelta(minutes=len(new_infeasible_set))
-        for vehicle_route in new_routeplan:
-            diff = (pd.to_datetime(
-                vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
-            total_travel_time += timedelta(minutes=diff)
-            pen_dev = [j if j > timedelta(
-                0) else -j for j in [i[2] for i in vehicle_route if i[2] is not None]]
-            total_deviation += reduce(
-                lambda a, b: a+b, [i-P_S if i > P_S else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(0)
+        print("Objective", objective)
         print("Total travel time", total_travel_time)
         print("Total deviation", total_deviation)
         print("Total infeasible", total_infeasible)
+
+    def print_total_objective(self, current_objective, current_infeasible, cumulative_objective, cumulative_infeasible, cumulative_recalibration):
+        if len(current_infeasible) == 0:
+            total_objective = current_objective \
+                              + cumulative_objective \
+                              + timedelta(minutes=cumulative_infeasible) * gamma \
+                              + cumulative_recalibration
+        else:
+            total_objective = current_objective \
+                              + cumulative_objective \
+                              + timedelta(minutes=(cumulative_infeasible - len(current_infeasible))) * gamma \
+                              + cumulative_recalibration
+
+        print("Total objective", total_objective)
+        print("Current objective", current_objective)
+        print("Current infeasible", len(current_infeasible))
+        print("Cumulative objective", cumulative_objective)
+        print("Cumulative infeasible", cumulative_infeasible)
+        print("Cumulative recalibration", cumulative_recalibration)
 
     def travel_matrix(self, df):
         # Lat and lon for each request
