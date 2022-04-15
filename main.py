@@ -84,7 +84,7 @@ def main():
         new_request_updater = NewRequestUpdater(
             constructor)
         disruption_updater = DisruptionUpdater(new_request_updater)
-        first_iteration, rejected, cumulative_objective, cumulative_recalibration = True, [], timedelta(0), timedelta(0)
+        first_iteration, rejected, cumulative_objective = True, [], timedelta(0)
         print("Length of disruption stack", len(simulator.disruptions_stack))
         while len(simulator.disruptions_stack) > 0:
             prev_inf_len = len(current_infeasible_set)
