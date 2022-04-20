@@ -19,7 +19,7 @@ weights = [3, 2, 1, 0.5]
 destruction_degree = 0.5
 
 # Number of destroy/repair pairs before updating weights in reopt
-N_U = 10
+N_U = 0.01
 
 # Allowed excess ride time
 F = 1
@@ -55,6 +55,4 @@ gamma = 10000
 
 
 # Simulated annealing temperatures -- NOTE: these must be tuned
-start_temperature = 50
-end_temperature = 10
-step = 5
+Z = 1.5

@@ -1,9 +1,4 @@
-import sys
-import traceback
-from datetime import timedelta
 from config.main_config import *
-from timeit import default_timer as timer
-from heuristic.construction.construction import ConstructionHeuristic
 from simulation.poisson import *
 from config.simulation_config import *
 from random import choice

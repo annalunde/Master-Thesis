@@ -1,6 +1,8 @@
 from copy import copy
 import numpy as np
 import numpy.random as rnd
+from math import ceil
+from numpy import log
 from tqdm import tqdm
 from config.reopt_improvement_config import *
 from heuristic.improvement.destroy_repair_updater import Destroy_Repair_Updater
@@ -86,6 +88,10 @@ class ALNS:
 
             r_count[repair] += 1
 
+            if i == 0:
+                self.criterion.temperature = -((current_objective * (1 + Z) - current_objective).total_seconds()/60)/\
+                                             (log(0.5))
+
             # Compare solutions
             best, best_objective, best_infeasible_set, current_route_plan, current_objective, current_infeasible_set, weight_score = self.evaluate_candidate(
                 best, best_objective, best_infeasible_set,
@@ -103,7 +109,7 @@ class ALNS:
                 r_scores[repair] += weight_score
 
             # After a certain number of iterations, update weight
-            if (i+1) % N_U == 0:
+            if (i+1) % ceil(num_iterations * N_U) == 0:
                 # Update weights with scores
 
                 for destroy in range(len(d_weights)):
