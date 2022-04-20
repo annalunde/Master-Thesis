@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 F = 1
 
 # Number of destroy/repair pairs before updating weights in initial
-N_U = 10
+N_U = 0.01
 
 
 # Number of vehicles

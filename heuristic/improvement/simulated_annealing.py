@@ -5,10 +5,9 @@ from datetime import timedelta
 
 class SimulatedAnnealing:
 
-    def __init__(self, start_temperature, end_temperature, cooling_rate):
-        self.start_temperature, self.end_temperature = start_temperature, end_temperature
+    def __init__(self, cooling_rate):
         self.cooling_rate = cooling_rate
-        self.temperature = start_temperature
+        self.temperature = 0
 
     # Simulated annealing acceptance criterion
     def accept_criterion(self, random_state, current_objective, candidate_objective):

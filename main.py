@@ -36,8 +36,7 @@ def main():
         # IMPROVEMENT OF INITIAL SOLUTION
         random_state = rnd.RandomState()
 
-        criterion = SimulatedAnnealing(
-            start_temperature, end_temperature, cooling_rate)
+        criterion = SimulatedAnnealing(cooling_rate)
 
         alns = ALNS(weights, reaction_factor, initial_route_plan, initial_objective, initial_infeasible_set, criterion,
                     destruction_degree, constructor, rnd_state=rnd.RandomState())
