@@ -1,14 +1,3 @@
-# ---
-# jupyter:
-#   jupytext:
-#     cell_metadata_filter: -all
-#     formats: ipynb,py:light
-#     text_representation:
-#       extension: .py
-#       format_name: light
-#       format_version: '1.5'
-#       jupytext_version: 1.13.8
-# ---
 
 import pandas as pd
 from decouple import config
@@ -115,8 +104,8 @@ if __name__ == "__main__":
                 test_instance_d[4:6] + "-" + \
                 test_instance_d[6:8] + " 10:00:00"
     """
-    runs = 10
-    iteration_tests = [10, 20, 30]
+    runs = 1
+    iteration_tests = [100]
 
     for num_iterations in iteration_tests:
         for test_instance in test_instances:
