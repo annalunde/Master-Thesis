@@ -1,10 +1,20 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     formats: ipynb,py:light
+#     text_representation:
+#       extension: .py
+#       format_name: light
+#       format_version: '1.5'
+#       jupytext_version: 1.13.8
+# ---
+
 from datetime import datetime, timedelta
 
 reaction_factor = 0.2
 
 weights = [3, 2, 1, 0.5]
-
-iterations = 10
 
 destruction_degree = 0.5
 
