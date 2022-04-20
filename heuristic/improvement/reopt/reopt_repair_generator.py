@@ -229,7 +229,7 @@ class ReOptRepairGenerator:
                                 e_p_node, e_p_time, e_p_d, e_p_p, e_p_w, _ = test_vehicle_route[
                                     start_idx + 2]
                                 end_idx = [i for i in range(
-                                    len(test_vehicle_route)) if test_vehicle_route[i][1] <= dropoff_time][-1]
+                                    len(test_vehicle_route)) if test_vehicle_route[i][1] <= dropoff_time]
                                 end_idx = end_idx[-1] if len(
                                     end_idx) else 0
 
