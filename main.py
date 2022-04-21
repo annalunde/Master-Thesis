@@ -1,5 +1,6 @@
 
 import pandas as pd
+from copy import copy
 from decouple import config
 import sys
 import numpy.random as rnd
@@ -67,6 +68,7 @@ def main(test_instance, test_instance_date,
         delta_dev_objective = constructor.get_delta_objective(
             current_route_plan, [], current_objective)
         cumulative_recalibration += delta_dev_objective
+        cumulative_objective += copy(current_objective)
         current_objective -= delta_dev_objective
 
         tracking.append([cumulative_objective,
