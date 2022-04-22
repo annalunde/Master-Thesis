@@ -14,7 +14,7 @@ class RepairGenerator:
             self.heuristic.introduced_vehicles)
         self.vehicles = copy(self.heuristic.vehicles)
 
-    def generate_insertions(self, route_plan, request, rid, infeasible_set, initial_route_plan, index_removed, objectives):
+    def generate_insertions(self, route_plan, request, rid, infeasible_set, initial_route_plan, index_removed, objectives, prev_objective):
         possible_insertions = {}  # dict: delta objective --> route plan
         self.introduced_vehicles = set([i for i in range(len(route_plan))])
         self.vehicles = [i for i in range(len(route_plan), V)]
@@ -389,9 +389,9 @@ class RepairGenerator:
                     infeasible_set.append((rid, request))
 
         if objectives:
-            return sorted(possible_insertions.keys())[0] if len(possible_insertions) else timedelta(minutes=gamma), sorted(possible_insertions.keys())[objectives-1] if len(possible_insertions) > objectives-1 else timedelta(minutes=gamma)
+            return sorted(possible_insertions.keys())[0] if len(possible_insertions) else prev_objective + self.heuristic.gamma, sorted(possible_insertions.keys())[objectives-1] if len(possible_insertions) > objectives-1 else prev_objective + self.heuristic.gamma
 
-        return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else self.heuristic.new_objective(route_plan, infeasible_set), infeasible_set
+        return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else prev_objective + self.heuristic.gamma, infeasible_set
 
     def get_bound_dev(self, depot, upper):
         if upper:

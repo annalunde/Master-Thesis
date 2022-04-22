@@ -23,18 +23,14 @@ def main():
 
     try:
         # CUMULATIVE OBJECTIVE
-        cumulative_infeasible, cumulative_recalibration, cumulative_objective = 0, timedelta(0), timedelta(0)
+        cumulative_rejected, cumulative_recalibration, cumulative_objective = 0, timedelta(0), timedelta(0)
 
         # CONSTRUCTION OF INITIAL SOLUTION
         df = pd.read_csv(config("test_data_construction"))
         constructor = ConstructionHeuristic(requests=df.head(R), vehicles=V)
         print("Constructing initial solution")
         initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
-        cumulative_infeasible = len(initial_infeasible_set)
 
-        total_objective = constructor.total_objective(initial_objective, initial_infeasible_set, cumulative_objective,
-                                                      cumulative_infeasible, cumulative_recalibration)
-        print("Total objective before alns", total_objective)
         # IMPROVEMENT OF INITIAL SOLUTION
         random_state = rnd.RandomState()
 
@@ -53,17 +49,18 @@ def main():
         current_route_plan, current_objective, current_infeasible_set, _ = alns.iterate(
             initial_iterations, initial_Z, None, None, None, delayed)
 
-        if current_infeasible_set:
-            cumulative_infeasible = len(current_infeasible_set)
-            print(
-                "Error: The service cannot serve the number of initial requests required")
-            print("Number of rejected", cumulative_infeasible)
-            current_infeasible_set = []
-
         total_objective = constructor.total_objective(current_objective, current_infeasible_set, cumulative_objective,
-                                                      cumulative_infeasible, cumulative_recalibration)
+                                                      cumulative_recalibration)
 
         print("Total objective", total_objective)
+
+        if current_infeasible_set:
+            cumulative_rejected = len(current_infeasible_set)
+            print(
+                "Error: The service cannot serve the number of initial requests required")
+            print("Number of rejected", cumulative_rejected)
+            current_infeasible_set = []
+
         # Recalibrate current solution
         current_route_plan = constructor.recalibrate_solution(
             current_route_plan)
@@ -77,7 +74,7 @@ def main():
               delta_dev_objective)
 
         total_objective = constructor.total_objective(current_objective, current_infeasible_set, cumulative_objective,
-                                                      cumulative_infeasible, cumulative_recalibration)
+                                                      cumulative_recalibration)
 
         # SIMULATION
         print("Start simulation")
@@ -90,7 +87,7 @@ def main():
         first_iteration, rejected = True, []
         print("Length of disruption stack", len(simulator.disruptions_stack))
         while len(simulator.disruptions_stack) > 0:
-            prev_inf_len = cumulative_infeasible
+            prev_inf_len = cumulative_rejected
             delayed, delay_deltas = (False, None, None), []
             i = 0
             prev_objective = current_objective
@@ -122,10 +119,9 @@ def main():
                 current_route_plan, current_objective, current_infeasible_set, vehicle_clocks, rejection, rid = new_request_updater.\
                     greedy_insertion_new_request(
                         current_route_plan, current_infeasible_set, disruption_info, disruption_time, vehicle_clocks, i)
-                print("Rejection", rejection)
                 if rejection:
                     rejected.append(rid)
-                    cumulative_infeasible += 1
+                    cumulative_rejected += 1
                     current_objective = prev_objective
                     for i in range(1, N_R+1):
                         current_route_plan, current_objective, current_infeasible_set, vehicle_clocks, rejection, rid = new_request_updater.\
@@ -133,8 +129,9 @@ def main():
                                 current_route_plan, current_infeasible_set, disruption_info, disruption_time, vehicle_clocks, i)
                         if not rejection:
                             rejected.remove(rid)
-                            cumulative_infeasible -= 1
+                            cumulative_rejected -= 1
                             break
+                current_infeasible_set = []
 
             else:
                 current_route_plan, vehicle_clocks = disruption_updater.update_route_plan(
@@ -164,16 +161,10 @@ def main():
             alns.set_operators(operators)
 
             # Run ALNS
-            total_objective = new_request_updater.total_objective(current_objective, current_infeasible_set,
-                                                                  cumulative_objective, cumulative_infeasible,
-                                                                  cumulative_recalibration)
 
             current_route_plan, current_objective, current_infeasible_set, still_delayed_nodes = alns.iterate(
                 reopt_iterations, reopt_Z, disrupt[0], disrupt[1], disruption_time, delayed)
 
-            total_objective = new_request_updater.total_objective(current_objective, current_infeasible_set,
-                                                                  cumulative_objective, cumulative_infeasible,
-                                                                  cumulative_recalibration)
             if delayed[0]:
                 delay_deltas[-1] = delay_deltas[-1] - current_objective
                 print("Reduction in objective of delay: ", delay_deltas[-1])
@@ -188,11 +179,11 @@ def main():
                 print("Change in objective based on recalibration of deviation",
                       delta_dev_objective)
 
-            if disruption_type == 0 and not(cumulative_infeasible > prev_inf_len):
+            if disruption_type == 0 and not(cumulative_rejected > prev_inf_len):
                 print("New request inserted")
 
             total_objective = new_request_updater.total_objective(current_objective, current_infeasible_set,
-                                                                  cumulative_objective, cumulative_infeasible,
+                                                                  cumulative_objective,
                                                                   cumulative_recalibration)
 
         print("End simulation")

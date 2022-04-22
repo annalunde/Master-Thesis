@@ -6,7 +6,7 @@ class InsertionGenerator:
     def __init__(self, construction_heuristic):
         self.heuristic = construction_heuristic
 
-    def generate_insertions(self, route_plan, request, rid):
+    def generate_insertions(self, route_plan, request, rid, prev_objective):
         possible_insertions = {}  # dict: delta objective --> route plan
         for introduced_vehicle in self.heuristic.introduced_vehicles:
             # generate all possible insertions
@@ -346,7 +346,7 @@ class InsertionGenerator:
                 if (rid, request) not in self.heuristic.infeasible_set:
                     self.heuristic.infeasible_set.append((rid, request))
 
-        return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else timedelta(minutes=gamma*len(self.heuristic.infeasible_set))
+        return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else self.heuristic.gamma + prev_objective
 
     def generate_possible_nodes(self, request, vehicle_route, dropoff_time):
         s = S_W if request["Wheelchair"] else S_P

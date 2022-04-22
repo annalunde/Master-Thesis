@@ -62,9 +62,6 @@ alpha = 1
 # Weight of deviation in objective function
 beta = 5
 
-# Weight of infeasible set in objective function
-gamma = 10000
-
 # Start temperature control parameter
 initial_Z = 1
 reopt_Z = 0.3

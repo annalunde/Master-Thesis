@@ -247,7 +247,7 @@ class ReOptOperators:
 
     # Repair operators
     def greedy_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set, current_route_plan, index_removed_requests, delayed, still_delayed_nodes):
-        unassigned_requests = removed_requests.copy()
+        unassigned_requests = removed_requests.copy() + initial_infeasible_set.copy()
         unassigned_requests.sort(key=lambda x: x[0])
         route_plan = list(map(list, destroyed_route_plan))
         current_objective = timedelta(0)
@@ -263,17 +263,21 @@ class ReOptOperators:
             route_plan, new_objective, infeasible_set, vehicle_clocks = self.reopt_repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=self.constructor.infeasible_set,
                 initial_route_plan=current_route_plan, index_removed=index_removal, sim_clock=self.sim_clock, objectives=False, delayed=delayed, still_delayed_nodes=still_delayed_nodes,
-                vehicle_clocks=self.vehicle_clocks)
+                vehicle_clocks=self.vehicle_clocks, prev_objective=current_objective)
 
             self.vehicle_clocks = vehicle_clocks
 
             # update current objective
             current_objective = new_objective
 
+        if len(self.constructor.infeasible_set) == len(unassigned_requests):
+            current_objective = self.constructor.new_objective(destroyed_route_plan, self.constructor.infeasible_set,
+                                                               False)
+
         return route_plan, current_objective, infeasible_set
 
     def regret_2_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set, current_route_plan, index_removed_requests, delayed, still_delayed_nodes):
-        unassigned_requests = removed_requests.copy()
+        unassigned_requests = removed_requests.copy() + initial_infeasible_set.copy()
         unassigned_requests.sort(key=lambda x: x[0])
         route_plan = list(map(list, destroyed_route_plan))
         current_objective = timedelta(0)
@@ -289,7 +293,11 @@ class ReOptOperators:
             first_objective, second_objective, vehicle_clocks = self.reopt_repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=self.constructor.infeasible_set,
                 initial_route_plan=current_route_plan, index_removed=index_removal, sim_clock=self.sim_clock, objectives=2, delayed=delayed, still_delayed_nodes=still_delayed_nodes,
-                vehicle_clocks=self.vehicle_clocks)
+                vehicle_clocks=self.vehicle_clocks,
+                prev_objective=self.constructor.new_objective(destroyed_route_plan, self.constructor.infeasible_set,
+                                                              False))
+
+            self.constructor.infeasible_set = []
 
             self.vehicle_clocks = vehicle_clocks
 
@@ -310,17 +318,21 @@ class ReOptOperators:
             route_plan, new_objective, infeasible_set, vehicle_clocks = self.reopt_repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=self.constructor.infeasible_set,
                 initial_route_plan=current_route_plan, index_removed=index_removal, sim_clock=self.sim_clock, objectives=0, delayed=delayed, still_delayed_nodes=still_delayed_nodes,
-                vehicle_clocks=self.vehicle_clocks)
+                vehicle_clocks=self.vehicle_clocks, prev_objective=current_objective)
 
             self.vehicle_clocks = vehicle_clocks
 
             # update current objective
             current_objective = new_objective
 
+        if len(self.constructor.infeasible_set) == len(unassigned_requests):
+            current_objective = self.constructor.new_objective(destroyed_route_plan, self.constructor.infeasible_set,
+                                                               False)
+
         return route_plan, current_objective, infeasible_set
 
     def regret_3_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set, current_route_plan, index_removed_requests, delayed, still_delayed_nodes):
-        unassigned_requests = removed_requests.copy()
+        unassigned_requests = removed_requests.copy() + initial_infeasible_set.copy()
         unassigned_requests.sort(key=lambda x: x[0])
         route_plan = list(map(list, destroyed_route_plan))
         current_objective = timedelta(0)
@@ -336,7 +348,11 @@ class ReOptOperators:
             first_objective, third_objective, vehicle_clocks = self.reopt_repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=self.constructor.infeasible_set,
                 initial_route_plan=current_route_plan, index_removed=index_removal, sim_clock=self.sim_clock, objectives=3, delayed=delayed, still_delayed_nodes=still_delayed_nodes,
-                vehicle_clocks=self.vehicle_clocks)
+                vehicle_clocks=self.vehicle_clocks,
+                prev_objective=self.constructor.new_objective(destroyed_route_plan, self.constructor.infeasible_set,
+                                                              False))
+
+            self.constructor.infeasible_set = []
 
             self.vehicle_clocks = vehicle_clocks
 
@@ -356,12 +372,16 @@ class ReOptOperators:
             route_plan, new_objective, infeasible_set, vehicle_clocks = self.reopt_repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=self.constructor.infeasible_set,
                 initial_route_plan=current_route_plan, index_removed=index_removal, sim_clock=self.sim_clock, objectives=0, delayed=delayed, still_delayed_nodes=still_delayed_nodes,
-                vehicle_clocks=self.vehicle_clocks)
+                vehicle_clocks=self.vehicle_clocks, prev_objective=current_objective)
 
             self.vehicle_clocks = vehicle_clocks
 
             # update current objective
             current_objective = new_objective
+
+        if len(self.constructor.infeasible_set) == len(unassigned_requests):
+            current_objective = self.constructor.new_objective(destroyed_route_plan, self.constructor.infeasible_set,
+                                                               False)
 
         return route_plan, current_objective, infeasible_set
 
