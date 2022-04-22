@@ -34,7 +34,7 @@ def main():
 
         total_objective = constructor.total_objective(initial_objective, initial_infeasible_set, cumulative_objective,
                                                       cumulative_infeasible, cumulative_recalibration)
-
+        print("Total objective before alns", total_objective)
         # IMPROVEMENT OF INITIAL SOLUTION
         random_state = rnd.RandomState()
 
@@ -62,6 +62,7 @@ def main():
         total_objective = constructor.total_objective(current_objective, current_infeasible_set, cumulative_objective,
                                                       cumulative_infeasible, cumulative_recalibration)
 
+        print("Total objective", total_objective)
         # Recalibrate current solution
         current_route_plan = constructor.recalibrate_solution(
             current_route_plan)

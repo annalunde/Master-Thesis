@@ -192,7 +192,7 @@ class ALNS:
             # Solution is rejected
             weight_score = 3
 
-        if candidate_objective <= best_objective:
+        if candidate_objective <= best_objective and len(candidate_infeasible_set) <= len(best_infeasible_set):
             # Solution is new global best
             current, best = copy(candidate), copy(candidate)
             current_objective, best_objective = copy(
