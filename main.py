@@ -57,6 +57,7 @@ def main():
             cumulative_infeasible = len(current_infeasible_set)
             print(
                 "Error: The service cannot serve the number of initial requests required")
+            print("Number of rejected", cumulative_infeasible)
             current_infeasible_set = []
 
         total_objective = constructor.total_objective(current_objective, current_infeasible_set, cumulative_objective,

@@ -477,7 +477,7 @@ class ReOptRepairGenerator:
                 push_back = t + travel_time - t_next if t_next - \
                     t - travel_time < timedelta(0) else timedelta(0)
 
-            if d is not None and d - push_back < L_D_N and (rid, request) not in self.heuristic.infeasible_set:
+            if d is not None and d - push_back < L_D_N:
                 activated_checks = True
                 break
 
@@ -518,7 +518,7 @@ class ReOptRepairGenerator:
             if d is not None and push_forward == timedelta(0):
                 break
 
-            if d + push_forward > U_D_N and (rid, request) not in self.heuristic.infeasible_set:
+            if d + push_forward > U_D_N:
                 if n not in still_delayed_nodes:
                     activated_checks = True
                     break
@@ -586,7 +586,7 @@ class ReOptRepairGenerator:
 
     def check_capacities(self, vehicle_route, start_id, dropoff_id, request, rid, activated_checks, infeasible_set):
         for n, t, d, p, w, _ in vehicle_route[start_id+1:dropoff_id]:
-            if p + request["Number of Passengers"] > P and (rid, request) not in infeasible_set or w + request["Wheelchair"] > W and (rid, request) not in infeasible_set:
+            if p + request["Number of Passengers"] > P or w + request["Wheelchair"] > W:
                 activated_checks = True
                 break
         return activated_checks

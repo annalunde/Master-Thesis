@@ -53,7 +53,7 @@ R = 105
 N_R = 0
 
 # Number of iterations in ALNS
-initial_iterations = 10
+initial_iterations = 100
 reopt_iterations = 10
 
 # Weight of ride time in objective function

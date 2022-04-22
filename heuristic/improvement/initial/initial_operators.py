@@ -233,7 +233,7 @@ class Operators:
         unassigned_requests.sort(key=lambda x: x[0])
         route_plan = list(map(list, destroyed_route_plan))
         current_objective = timedelta(0)
-        infeasible_set = []
+        self.constructor.infeasible_set = []
         unassigned_requests = pd.DataFrame(unassigned_requests)
         for i in range(unassigned_requests.shape[0]):
             # while not unassigned_requests.empty:
@@ -243,7 +243,7 @@ class Operators:
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
             route_plan, new_objective, infeasible_set = self.repair_generator.generate_insertions(
-                route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=current_route_plan, index_removed=index_removal, objectives=0)
+                route_plan=route_plan, request=request, rid=rid, infeasible_set=self.constructor.infeasible_set, initial_route_plan=current_route_plan, index_removed=index_removal, objectives=0)
 
             # update current objective
             current_objective = new_objective
@@ -255,7 +255,7 @@ class Operators:
         unassigned_requests.sort(key=lambda x: x[0])
         route_plan = list(map(list, destroyed_route_plan))
         current_objective = timedelta(0)
-        infeasible_set, regret_values = [], []
+        self.constructor.infeasible_set, regret_values = [], []
         unassigned_requests = pd.DataFrame(unassigned_requests)
         for i in range(unassigned_requests.shape[0]):
             rid = unassigned_requests.iloc[i][0]
@@ -264,7 +264,7 @@ class Operators:
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
             first_objective, second_objective = self.repair_generator.generate_insertions(
-                route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set,
+                route_plan=route_plan, request=request, rid=rid, infeasible_set=self.constructor.infeasible_set,
                 initial_route_plan=current_route_plan, index_removed=index_removal, objectives=2)
 
             regret_values.append(
@@ -280,7 +280,7 @@ class Operators:
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
             route_plan, new_objective, infeasible_set = self.repair_generator.generate_insertions(
-                route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set,
+                route_plan=route_plan, request=request, rid=rid, infeasible_set=self.constructor.infeasible_set,
                 initial_route_plan=current_route_plan, index_removed=index_removal, objectives=0)
 
             # update current objective
@@ -293,7 +293,7 @@ class Operators:
         unassigned_requests.sort(key=lambda x: x[0])
         route_plan = list(map(list, destroyed_route_plan))
         current_objective = timedelta(0)
-        infeasible_set, regret_values = [], []
+        self.constructor.infeasible_set, regret_values = [], []
         unassigned_requests = pd.DataFrame(unassigned_requests)
 
         for i in range(unassigned_requests.shape[0]):
@@ -303,7 +303,7 @@ class Operators:
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
             first_objective, third_objective = self.repair_generator.generate_insertions(
-                route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set,
+                route_plan=route_plan, request=request, rid=rid, infeasible_set=self.constructor.infeasible_set,
                 initial_route_plan=current_route_plan, index_removed=index_removal, objectives=3)
 
             regret_values.append(
@@ -319,7 +319,7 @@ class Operators:
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
             route_plan, new_objective, infeasible_set = self.repair_generator.generate_insertions(
-                route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set,
+                route_plan=route_plan, request=request, rid=rid, infeasible_set=self.constructor.infeasible_set,
                 initial_route_plan=current_route_plan, index_removed=index_removal, objectives=0)
 
             # update current objective
