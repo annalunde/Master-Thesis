@@ -1,5 +1,6 @@
 from datetime import timedelta
-from config.reopt_improvement_config import *
+#from config.reopt_improvement_config import *
+from config.main_config import *
 
 
 class Destroy_Repair_Updater:

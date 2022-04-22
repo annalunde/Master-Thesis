@@ -4,7 +4,8 @@ import numpy.random as rnd
 from math import ceil
 from numpy import log
 from tqdm import tqdm
-from config.reopt_improvement_config import *
+#from config.reopt_improvement_config import *
+from config.main_config import *
 from heuristic.improvement.destroy_repair_updater import Destroy_Repair_Updater
 
 
@@ -26,7 +27,7 @@ class ALNS:
         self.destroy_repair_updater = Destroy_Repair_Updater(constructor)
 
     # Run ALNS algorithm
-    def iterate(self, num_iterations, disrupted, index_removed, disruption_time, delayed):
+    def iterate(self, num_iterations, z, disrupted, index_removed, disruption_time, delayed):
         weights = np.asarray(self.weights, dtype=np.float16)
         best, current_route_plan, initial_route_plan = list(map(list, self.route_plan)), list(
             map(list, self.route_plan)), list(map(list, self.route_plan))
@@ -89,7 +90,7 @@ class ALNS:
             r_count[repair] += 1
 
             if i == 0:
-                self.criterion.temperature = -((current_objective * (1 + Z) - current_objective).total_seconds()/60)/\
+                self.criterion.temperature = -((current_objective * (1 + z) - current_objective).total_seconds()/60)/\
                                              (log(0.5))
 
             # Compare solutions

@@ -4,7 +4,8 @@ from tqdm import tqdm
 from math import radians
 from decouple import config
 from functools import reduce
-from config.construction_config import *
+#from config.construction_config import *
+from config.main_config import *
 from heuristic.construction.insertion_generator import InsertionGenerator
 from datetime import datetime, timedelta
 from sklearn.metrics.pairwise import haversine_distances
@@ -101,15 +102,27 @@ class ConstructionHeuristic:
         total_deviation, total_travel_time = timedelta(
             minutes=0), timedelta(minutes=0)
         total_infeasible = timedelta(minutes=len(new_infeasible_set))
-        for vehicle_route in new_routeplan:
+        for vehicle, vehicle_route in enumerate(new_routeplan):
+            '''
             if len(vehicle_route) >= 2:
                 diff = (pd.to_datetime(
                     vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
                 total_travel_time += timedelta(minutes=diff)
+            '''
+            if len(vehicle_route) >= 2:
+                for i in range(len(vehicle_route) - 1):
+                    sn = vehicle_route[i][0]
+                    en = vehicle_route[i+1][0]
+                    sn_mod = sn % int(sn) if sn else 0
+                    en_mod = en % int(en)
+                    start_id = int(sn - 0.5 - 1 + self.n if sn_mod else sn - 1) if sn else 2 * self.n + vehicle
+                    end_id = int(en - 0.5 - 1 + self.n if en_mod else en - 1)
+                    total_travel_time += self.travel_time(start_id, end_id, False)
+
             pen_dev = [j if j > timedelta(
                 0) else -j for j in [i[2] for i in vehicle_route if i[2] is not None]]
             total_deviation += reduce(
-                lambda a, b: a+b, [i-P_S if i > P_S else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(0)
+                lambda a, b: a+b, [i-P_S_C if i > P_S_C else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(0)
 
         updated = alpha*total_travel_time + beta * \
             total_deviation + gamma*total_infeasible
@@ -119,15 +132,20 @@ class ConstructionHeuristic:
         total_deviation, total_travel_time = timedelta(
             minutes=0), timedelta(minutes=0)
         total_infeasible = timedelta(minutes=len(new_infeasible_set))
-        for vehicle_route in new_routeplan:
+        for vehicle, vehicle_route in enumerate(new_routeplan):
             if len(vehicle_route) >= 2:
-                diff = (pd.to_datetime(
-                    vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
-                total_travel_time += timedelta(minutes=diff)
+                for i in range(len(vehicle_route) - 1):
+                    sn = vehicle_route[i][0]
+                    en = vehicle_route[i + 1][0]
+                    sn_mod = sn % int(sn) if sn else 0
+                    en_mod = en % int(en)
+                    start_id = int(sn - 0.5 - 1 + self.n if sn_mod else sn - 1) if sn else 2 * self.n + vehicle
+                    end_id = int(en - 0.5 - 1 + self.n if en_mod else en - 1)
+                    total_travel_time += self.travel_time(start_id, end_id, False)
             pen_dev = [j if j > timedelta(
                 0) else -j for j in [i[2] for i in vehicle_route if i[2] is not None]]
             total_deviation += reduce(
-                lambda a, b: a+b, [i-P_S if i > P_S else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(0)
+                lambda a, b: a+b, [i-P_S_C if i > P_S_C else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(0)
 
         objective = alpha*total_travel_time + beta * total_deviation + gamma*total_infeasible
 
@@ -136,8 +154,7 @@ class ConstructionHeuristic:
         print("Total deviation", total_deviation)
         print("Total infeasible", total_infeasible)
 
-    def print_total_objective(self, current_objective, current_infeasible, cumulative_objective, cumulative_infeasible,
-                              cumulative_recalibration):
+    def total_objective(self, current_objective, current_infeasible, cumulative_objective, cumulative_infeasible, cumulative_recalibration):
         if len(current_infeasible) == 0:
             total_objective = current_objective \
                               + cumulative_objective \
@@ -149,12 +166,7 @@ class ConstructionHeuristic:
                               + timedelta(minutes=(cumulative_infeasible - len(current_infeasible))) * gamma \
                               + cumulative_recalibration
 
-        print("Total objective", total_objective)
-        print("Current objective", current_objective)
-        print("Current infeasible", len(current_infeasible))
-        print("Cumulative objective", cumulative_objective)
-        print("Cumulative infeasible", cumulative_infeasible)
-        print("Cumulative recalibration", cumulative_recalibration)
+        return total_objective
 
     def travel_matrix(self, df):
         # Lat and lon for each request
