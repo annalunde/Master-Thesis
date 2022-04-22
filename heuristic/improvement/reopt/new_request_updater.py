@@ -1,13 +1,9 @@
 import pandas as pd
 import numpy as np
 from copy import copy
-from tqdm import tqdm
 from math import radians
-import sklearn.metrics
 from functools import reduce
-from decouple import config
-from config.construction_config import *
-from datetime import datetime, timedelta
+from config.main_config import *
 from sklearn.metrics.pairwise import haversine_distances
 from heuristic.improvement.reopt.reopt_repair_generator import ReOptRepairGenerator
 
@@ -24,7 +20,7 @@ class NewRequestUpdater:
         self.current_objective = timedelta(0)
         self.T_ij = np.array(constructor.T_ij, copy=True)
         self.infeasible_set = copy(constructor.infeasible_set)
-        self.re_opt_repair_generator = ReOptRepairGenerator(self)
+        self.re_opt_repair_generator = ReOptRepairGenerator(self, False)
         self.preprocessed = copy(constructor.preprocessed)
 
     def set_parameters(self, new_request):
@@ -82,6 +78,7 @@ class NewRequestUpdater:
         request["Requested Pickup Time"] = request["Requested Pickup Time"] + \
             i*U_D
 
+        self.re_opt_repair_generator.greedy = True
         route_plan, new_objective, infeasible_set, vehicle_clocks = self.re_opt_repair_generator.generate_insertions(
             route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=None,
             index_removed=None, sim_clock=sim_clock, vehicle_clocks=vehicle_clocks,
@@ -91,66 +88,51 @@ class NewRequestUpdater:
         infeasible_set = [] if rejection else infeasible_set
         # update current objective
         self.current_objective = new_objective
-
+        self.re_opt_repair_generator.greedy = False
         return route_plan, self.current_objective, infeasible_set, vehicle_clocks, rejection, rid
 
-    def new_objective(self, new_routeplan, new_infeasible_set):
+    def new_objective(self, new_routeplan, new_infeasible_set, greedy):
         total_deviation, total_travel_time = timedelta(
             minutes=0), timedelta(minutes=0)
         total_infeasible = timedelta(minutes=len(new_infeasible_set))
-        for vehicle_route in new_routeplan:
+        for vehicle, vehicle_route in enumerate(new_routeplan):
+            '''
             if len(vehicle_route) >= 2:
                 diff = (pd.to_datetime(
                     vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
                 total_travel_time += timedelta(minutes=diff)
+            '''
+            if len(vehicle_route) >= 2:
+                for i in range(len(vehicle_route) - 1):
+                    sn = vehicle_route[i][0]
+                    en = vehicle_route[i+1][0]
+                    sn_mod = sn % int(sn) if sn else 0
+                    en_mod = en % int(en)
+                    start_id = int(sn - 0.5 - 1 + self.n if sn_mod else sn - 1) if sn else 2 * self.n + vehicle
+                    end_id = int(en - 0.5 - 1 + self.n if en_mod else en - 1)
+                    total_travel_time += self.travel_time(start_id, end_id, False)
+
             pen_dev = [j if j > timedelta(
                 0) else -j for j in [i[2] for i in vehicle_route if i[2] is not None]]
             total_deviation += reduce(
-                lambda a, b: a+b, [i-P_S if i > P_S else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(0)
+                lambda a, b: a+b, [i-P_S_R if i > P_S_R else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(0)
         updated = alpha*total_travel_time + beta * \
             total_deviation + gamma*total_infeasible
         return updated
 
-    def print_objective(self, new_routeplan, new_infeasible_set):
-        total_deviation, total_travel_time = timedelta(
-            minutes=0), timedelta(minutes=0)
-        total_infeasible = timedelta(minutes=len(new_infeasible_set))
-        for vehicle_route in new_routeplan:
-            if len(vehicle_route) >= 2:
-                diff = (pd.to_datetime(
-                    vehicle_route[-1][1]) - pd.to_datetime(vehicle_route[0][1])) / pd.Timedelta(minutes=1)
-                total_travel_time += timedelta(minutes=diff)
-            pen_dev = [j if j > timedelta(
-                0) else -j for j in [i[2] for i in vehicle_route if i[2] is not None]]
-            total_deviation += reduce(
-                lambda a, b: a + b, [i - P_S if i > P_S else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(
-                0)
-
-        objective = alpha * total_travel_time + beta * total_deviation + gamma * total_infeasible
-
-        print("Objective", objective)
-        print("Total travel time", total_travel_time)
-        print("Total deviation", total_deviation)
-        print("Total infeasible", total_infeasible)
-
-    def print_total_objective(self, current_objective, current_infeasible, cumulative_objective, cumulative_infeasible, cumulative_recalibration):
+    def total_objective(self, current_objective, current_infeasible, cumulative_objective, cumulative_infeasible, cumulative_recalibration):
         if len(current_infeasible) == 0:
-            total_objective = current_objective \
-                              + cumulative_objective \
+            total_objective = copy(current_objective) \
+                              + copy(cumulative_objective) \
                               + timedelta(minutes=cumulative_infeasible) * gamma \
-                              + cumulative_recalibration
+                              + copy(cumulative_recalibration)
         else:
-            total_objective = current_objective \
-                              + cumulative_objective \
-                              + timedelta(minutes=(cumulative_infeasible - len(current_infeasible))) * gamma \
-                              + cumulative_recalibration
+            total_objective = copy(current_objective) \
+                              + copy(cumulative_objective) \
+                              + timedelta(minutes=(cumulative_infeasible - len(copy(current_infeasible)))) * gamma \
+                              + copy(cumulative_recalibration)
 
-        print("Total objective", total_objective)
-        print("Current objective", current_objective)
-        print("Current infeasible", len(current_infeasible))
-        print("Cumulative objective", cumulative_objective)
-        print("Cumulative infeasible", cumulative_infeasible)
-        print("Cumulative recalibration", cumulative_recalibration)
+        return total_objective
 
     def travel_matrix(self, df):
         # Lat and lon for each request
@@ -246,4 +228,4 @@ class NewRequestUpdater:
         return timedelta(seconds=(1+F) * self.T_ij[to_id, from_id])
 
     def get_delta_objective(self, new_routeplan, infeasible_set, current_objective):
-        return current_objective - self.new_objective(new_routeplan, infeasible_set)
+        return current_objective - self.new_objective(new_routeplan, infeasible_set, False)

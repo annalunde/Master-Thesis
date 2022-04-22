@@ -1,6 +1,5 @@
 from copy import copy
-from config.initial_improvement_config import *
-from decouple import config
+from config.main_config import *
 from datetime import timedelta
 
 """
@@ -396,9 +395,9 @@ class RepairGenerator:
 
     def get_bound_dev(self, depot, upper):
         if upper:
-            dev = U_D_N if not depot else U_D_D
+            dev = U_D_N_I if not depot else U_D_D_I
         else:
-            dev = L_D_N if not depot else L_D_D
+            dev = L_D_N_I if not depot else L_D_D_I
         return dev
 
     def check_remove(self, rid, request, infeasible_set):
@@ -423,7 +422,7 @@ class RepairGenerator:
                 push_back = t + travel_time - t_next if t_next - \
                     t - travel_time < timedelta(0) else timedelta(0)
 
-            if d is not None and d - push_back < L_D_N and (rid, request) not in self.heuristic.infeasible_set:
+            if d is not None and d - push_back < L_D_N_I and (rid, request) not in self.heuristic.infeasible_set:
                 activated_checks = True
                 break
 
@@ -459,7 +458,7 @@ class RepairGenerator:
             if d is not None and push_forward == timedelta(0):
                 break
 
-            if d + push_forward > U_D_N and (rid, request) not in self.heuristic.infeasible_set:
+            if d + push_forward > U_D_N_I and (rid, request) not in self.heuristic.infeasible_set:
                 activated_checks = True
                 break
             t = t + push_forward

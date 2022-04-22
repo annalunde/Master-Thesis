@@ -1,6 +1,5 @@
 from copy import copy
-from config.construction_config import *
-from datetime import timedelta
+from config.main_config import *
 
 
 class InsertionGenerator:

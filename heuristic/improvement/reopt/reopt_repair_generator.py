@@ -1,6 +1,5 @@
 from copy import copy
-from datetime import timedelta
-from config.reopt_improvement_config import *
+from config.main_config import *
 
 """
 NOTE: we only try to add it after the first node that is closest in time
@@ -8,11 +7,12 @@ NOTE: we only try to add it after the first node that is closest in time
 
 
 class ReOptRepairGenerator:
-    def __init__(self, heuristic):
+    def __init__(self, heuristic, greedy):
         self.heuristic = heuristic
         self.introduced_vehicles = copy(
             self.heuristic.introduced_vehicles)
         self.vehicles = copy(self.heuristic.vehicles)
+        self.greedy = greedy
 
     def generate_insertions(self, route_plan, request, rid, infeasible_set, initial_route_plan, index_removed, sim_clock, objectives, delayed, still_delayed_nodes, vehicle_clocks):
         possible_insertions = {}  # dict: delta objective --> route plan
@@ -33,7 +33,7 @@ class ReOptRepairGenerator:
 
                 # calculate change in objective
                 change_objective = self.heuristic.new_objective(
-                    temp_route_plan, infeasible_set)
+                    temp_route_plan, infeasible_set, self.greedy)
                 possible_insertions[change_objective] = temp_route_plan
 
             else:
@@ -169,7 +169,7 @@ class ReOptRepairGenerator:
 
                                         # calculate change in objective
                                         change_objective = self.heuristic.new_objective(
-                                            temp_route_plan, infeasible_set)
+                                            temp_route_plan, infeasible_set, self.greedy)
                                         possible_insertions[change_objective] = temp_route_plan
                         else:
                             e_p_node, e_p_time, e_p_d, e_p_p, e_p_w, _ = vehicle_route[start_idx + 1]
@@ -397,7 +397,7 @@ class ReOptRepairGenerator:
 
                                             # calculate change in objective
                                             change_objective = self.heuristic.new_objective(
-                                                temp_route_plan, infeasible_set)
+                                                temp_route_plan, infeasible_set, self.greedy)
                                             possible_insertions[change_objective] = temp_route_plan
 
                         # update capacity between pickup and dropoff
@@ -422,7 +422,7 @@ class ReOptRepairGenerator:
 
                     # calculate change in objective
                     change_objective = self.heuristic.new_objective(
-                        temp_route_plan, infeasible_set)
+                        temp_route_plan, infeasible_set, self.greedy)
                     possible_insertions[change_objective] = temp_route_plan
                 else:
                     if (rid, request) not in infeasible_set:
@@ -436,9 +436,13 @@ class ReOptRepairGenerator:
         if objectives:
             return sorted(possible_insertions.keys())[0] if len(possible_insertions) else timedelta(minutes=gamma), sorted(possible_insertions.keys())[objectives-1] if len(possible_insertions) > objectives-1 else timedelta(minutes=gamma), vehicle_clocks
 
-        return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else self.heuristic.new_objective(route_plan, infeasible_set), infeasible_set, vehicle_clocks
+        return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else self.heuristic.new_objective(route_plan, infeasible_set, self.greedy), infeasible_set, vehicle_clocks
 
     def get_bound_dev(self, depot, upper):
+        U_D_N = U_D_N_I if self.greedy else U_D_N_R
+        U_D_D = U_D_D_I if self.greedy else U_D_D_R
+        L_D_N = L_D_N_I if self.greedy else L_D_N_R
+        L_D_D = L_D_D_I if self.greedy else L_D_D_R
         if upper:
             dev = U_D_N if not depot else U_D_D
         else:
@@ -450,6 +454,7 @@ class ReOptRepairGenerator:
             infeasible_set.remove((rid, request))
 
     def update_check_backward(self, vehicle_route, start_idx, push_back, activated_checks, rid, request, introduced_vehicle, vehicle_clock):
+        L_D_N = L_D_N_I if self.greedy else L_D_N_R
         for idx in range(start_idx, -1, -1):
             n, t, d, p, w, r = vehicle_route[idx]
 
@@ -493,6 +498,7 @@ class ReOptRepairGenerator:
         return vehicle_route, activated_checks
 
     def update_check_forward(self, vehicle_route, start_idx, push_forward, activated_checks, rid, request, still_delayed_nodes):
+        U_D_N = U_D_N_I if self.greedy else U_D_N_R
         idx = start_idx + 1
         for n, t, d, p, w, r in vehicle_route[start_idx+1:]:
             # since updating happens at start_idx + 1, there is no need to check for depot
@@ -586,6 +592,7 @@ class ReOptRepairGenerator:
         return activated_checks
 
     def add_initial_nodes(self, request, introduced_vehicle, rid, vehicle_route, depot, sim_clock):
+        U_D_N = U_D_N_I if self.greedy else U_D_N_R
         s = S_W if request["Wheelchair"] else S_P
         depot_check = False
         if not depot:

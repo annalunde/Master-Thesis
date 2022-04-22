@@ -2,8 +2,7 @@ import pandas as pd
 from copy import copy
 from math import ceil
 from numpy.random import randint, choice
-from datetime import timedelta
-from config.reopt_improvement_config import *
+from config.main_config import *
 from heuristic.improvement.reopt.reopt_repair_generator import ReOptRepairGenerator
 
 
@@ -12,7 +11,7 @@ class ReOptOperators:
         self.destruction_degree = alns.destruction_degree
         self.constructor = alns.constructor
         self.T_ij = self.constructor.T_ij
-        self.reopt_repair_generator = ReOptRepairGenerator(self.constructor)
+        self.reopt_repair_generator = ReOptRepairGenerator(self.constructor, False)
         self.sim_clock = sim_clock
         self.vehicle_clocks = vehicle_clocks
 

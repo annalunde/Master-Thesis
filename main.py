@@ -1,21 +1,20 @@
-
+from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
+from heuristic.improvement.reopt.disruption_updater import DisruptionUpdater
+from simulation.simulator import Simulator
+from heuristic.improvement.simulated_annealing import SimulatedAnnealing
+from heuristic.improvement.reopt.reopt_operators import ReOptOperators
+from heuristic.improvement.initial.initial_operators import Operators
+from config.main_config import *
+from heuristic.improvement.alns import ALNS
+from heuristic.construction.construction import ConstructionHeuristic
+from profiling.profiler import Profile
+import cProfile
+import traceback
+import numpy.random as rnd
+import sys
+from decouple import config
 import pandas as pd
 from copy import copy
-from decouple import config
-import sys
-import numpy.random as rnd
-import traceback
-import cProfile
-from profiling.profiler import Profile
-from heuristic.construction.construction import ConstructionHeuristic
-from heuristic.improvement.alns import ALNS
-from config.main_config import *
-from heuristic.improvement.initial.initial_operators import Operators
-from heuristic.improvement.reopt.reopt_operators import ReOptOperators
-from heuristic.improvement.simulated_annealing import SimulatedAnnealing
-from simulation.simulator import Simulator
-from heuristic.improvement.reopt.disruption_updater import DisruptionUpdater
-from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
 
 
 def main(test_instance, test_instance_date,
@@ -37,6 +36,9 @@ def main(test_instance, test_instance_date,
         initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
         cumulative_infeasible = len(initial_infeasible_set)
 
+        total_objective = constructor.total_objective(initial_objective, initial_infeasible_set, cumulative_objective,
+                                                      cumulative_infeasible, cumulative_recalibration)
+
         # IMPROVEMENT OF INITIAL SOLUTION
         random_state = rnd.RandomState()
 
@@ -53,13 +55,16 @@ def main(test_instance, test_instance_date,
         delayed = (False, None, None)
 
         current_route_plan, current_objective, current_infeasible_set, _ = alns.iterate(
-            iterations, None, None, None, delayed)
+            initial_iterations, initial_Z, None, None, None, delayed)
 
         if current_infeasible_set:
             cumulative_infeasible = len(current_infeasible_set)
             print(
                 "Error: The service cannot serve the number of initial requests required")
             current_infeasible_set = []
+
+        total_objective = constructor.total_objective(current_objective, current_infeasible_set, cumulative_objective,
+                                                      cumulative_infeasible, cumulative_recalibration)
 
         # Recalibrate current solution
         current_route_plan = constructor.recalibrate_solution(
@@ -68,10 +73,12 @@ def main(test_instance, test_instance_date,
         delta_dev_objective = constructor.get_delta_objective(
             current_route_plan, [], current_objective)
         cumulative_recalibration += delta_dev_objective
-        cumulative_objective += copy(current_objective)
         current_objective -= delta_dev_objective
 
-        tracking.append([cumulative_objective,
+        total_objective = constructor.total_objective(current_objective, current_infeasible_set, cumulative_objective,
+                                                      cumulative_infeasible, cumulative_recalibration)
+
+        tracking.append([total_objective,
                         (datetime.now() - start_time).total_seconds()])
 
         df_tracking = pd.DataFrame(
