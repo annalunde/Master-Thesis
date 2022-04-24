@@ -63,7 +63,7 @@ alpha = 1
 beta = 5
 
 # Start temperature control parameter
-initial_Z = 1
+initial_Z = 1.2
 reopt_Z = 0.3
 
 # Cooling rate

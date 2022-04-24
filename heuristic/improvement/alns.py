@@ -87,10 +87,6 @@ class ALNS:
                 updated_route_plan, removed_requests, current_infeasible_set, current_route_plan, index_removed,
                 delayed, still_delayed_nodes)
 
-            if len(candidate_infeasible_set) > 0:
-                print("Lengde inf alns", len(candidate_infeasible_set))
-                print("Iteration nr", i)
-
             r_count[repair] += 1
 
             if i == 0:
