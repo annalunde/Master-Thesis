@@ -3,8 +3,6 @@ import numpy as np
 import numpy.random as rnd
 from math import ceil
 from numpy import log
-from tqdm import tqdm
-#from config.reopt_improvement_config import *
 from config.main_config import *
 from heuristic.improvement.destroy_repair_updater import Destroy_Repair_Updater
 
@@ -49,7 +47,7 @@ class ALNS:
             current_route_plan = self.destroy_repair_updater.update_solution(
                 current_route_plan, index_removed, disruption_time)
 
-        for i in tqdm(range(num_iterations), colour='#39ff14'):
+        for i in range(num_iterations):
             already_found = False
             still_delayed_nodes = []
 
@@ -90,8 +88,8 @@ class ALNS:
             r_count[repair] += 1
 
             if i == 0:
-                self.criterion.temperature = -((current_objective * (1 + z) - current_objective).total_seconds()/60)/\
-                                             (log(0.5))
+                self.criterion.temperature = -((current_objective * (1 + z) - current_objective).total_seconds()/60) /\
+                    (log(0.5))
 
             # Compare solutions
             best, best_objective, best_infeasible_set, current_route_plan, current_objective, current_infeasible_set, weight_score = self.evaluate_candidate(

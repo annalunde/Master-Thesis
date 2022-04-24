@@ -1,10 +1,8 @@
 import pandas as pd
 import numpy as np
-from tqdm import tqdm
 from math import radians
 from decouple import config
 from functools import reduce
-#from config.construction_config import *
 from config.main_config import *
 from heuristic.construction.insertion_generator import InsertionGenerator
 from datetime import datetime, timedelta
@@ -51,7 +49,8 @@ class ConstructionHeuristic:
         for i in range(self.n):
             if nat_pickup.iloc[i]:
 
-                travel_time = self.temp_travel_time(i, self.n + i, True, temp_T_ij)
+                travel_time = self.temp_travel_time(
+                    i, self.n + i, True, temp_T_ij)
 
                 # rush hour modelling:
                 if not (requests.iloc[i]["Requested Dropoff Time"].weekday() == 5):
@@ -85,7 +84,7 @@ class ConstructionHeuristic:
         unassigned_requests = self.requests.copy(deep=False)
         self.introduced_vehicles.add(self.vehicles.pop(0))
         route_plan = [[]]
-        for i in tqdm(range(unassigned_requests.shape[0]), colour='#39ff14'):
+        for i in range(unassigned_requests.shape[0]):
             # while not unassigned_requests.empty:
             request = unassigned_requests.iloc[i]
 
@@ -115,9 +114,11 @@ class ConstructionHeuristic:
                     en = vehicle_route[i+1][0]
                     sn_mod = sn % int(sn) if sn else 0
                     en_mod = en % int(en)
-                    start_id = int(sn - 0.5 - 1 + self.n if sn_mod else sn - 1) if sn else 2 * self.n + vehicle
+                    start_id = int(
+                        sn - 0.5 - 1 + self.n if sn_mod else sn - 1) if sn else 2 * self.n + vehicle
                     end_id = int(en - 0.5 - 1 + self.n if en_mod else en - 1)
-                    total_travel_time += self.travel_time(start_id, end_id, False)
+                    total_travel_time += self.travel_time(
+                        start_id, end_id, False)
 
             pen_dev = [j if j > timedelta(
                 0) else -j for j in [i[2] for i in vehicle_route if i[2] is not None]]
@@ -139,15 +140,18 @@ class ConstructionHeuristic:
                     en = vehicle_route[i + 1][0]
                     sn_mod = sn % int(sn) if sn else 0
                     en_mod = en % int(en)
-                    start_id = int(sn - 0.5 - 1 + self.n if sn_mod else sn - 1) if sn else 2 * self.n + vehicle
+                    start_id = int(
+                        sn - 0.5 - 1 + self.n if sn_mod else sn - 1) if sn else 2 * self.n + vehicle
                     end_id = int(en - 0.5 - 1 + self.n if en_mod else en - 1)
-                    total_travel_time += self.travel_time(start_id, end_id, False)
+                    total_travel_time += self.travel_time(
+                        start_id, end_id, False)
             pen_dev = [j if j > timedelta(
                 0) else -j for j in [i[2] for i in vehicle_route if i[2] is not None]]
             total_deviation += reduce(
                 lambda a, b: a+b, [i-P_S_C if i > P_S_C else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(0)
 
-        objective = alpha*total_travel_time + beta * total_deviation + gamma*total_infeasible
+        objective = alpha*total_travel_time + beta * \
+            total_deviation + gamma*total_infeasible
 
         print("Objective", objective)
         print("Total travel time", total_travel_time)
@@ -157,14 +161,14 @@ class ConstructionHeuristic:
     def total_objective(self, current_objective, current_infeasible, cumulative_objective, cumulative_infeasible, cumulative_recalibration):
         if len(current_infeasible) == 0:
             total_objective = current_objective \
-                              + cumulative_objective \
-                              + timedelta(minutes=cumulative_infeasible) * gamma \
-                              + cumulative_recalibration
+                + cumulative_objective \
+                + timedelta(minutes=cumulative_infeasible) * gamma \
+                + cumulative_recalibration
         else:
             total_objective = current_objective \
-                              + cumulative_objective \
-                              + timedelta(minutes=(cumulative_infeasible - len(current_infeasible))) * gamma \
-                              + cumulative_recalibration
+                + cumulative_objective \
+                + timedelta(minutes=(cumulative_infeasible - len(current_infeasible))) * gamma \
+                + cumulative_recalibration
 
         return total_objective
 
