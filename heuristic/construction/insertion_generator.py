@@ -6,7 +6,7 @@ class InsertionGenerator:
     def __init__(self, construction_heuristic):
         self.heuristic = construction_heuristic
 
-    def generate_insertions(self, route_plan, request, rid):
+    def generate_insertions(self, route_plan, request, rid, prev_objective):
         possible_insertions = {}  # dict: delta objective --> route plan
         for introduced_vehicle in self.heuristic.introduced_vehicles:
             # generate all possible insertions
@@ -346,7 +346,7 @@ class InsertionGenerator:
                 if (rid, request) not in self.heuristic.infeasible_set:
                     self.heuristic.infeasible_set.append((rid, request))
 
-        return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else timedelta(minutes=gamma*len(self.heuristic.infeasible_set))
+        return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else self.heuristic.gamma + prev_objective
 
     def generate_possible_nodes(self, request, vehicle_route, dropoff_time):
         s = S_W if request["Wheelchair"] else S_P
@@ -391,7 +391,7 @@ class InsertionGenerator:
                 push_back = t + travel_time - t_next if t_next - \
                     t - travel_time < timedelta(0) else timedelta(0)
 
-            if d is not None and d - push_back < L_D and (rid, request) not in self.heuristic.infeasible_set:
+            if d is not None and d - push_back < L_D:
                 activated_checks = True
                 break
 
@@ -428,7 +428,7 @@ class InsertionGenerator:
             if d is not None and push_forward == timedelta(0):
                 break
 
-            if d + push_forward > U_D and (rid, request) not in self.heuristic.infeasible_set:
+            if d + push_forward > U_D:
                 activated_checks = True
                 break
             t = t + push_forward
@@ -489,7 +489,7 @@ class InsertionGenerator:
 
     def check_capacities(self, vehicle_route, start_id, dropoff_id, request, rid, activated_checks):
         for n, t, d, p, w, _ in vehicle_route[start_id+1:dropoff_id]:
-            if p + request["Number of Passengers"] > P and (rid, request) not in self.heuristic.infeasible_set or w + request["Wheelchair"] > W and (rid, request) not in self.heuristic.infeasible_set:
+            if p + request["Number of Passengers"] > P or w + request["Wheelchair"] > W:
                 activated_checks = True
                 break
         return activated_checks

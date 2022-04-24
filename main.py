@@ -26,7 +26,7 @@ def main(test_instance, test_instance_date,
         tracking = []
 
         # CUMULATIVE OBJECTIVE
-        cumulative_infeasible, cumulative_recalibration, cumulative_objective = 0, timedelta(
+        cumulative_rejected, cumulative_recalibration, cumulative_objective = 0, timedelta(
             0), timedelta(0)
 
         # CONSTRUCTION OF INITIAL SOLUTION
@@ -34,10 +34,6 @@ def main(test_instance, test_instance_date,
         constructor = ConstructionHeuristic(requests=df, vehicles=V)
         print("Constructing initial solution")
         initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
-        cumulative_infeasible = len(initial_infeasible_set)
-
-        total_objective = constructor.total_objective(initial_objective, initial_infeasible_set, cumulative_objective,
-                                                      cumulative_infeasible, cumulative_recalibration)
 
         # IMPROVEMENT OF INITIAL SOLUTION
         random_state = rnd.RandomState()
@@ -57,14 +53,17 @@ def main(test_instance, test_instance_date,
         current_route_plan, current_objective, current_infeasible_set, _ = alns.iterate(
             initial_iterations, initial_Z, None, None, None, delayed)
 
+        total_objective = constructor.total_objective(current_objective, current_infeasible_set, cumulative_objective,
+                                                      cumulative_recalibration)
+
+        print("Total objective", total_objective)
+
         if current_infeasible_set:
-            cumulative_infeasible = len(current_infeasible_set)
+            cumulative_rejected = len(current_infeasible_set)
             print(
                 "Error: The service cannot serve the number of initial requests required")
+            print("Number of rejected", cumulative_rejected)
             current_infeasible_set = []
-
-        total_objective = constructor.total_objective(current_objective, current_infeasible_set, cumulative_objective,
-                                                      cumulative_infeasible, cumulative_recalibration)
 
         # Recalibrate current solution
         current_route_plan = constructor.recalibrate_solution(
@@ -76,7 +75,7 @@ def main(test_instance, test_instance_date,
         current_objective -= delta_dev_objective
 
         total_objective = constructor.total_objective(current_objective, current_infeasible_set, cumulative_objective,
-                                                      cumulative_infeasible, cumulative_recalibration)
+                                                      cumulative_recalibration)
 
         tracking.append([total_objective,
                         (datetime.now() - start_time).total_seconds()])

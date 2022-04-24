@@ -52,7 +52,7 @@ CHANGEABLE PARAMETERS
 N_R = 0
 
 # Number of iterations in ALNS
-initial_iterations = 10
+initial_iterations = 100
 reopt_iterations = 10
 
 # Weight of ride time in objective function
@@ -61,11 +61,8 @@ alpha = 1
 # Weight of deviation in objective function
 beta = 5
 
-# Weight of infeasible set in objective function
-gamma = 10000
-
 # Start temperature control parameter
-initial_Z = 1
+initial_Z = 1.2
 reopt_Z = 0.3
 
 # Cooling rate

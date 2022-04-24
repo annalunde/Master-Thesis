@@ -14,7 +14,7 @@ class ReOptRepairGenerator:
         self.vehicles = copy(self.heuristic.vehicles)
         self.greedy = greedy
 
-    def generate_insertions(self, route_plan, request, rid, infeasible_set, initial_route_plan, index_removed, sim_clock, objectives, delayed, still_delayed_nodes, vehicle_clocks):
+    def generate_insertions(self, route_plan, request, rid, infeasible_set, initial_route_plan, index_removed, sim_clock, objectives, delayed, still_delayed_nodes, vehicle_clocks, prev_objective):
         possible_insertions = {}  # dict: delta objective --> route plan
         self.introduced_vehicles = set([i for i in range(len(route_plan))])
         self.vehicles = [i for i in range(len(route_plan), V)]
@@ -434,9 +434,9 @@ class ReOptRepairGenerator:
                     infeasible_set.append((rid, request))
 
         if objectives:
-            return sorted(possible_insertions.keys())[0] if len(possible_insertions) else timedelta(minutes=gamma), sorted(possible_insertions.keys())[objectives-1] if len(possible_insertions) > objectives-1 else timedelta(minutes=gamma), vehicle_clocks
+            return sorted(possible_insertions.keys())[0] if len(possible_insertions) else prev_objective + self.heuristic.gamma, sorted(possible_insertions.keys())[objectives-1] if len(possible_insertions) > objectives-1 else prev_objective + self.heuristic.gamma, vehicle_clocks
 
-        return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else self.heuristic.new_objective(route_plan, infeasible_set, self.greedy), infeasible_set, vehicle_clocks
+        return possible_insertions[min(possible_insertions.keys())] if len(possible_insertions) else route_plan, min(possible_insertions.keys()) if len(possible_insertions) else prev_objective + self.heuristic.gamma, infeasible_set, vehicle_clocks
 
     def get_bound_dev(self, depot, upper):
         U_D_N = U_D_N_I if self.greedy else U_D_N_R
@@ -477,7 +477,7 @@ class ReOptRepairGenerator:
                 push_back = t + travel_time - t_next if t_next - \
                     t - travel_time < timedelta(0) else timedelta(0)
 
-            if d is not None and d - push_back < L_D_N and (rid, request) not in self.heuristic.infeasible_set:
+            if d is not None and d - push_back < L_D_N:
                 activated_checks = True
                 break
 
@@ -518,7 +518,7 @@ class ReOptRepairGenerator:
             if d is not None and push_forward == timedelta(0):
                 break
 
-            if d + push_forward > U_D_N and (rid, request) not in self.heuristic.infeasible_set:
+            if d + push_forward > U_D_N:
                 if n not in still_delayed_nodes:
                     activated_checks = True
                     break
@@ -586,7 +586,7 @@ class ReOptRepairGenerator:
 
     def check_capacities(self, vehicle_route, start_id, dropoff_id, request, rid, activated_checks, infeasible_set):
         for n, t, d, p, w, _ in vehicle_route[start_id+1:dropoff_id]:
-            if p + request["Number of Passengers"] > P and (rid, request) not in infeasible_set or w + request["Wheelchair"] > W and (rid, request) not in infeasible_set:
+            if p + request["Number of Passengers"] > P or w + request["Wheelchair"] > W:
                 activated_checks = True
                 break
         return activated_checks
