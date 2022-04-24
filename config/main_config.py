@@ -59,17 +59,14 @@ reopt_iterations = 10
 alpha = 1
 
 # Weight of deviation in objective function
-beta = 5
+beta = 100
 
 # Start temperature control parameter
-initial_Z = 1.2
+initial_Z = 0.6
 reopt_Z = 0.3
 
 # Cooling rate
 cooling_rate = 0.999
-
-# Control parameter
-Z = 1.5
 
 # Weight scores
 weights = [15, 10, 5, 0]
@@ -86,5 +83,5 @@ destruction_degree = 0.4
 
 # Running data
 #"test_instance_small_1_20210703", "test_instance_small_2_20210724", "test_instance_small_3_20210918", "test_instance_medium_2_20210830", "test_instance_medium_3_20211015", "test_instance_large_1_20211005", "test_instance_large_2_20211014", "test_instance_large_3_20220112"
-test_instances = ["test_instance_large_1_20211005"]
+test_instances = ["test_data_construction"]
 start_time = datetime.now()

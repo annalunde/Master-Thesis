@@ -56,8 +56,6 @@ def main(test_instance, test_instance_date,
         total_objective = constructor.total_objective(current_objective, current_infeasible_set, cumulative_objective,
                                                       cumulative_recalibration)
 
-        print("Total objective", total_objective)
-
         if current_infeasible_set:
             cumulative_rejected = len(current_infeasible_set)
             print(
@@ -77,9 +75,10 @@ def main(test_instance, test_instance_date,
         total_objective = constructor.total_objective(current_objective, current_infeasible_set, cumulative_objective,
                                                       cumulative_recalibration)
 
-        tracking.append([total_objective,
+        tracking.append([total_objective.total_seconds(),
                         (datetime.now() - start_time).total_seconds()])
 
+        
         df_tracking = pd.DataFrame(
             tracking, columns=["Current Objective", "Solution Time"])
         df_tracking.to_csv(config("tuning_path") + "param_tuning" +

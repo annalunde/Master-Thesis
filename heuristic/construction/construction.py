@@ -154,8 +154,8 @@ class ConstructionHeuristic:
             total_deviation + self.gamma*total_infeasible
 
         print("Objective", objective)
-        print("Total travel time", total_travel_time)
-        print("Total deviation", total_deviation)
+        print("Total travel time", total_travel_time.total_seconds())
+        print("Total deviation", total_deviation.total_seconds())
         print("Total infeasible", total_infeasible)
 
     def total_objective(self, current_objective, current_infeasible, cumulative_objective, cumulative_recalibration):
