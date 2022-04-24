@@ -53,9 +53,6 @@ def main(test_instance, test_instance_date,
         current_route_plan, current_objective, current_infeasible_set, _ = alns.iterate(
             initial_iterations, initial_Z, None, None, None, delayed)
 
-        total_objective = constructor.total_objective(current_objective, current_infeasible_set, cumulative_objective,
-                                                      cumulative_recalibration)
-
         if current_infeasible_set:
             cumulative_rejected = len(current_infeasible_set)
             print(
@@ -63,6 +60,7 @@ def main(test_instance, test_instance_date,
             print("Number of rejected", cumulative_rejected)
             current_infeasible_set = []
 
+        '''
         # Recalibrate current solution
         current_route_plan = constructor.recalibrate_solution(
             current_route_plan)
@@ -71,6 +69,7 @@ def main(test_instance, test_instance_date,
             current_route_plan, [], current_objective)
         cumulative_recalibration += delta_dev_objective
         current_objective -= delta_dev_objective
+        '''
 
         total_objective = constructor.total_objective(current_objective, current_infeasible_set, cumulative_objective,
                                                       cumulative_recalibration)
