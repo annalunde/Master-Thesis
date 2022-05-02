@@ -165,9 +165,11 @@ class AnalyserDisruptions:
 
         fit_shape, fit_loc, fit_scale = gamma.fit(waiting_times)
         print([fit_shape, fit_loc, fit_scale])
-        plt.hist(waiting_times, bins=50, density=True)
+        #plt.hist(waiting_times, bins=50, density=True)
         plt.plot(xlin, gamma.pdf(xlin, a=fit_shape,
-                 loc=fit_loc, scale=fit_scale))
+                 loc=fit_loc, scale=fit_scale), '#A0BCD4')
+        plt.xlabel('Minutes between creation and requested pick-up time')
+        plt.ylabel('Probability density')
         plt.show()
 
         # probability density function time between request creation time and requested dropoff time
@@ -193,9 +195,11 @@ class AnalyserDisruptions:
 
         fit_shape, fit_loc, fit_scale = gamma.fit(waiting_times)
         print([fit_shape, fit_loc, fit_scale])
-        plt.hist(waiting_times, bins=50, density=True)
+        #plt.hist(waiting_times, bins=50, density=True)
         plt.plot(xlin, gamma.pdf(xlin, a=fit_shape,
-                 loc=fit_loc, scale=fit_scale))
+                 loc=fit_loc, scale=fit_scale), '#A0BCD4')
+        plt.xlabel('Minutes between creation and requested drop-off time')
+        plt.ylabel('Probability density')
         plt.show()
 
     # DELAY
@@ -324,10 +328,11 @@ class AnalyserDisruptions:
 
         fit_a, fit_b, fit_loc, fit_scale = beta.fit(waiting_times)
         print([fit_a, fit_b, fit_loc, fit_scale])
-        plt.hist(waiting_times, bins=50, density=True)
+        #plt.hist(waiting_times, bins=50, density=True)
         plt.plot(xlin, beta.pdf(xlin, a=fit_a,
-                 b=fit_b, loc=fit_loc, scale=fit_scale))
-
+                 b=fit_b, loc=fit_loc, scale=fit_scale), '#A0BCD4')
+        plt.xlabel('Minutes of delay')
+        plt.ylabel('Probability density')
         plt.show()
 
     # CANCEL

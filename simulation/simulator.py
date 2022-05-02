@@ -1,18 +1,23 @@
 from config.main_config import *
 from simulation.poisson import *
 from config.simulation_config import *
-from random import choice
+import random
 from scipy.stats import gamma, beta
-from numpy.random import rand
+from numpy.random import rand, seed
 import pandas as pd
 from decouple import config
 
+from heuristic.construction.construction import ConstructionHeuristic
 
 class Simulator:
     def __init__(self, sim_clock):
         self.sim_clock = sim_clock
         self.poisson = Poisson()
         self.disruptions_stack = self.create_disruption_stack()
+        seed(int((self.sim_clock - timedelta(hours=self.sim_clock.hour, minutes=self.sim_clock.minute,
+                                             seconds=self.sim_clock.second)).timestamp()))
+        random.seed(int((self.sim_clock - timedelta(hours=self.sim_clock.hour, minutes=self.sim_clock.minute,
+                                                    seconds=self.sim_clock.second)).timestamp()))
 
     def create_disruption_stack(self):
         """
@@ -167,6 +172,7 @@ class Simulator:
             return -1, -1, -1
 
     def cancel(self, cancel, current_route_plan):
+
         indices = []
 
         # potential cancellations - pickup nodes with planned pickup after disruption time of cancellation
@@ -186,7 +192,7 @@ class Simulator:
         # check whether there are any cancellations, if not, another disruption will be chosen
         # if yes, pick a random pickup node as the cancellation
         if len(indices) > 0:
-            index = choice(indices)
+            index = random.choice(indices)
             return index[0], index[1], index[2], index[3], index[4]
         else:
             return -1, -1, -1, -1, -1
@@ -272,3 +278,43 @@ class Simulator:
         df_same_day_after_10_updated.to_csv(config("data_simulator_path"))
 
         return random_request
+
+
+def main():
+    sim_clock = datetime.strptime("2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
+    simulator = Simulator(sim_clock)
+    print(simulator.disruptions_stack)
+    print(simulator.create_disruption_stack())
+    print(len(simulator.disruptions_stack))
+
+    # CONSTRUCTION OF INITIAL SOLUTION
+    df = pd.read_csv(config("test_data_construction"))
+    constructor = ConstructionHeuristic(requests=df, vehicles=V)
+    print("Constructing initial solution")
+    initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
+
+    first_iteration = True
+
+    while len(simulator.disruptions_stack) > 0:
+        if not first_iteration:
+            disruption_type, disruption_time, disruption_info = simulator.get_disruption(
+                initial_route_plan, config("data_simulator_path"), first_iteration)
+        else:
+            disruption_type, disruption_time, disruption_info = simulator.get_disruption(
+                initial_route_plan, config("data_processed_path"), first_iteration)
+            first_iteration = False
+
+        if disruption_type == 0:
+            print("New request", disruption_time, disruption_info.iloc[0]["Requested Pickup Time"], disruption_info.iloc[0]["Origin Lat"])
+
+        elif disruption_type == 1:
+            print("Delay", disruption_time, disruption_info)
+
+        elif disruption_type == 2:
+            print("Cancel", disruption_time, disruption_info)
+
+        else:
+            print("No show", disruption_time, disruption_info)
+
+if __name__ == "__main__":
+    main()

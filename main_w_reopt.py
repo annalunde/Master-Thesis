@@ -27,8 +27,8 @@ def main(test_instance, test_instance_date,
             0), timedelta(0)
 
         # CONSTRUCTION OF INITIAL SOLUTION
-        df = pd.read_csv(config("test_data_construction"))
-        constructor = ConstructionHeuristic(requests=df.head(R), vehicles=V)
+        df = pd.read_csv(config(test_instance))
+        constructor = ConstructionHeuristic(requests=df, vehicles=V)
         print("Constructing initial solution")
         initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
 
@@ -80,7 +80,7 @@ def main(test_instance, test_instance_date,
         # SIMULATION
         print("Start simulation")
         sim_clock = datetime.strptime(
-            "2021-05-10 10:00:00", "%Y-%m-%d %H:%M:%S")
+            test_instance_date, "%Y-%m-%d %H:%M:%S")
         simulator = Simulator(sim_clock)
         new_request_updater = NewRequestUpdater(
             constructor)
@@ -110,6 +110,7 @@ def main(test_instance, test_instance_date,
             if disruption_type == 4:  # No disruption
                 continue
             elif disruption_type == 0:  # Disruption: new request
+                print("Current obj", current_objective)
                 current_route_plan, vehicle_clocks = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
                 updated_objective = new_request_updater.new_objective(
@@ -118,8 +119,12 @@ def main(test_instance, test_instance_date,
                     current_route_plan, vehicle_clocks)  # Filter route plan
                 filter_objective = new_request_updater.new_objective(
                     current_route_plan, [], False)
+                print("Old cumulative obj", cumulative_objective)
+                print("Updated obj", updated_objective)
+                print("Filtered obj", filter_objective)
                 cumulative_objective = copy(
                     cumulative_objective) + copy(updated_objective) - copy(filter_objective)
+                print("New cumulative obj", cumulative_objective)
                 current_route_plan, current_objective, current_infeasible_set, vehicle_clocks, rejection, rid = new_request_updater.\
                     greedy_insertion_new_request(
                         current_route_plan, current_infeasible_set, disruption_info, disruption_time, vehicle_clocks, i)
@@ -215,19 +220,19 @@ if __name__ == "__main__":
     profile = Profile()
     cProfile.run('main()', 'profiling/restats')
     profile.display()
-
+    """
     # Generate test instance datetime from filename
     test_instance_d = test_instance.split(
                 "/")[-1].split("_")[-1].split(".")[0]
-            test_instance_date = test_instance_d[0:4] + "-" + \
+    test_instance_date = test_instance_d[0:4] + "-" + \
                 test_instance_d[4:6] + "-" + \
                 test_instance_d[6:8] + " 10:00:00"
-    """
+
+    print(test_instance_date)
     runs = 1
     iteration_tests = [100]
 
     for num_iterations in iteration_tests:
-        for test_instance in test_instances:
-            for run in range(runs):
-                main(test_instance, "2021-05-10 10:00:00",
-                     run, num_iterations)
+        for run in range(runs):
+            main(test_instance, test_instance_date,
+                 run, num_iterations)
