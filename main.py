@@ -28,7 +28,7 @@ def main(test_instance, test_instance_date):
             0), timedelta(0)
 
         # CONSTRUCTION OF INITIAL SOLUTION
-        df = pd.read_csv(config("test_data_construction"))
+        df = pd.read_csv(config(test_instance))
         constructor = ConstructionHeuristic(
             requests=df, vehicles=V, alpha=alpha, beta=beta)
         print("Constructing initial solution")
@@ -62,7 +62,7 @@ def main(test_instance, test_instance_date):
             current_route_plan)
 
         delta_dev_objective = constructor.get_delta_objective(
-            current_route_plan, [], current_objective)
+            current_route_plan, [i for i in range(cumulative_rejected)], current_objective)
         cumulative_recalibration += delta_dev_objective
         current_objective -= delta_dev_objective
 
