@@ -25,7 +25,8 @@ class ALNS:
         self.destroy_repair_updater = Destroy_Repair_Updater(constructor)
 
     # Run ALNS algorithm
-    def iterate(self, num_iterations, z, disrupted, index_removed, disruption_time, delayed):
+    def iterate(self, num_iterations, z, disrupted, index_removed, disruption_time, delayed, reopt):
+        N_U = N_U_reopt if reopt else N_U_init
         weights = np.asarray(self.weights, dtype=np.float16)
         best, current_route_plan, initial_route_plan = list(map(list, self.route_plan)), list(
             map(list, self.route_plan)), list(map(list, self.route_plan))

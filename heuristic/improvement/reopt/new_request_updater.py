@@ -22,7 +22,11 @@ class NewRequestUpdater:
         self.infeasible_set = copy(constructor.infeasible_set)
         self.re_opt_repair_generator = ReOptRepairGenerator(self, False)
         self.preprocessed = copy(constructor.preprocessed)
-        self.gamma = alpha * 4 * timedelta(seconds=np.amax(self.T_ij)) + beta * timedelta(minutes=15) * 2 * (self.n / V)
+        self.alpha = constructor.alpha
+        self.beta = constructor.beta
+        self.gamma = self.alpha * 4 * \
+            timedelta(seconds=np.amax(self.T_ij)) + self.beta * \
+            timedelta(minutes=15) * 2 * (self.n / V)
 
     def set_parameters(self, new_request):
         updated_new_request = self.compute_pickup_time(new_request)
@@ -38,7 +42,8 @@ class NewRequestUpdater:
                               np.deg2rad(new_request.iloc[0]["Origin Lng"]))]
             destination_lat_lon = [(np.deg2rad(new_request.iloc[0]["Destination Lat"]),
                                    np.deg2rad(new_request.iloc[0]["Destination Lng"]))]
-            D_ij = haversine_distances(origin_lat_lon, destination_lat_lon) * 6371
+            D_ij = haversine_distances(
+                origin_lat_lon, destination_lat_lon) * 6371
             speed = 20
             travel_time = (timedelta(hours=(D_ij[0][0] / speed)
                                      ).total_seconds())*(1+F/2)
@@ -104,21 +109,23 @@ class NewRequestUpdater:
                     en = vehicle_route[i+1][0]
                     sn_mod = sn % int(sn) if sn else 0
                     en_mod = en % int(en)
-                    start_id = int(sn - 0.5 - 1 + self.n if sn_mod else sn - 1) if sn else 2 * self.n + vehicle
+                    start_id = int(
+                        sn - 0.5 - 1 + self.n if sn_mod else sn - 1) if sn else 2 * self.n + vehicle
                     end_id = int(en - 0.5 - 1 + self.n if en_mod else en - 1)
-                    total_travel_time += self.travel_time(start_id, end_id, False)
+                    total_travel_time += self.travel_time(
+                        start_id, end_id, False)
 
             pen_dev = [j if j > timedelta(
                 0) else -j for j in [i[2] for i in vehicle_route if i[2] is not None]]
             total_deviation += reduce(
                 lambda a, b: a+b, [i-P_S_R if i > P_S_R else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(0)
-        updated = alpha*total_travel_time + beta * \
+        updated = self.alpha*total_travel_time + self.beta * \
             total_deviation + self.gamma*total_infeasible
         return updated
 
-    def total_objective(self, current_objective, current_infeasible, cumulative_objective, cumulative_recalibration):
-        total_objective = current_objective + cumulative_objective - len(current_infeasible) * self.gamma \
-                          + cumulative_recalibration
+    def total_objective(self, current_objective, cumulative_objective, cumulative_recalibration):
+        total_objective = current_objective + \
+            cumulative_objective + cumulative_recalibration
         return total_objective
 
     def travel_matrix(self, df):
@@ -167,7 +174,8 @@ class NewRequestUpdater:
                         T_ij[k][l] = T_ij[k][l] * R_F
                         T_ij[k + self.n][l] = T_ij[k + self.n][l] * R_F
                         T_ij[k][l + self.n] = T_ij[k][l + self.n] * R_F
-                        T_ij[k + self.n][l + self.n] = T_ij[k + self.n][l + self.n] * R_F
+                        T_ij[k + self.n][l + self.n] = T_ij[k +
+                                                            self.n][l + self.n] * R_F
 
         return T_ij
 

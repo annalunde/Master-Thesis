@@ -16,7 +16,6 @@ class Poisson:
                       for time_step in range(start_poisson, end_poisson)
                       for t in range(0, poisson(arrival_rates[time_step]))]
 
-
         # convert timestamps to datetime
         disruption_timestamps = []
         for timestamp in timestamps:
@@ -29,4 +28,3 @@ class Poisson:
                 disruption_timestamps.append((disruption_type, date_time))
 
         return disruption_timestamps
-
