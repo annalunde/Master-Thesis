@@ -53,7 +53,7 @@ N_R = 0
 
 # Number of iterations in ALNS
 initial_iterations = 100
-reopt_iterations = 10
+reopt_iterations = 100
 
 # Weight of ride time in objective function
 alpha = 1
@@ -62,26 +62,26 @@ alpha = 1
 beta = 100
 
 # Start temperature control parameter
-initial_Z = 0.6
+initial_Z = 0.3
 reopt_Z = 0.3
 
 # Cooling rate
-cooling_rate = 0.999
+cooling_rate = 0.96
 
 # Weight scores
-weights = [15, 10, 5, 0]
+weights = [10, 5, 1, 0]
 
 # Reaction factor
-reaction_factor = 0.7
+reaction_factor = 0.6
 
 # Number of destroy/repair pairs before updating weights in initial
-N_U = 0.2
+N_U_init = 0.3
+N_U_reopt = 0.3
 
 # Destruction degree
 destruction_degree = 0.4
 
 
 # Running data
-#"test_instance_small_1_20210703", "test_instance_small_2_20210724", "test_instance_small_3_20210918", "test_instance_medium_2_20210830", "test_instance_medium_3_20211015", "test_instance_large_1_20211005", "test_instance_large_2_20211014", "test_instance_large_3_20220112"
-test_instances = ["test_data_construction"]
-start_time = datetime.now()
+#"test_instance_small_1_20210703", "test_instance_small_2_20210724", "test_instance_small_3_20210918", "test_instance_medium_1_20210706", "test_instance_medium_2_20210830", "test_instance_medium_3_20211015", "test_instance_large_1_20211005", "test_instance_large_2_20211014", "test_instance_large_3_20220112"
+test_instance = "test_instance_large_1_20211005"

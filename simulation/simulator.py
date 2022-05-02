@@ -1,9 +1,10 @@
 from config.main_config import *
 from simulation.poisson import *
 from config.simulation_config import *
+import random
 from random import choice
 from scipy.stats import gamma, beta
-from numpy.random import rand
+from numpy.random import rand, seed
 import pandas as pd
 from decouple import config
 
@@ -13,6 +14,10 @@ class Simulator:
         self.sim_clock = sim_clock
         self.poisson = Poisson()
         self.disruptions_stack = self.create_disruption_stack()
+        seed(int((self.sim_clock - timedelta(hours=self.sim_clock.hour, minutes=self.sim_clock.minute,
+                                             seconds=self.sim_clock.second)).timestamp()))
+        random.seed(int((self.sim_clock - timedelta(hours=self.sim_clock.hour, minutes=self.sim_clock.minute,
+                                                    seconds=self.sim_clock.second)).timestamp()))
 
     def create_disruption_stack(self):
         """
@@ -100,7 +105,8 @@ class Simulator:
 
             else:
                 # get random request
-                random_request = self.get_and_drop_random_request(data_path, first_iteration)
+                random_request = self.get_and_drop_random_request(
+                    data_path, first_iteration)
 
                 # update creation time to request disruption time
                 random_request['Request Creation Time'] = request_arrival
@@ -124,7 +130,8 @@ class Simulator:
 
             else:
                 # get random request
-                random_request = self.get_and_drop_random_request(data_path, first_iteration)
+                random_request = self.get_and_drop_random_request(
+                    data_path, first_iteration)
 
                 # update creation time to request disruption time
                 random_request['Request Creation Time'] = request_arrival
@@ -167,6 +174,7 @@ class Simulator:
             return -1, -1, -1
 
     def cancel(self, cancel, current_route_plan):
+
         indices = []
 
         # potential cancellations - pickup nodes with planned pickup after disruption time of cancellation

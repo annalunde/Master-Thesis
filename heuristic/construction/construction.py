@@ -11,7 +11,7 @@ pd.options.mode.chained_assignment = None
 
 
 class ConstructionHeuristic:
-    def __init__(self, requests, vehicles):
+    def __init__(self, requests, vehicles, alpha, beta):
         self.vehicles = [i for i in range(vehicles)]
         self.n = len(requests.index)
         self.num_nodes_and_depots = vehicles + 2 * self.n
@@ -33,8 +33,10 @@ class ConstructionHeuristic:
         self.infeasible_set = []
         self.insertion_generator = InsertionGenerator(self)
         self.preprocessed = self.preprocess_requests()
-        self.gamma = alpha * 4 * \
-            timedelta(seconds=np.amax(self.T_ij)) + beta * \
+        self.alpha = alpha
+        self.beta = beta
+        self.gamma = self.alpha * 4 * \
+            timedelta(seconds=np.amax(self.T_ij)) + self.beta * \
             timedelta(minutes=15) * 2 * (self.n / V)
 
     def compute_pickup_time(self, requests):
@@ -125,7 +127,7 @@ class ConstructionHeuristic:
             total_deviation += reduce(
                 lambda a, b: a+b, [i-P_S_C if i > P_S_C else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(0)
 
-        updated = alpha*total_travel_time + beta * \
+        updated = self.alpha*total_travel_time + self.beta * \
             total_deviation + self.gamma*total_infeasible
         return updated
 
@@ -150,17 +152,18 @@ class ConstructionHeuristic:
             total_deviation += reduce(
                 lambda a, b: a+b, [i-P_S_C if i > P_S_C else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(0)
 
-        objective = alpha*total_travel_time + beta * \
+        objective = self.alpha*total_travel_time + self.beta * \
             total_deviation + self.gamma*total_infeasible
 
-        print("Objective", objective)
-        print("Total travel time", total_travel_time.total_seconds())
-        print("Total deviation", total_deviation.total_seconds())
-        print("Total infeasible", total_infeasible)
+        #print("Objective", objective)
+        #print("Total travel time", total_travel_time.total_seconds())
+        #print("Total deviation", total_deviation.total_seconds())
+        #print("Total infeasible", total_infeasible)
+        return total_travel_time, total_deviation, total_infeasible
 
-    def total_objective(self, current_objective, current_infeasible, cumulative_objective, cumulative_recalibration):
-        total_objective = current_objective + cumulative_objective - len(current_infeasible) * self.gamma \
-            + cumulative_recalibration
+    def total_objective(self, current_objective, cumulative_objective, cumulative_recalibration):
+        total_objective = current_objective + \
+            cumulative_objective + cumulative_recalibration
         return total_objective
 
     def travel_matrix(self, df):
