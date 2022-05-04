@@ -71,6 +71,8 @@ def main(test_instance, test_instance_date, run):
         print("Initial objective", current_objective.total_seconds())
         print("Initial rejected", cumulative_rejected)
 
+        print("Initial objective", current_objective.total_seconds())
+        print("Initial rejected", cumulative_rejected)
         # SIMULATION
         print("Start simulation")
         sim_clock = datetime.strptime(
@@ -81,6 +83,7 @@ def main(test_instance, test_instance_date, run):
         disruption_updater = DisruptionUpdater(new_request_updater)
         first_iteration, rejected = True, []
         print("Length of disruption stack", len(simulator.disruptions_stack))
+        print(simulator.disruptions_stack)
         while len(simulator.disruptions_stack) > 0:
             start_time = datetime.now()
             prev_inf_len = cumulative_rejected
@@ -97,7 +100,6 @@ def main(test_instance, test_instance_date, run):
                 disruption_type, disruption_time, disruption_info = simulator.get_disruption(
                     current_route_plan, config("data_processed_path"), first_iteration)
                 first_iteration = False
-
             # updates before heuristic
             disrupt = (False, None)
             if disruption_type == 4:  # No disruption
@@ -185,6 +187,9 @@ def main(test_instance, test_instance_date, run):
                                                                   cumulative_recalibration, cumulative_rejected, rejection)
             df_runtime.append(
                 [run, str(disruption_type), (datetime.now() - start_time).total_seconds(), total_objective.total_seconds()])
+            print("Disruption type", str(disruption_type),
+                  total_objective.total_seconds())
+
             print("Disruption type", str(disruption_type),
                   total_objective.total_seconds())
 

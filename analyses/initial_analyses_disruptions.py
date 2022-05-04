@@ -62,55 +62,26 @@ class AnalyserDisruptions:
         df_dropoff['Diff Creation and Requested Dropoff'] = df_dropoff['Requested Dropoff Time'] - \
             df_dropoff['Request Creation Time']
 
-        '''
-        diff_dict = dict()
-        for index, row in df_request.iterrows():
-            if row['Date Creation'] in diff_dict:
-                diff_dict[row['Date Creation']].append([row['Time Creation'], row['Diff'].total_seconds()/60])
-            else:
-                diff_dict[row['Date Creation']] = []
-
-        time_dict = dict()
-        for value in diff_dict.values():
-            for v in value:
-                if v[0] in time_dict:
-                    time_dict[v[0]].append(v[1])
-                else:
-                    time_dict[v[0]] = [v[1]]
-        
-
-        hour_intervals = []
-        avg_diff = []
-        total_diff = []
-        counts_per_hour = []
-
-        print("Hour interval", '\t', "Average interval")
-        for key, value in time_dict.items():
-            mean = np.mean([c for c in value])
-            hour_intervals.append(key)
-            avg_diff.append(mean)
-            total_diff += value
-            counts_per_hour.append(len(value))
-            print(key, '\t', mean)
-        
-        total_mean = np.mean([c for c in total_diff])
-        print("Average number of minutes between requests:",total_mean)
-        plt.bar(hour_intervals,avg_diff)
-        plt.xlabel('Hour of the day')
-        plt.ylabel('Minutes between requests')
-        plt.show()
-        '''
-
         # ARRIVAL RATES
         # sort on date and time, and count how many requests for each date-time pair
         date_time_dict = dict()
-        for index, row in df_request.iterrows():
-            if (row['Date Creation'], row['Time Creation']) in date_time_dict:
-                date_time_dict[(row['Date Creation'],
-                                row['Time Creation'])] += 1
-            else:
-                date_time_dict[(row['Date Creation'],
-                                row['Time Creation'])] = 1
+        for index, row in df_pickup.iterrows():
+            if row['Diff Creation and Requested Pickup'].total_seconds()/60 <= 480:
+                if (row['Date Creation'], row['Time Creation']) in date_time_dict:
+                    date_time_dict[(row['Date Creation'],
+                                    row['Time Creation'])] += 1
+                else:
+                    date_time_dict[(row['Date Creation'],
+                                    row['Time Creation'])] = 1
+
+        for index, row in df_dropoff.iterrows():
+            if row['Diff Creation and Requested Dropoff'].total_seconds()/60 <= 480:
+                if (row['Date Creation'], row['Time Creation']) in date_time_dict:
+                    date_time_dict[(row['Date Creation'],
+                                    row['Time Creation'])] += 1
+                else:
+                    date_time_dict[(row['Date Creation'],
+                                    row['Time Creation'])] = 1
 
         # group by time across all dates and create list of how many requests per date
         time_interval_dict = dict()
@@ -132,7 +103,7 @@ class AnalyserDisruptions:
 
         print("Hour interval", '\t', "Arrival rate")
         for key, value in time_interval_dict.items():
-            if key >= 10:
+            if key >= 10 and key < 19:
                 mean = np.mean([c for c in value])
                 time_intervals.append(key)
                 arrival_rates.append(mean)
@@ -147,8 +118,9 @@ class AnalyserDisruptions:
         print("Requested Pickup Time")
         waiting_times = []
         for index, row in df_pickup.iterrows():
-            waiting_times.append(
-                row['Diff Creation and Requested Pickup'].total_seconds()/60)
+            if row['Diff Creation and Requested Pickup'].total_seconds() / 60 <= 480:
+                waiting_times.append(
+                    row['Diff Creation and Requested Pickup'].total_seconds()/60)
         sns.displot(data=waiting_times, kind="hist", bins=100)
         plt.xlabel('Number of minutes between creation and requested pickup time')
         plt.show()
@@ -161,24 +133,27 @@ class AnalyserDisruptions:
         plt.show()
 
         # find best parameters for distribution
-        xlin = np.linspace(0, 600, 50)
+        xlin = np.linspace(0, 500, 50)
 
         fit_shape, fit_loc, fit_scale = gamma.fit(waiting_times)
         print([fit_shape, fit_loc, fit_scale])
-        plt.hist(waiting_times, bins=50, density=True)
+        #plt.hist(waiting_times, bins=50, density=True)
         plt.plot(xlin, gamma.pdf(xlin, a=fit_shape,
-                 loc=fit_loc, scale=fit_scale))
+                 loc=fit_loc, scale=fit_scale), '#A0BCD4')
+        plt.xlabel('Minutes between creation and requested pick-up')
+        plt.ylabel('Probability density')
         plt.show()
 
         # probability density function time between request creation time and requested dropoff time
         print("Requested Dropoff Time")
         waiting_times = []
         for index, row in df_dropoff.iterrows():
-            waiting_times.append(
-                row['Diff Creation and Requested Dropoff'].total_seconds() / 60)
+            if row['Diff Creation and Requested Dropoff'].total_seconds() / 60 <= 480:
+                waiting_times.append(
+                    row['Diff Creation and Requested Dropoff'].total_seconds() / 60)
         sns.displot(data=waiting_times, kind="hist", bins=100)
         plt.xlabel(
-            'Number of minutes between creation and requested dropoff time')
+            'Minutes between creation and requested drop-off')
         plt.show()
 
         f = Fitter(waiting_times, distributions=[
@@ -189,13 +164,15 @@ class AnalyserDisruptions:
         plt.show()
 
         # find best parameters for distribution
-        xlin = np.linspace(0, 600, 50)
+        xlin = np.linspace(0, 500, 50)
 
         fit_shape, fit_loc, fit_scale = gamma.fit(waiting_times)
         print([fit_shape, fit_loc, fit_scale])
-        plt.hist(waiting_times, bins=50, density=True)
+        #plt.hist(waiting_times, bins=50, density=True)
         plt.plot(xlin, gamma.pdf(xlin, a=fit_shape,
-                 loc=fit_loc, scale=fit_scale))
+                 loc=fit_loc, scale=fit_scale), '#A0BCD4')
+        plt.xlabel('Minutes between creation and requested drop-off')
+        plt.ylabel('Probability density')
         plt.show()
 
     # DELAY
@@ -302,32 +279,33 @@ class AnalyserDisruptions:
         plt.ylabel('Average number of delays in time interval')
         plt.show()
 
-        # probability density function time between planned pickup and cancellation
         waiting_times = []
         for index, row in df_delay.iterrows():
             waiting_times.append(row['Delay'].total_seconds() / 60)
 
+        print("max waiting", max(waiting_times))
         sns.displot(data=waiting_times, kind="hist", bins=100)
         plt.xlabel('Delay (minutes)')
         plt.show()
 
         # find best distribution
         f = Fitter(waiting_times, distributions=[
-                   'gamma', 'lognorm', "beta", "norm"])
+                   'lognorm', "beta", "norm"])
         f.fit()
         print(f.summary())
         print(f.get_best(method='sumsquare_error'))
         plt.show()
 
         # find best parameters for distribution
-        xlin = np.linspace(0, 160, 50)
+        xlin = np.linspace(0, 140, 50)
 
         fit_a, fit_b, fit_loc, fit_scale = beta.fit(waiting_times)
         print([fit_a, fit_b, fit_loc, fit_scale])
-        plt.hist(waiting_times, bins=50, density=True)
+        #plt.hist(waiting_times, bins=50, density=True)
         plt.plot(xlin, beta.pdf(xlin, a=fit_a,
-                 b=fit_b, loc=fit_loc, scale=fit_scale))
-
+                 b=fit_b, loc=fit_loc, scale=fit_scale), '#A0BCD4')
+        plt.xlabel('Duration of delay in minutes')
+        plt.ylabel('Probability density')
         plt.show()
 
     # CANCEL
@@ -351,7 +329,6 @@ class AnalyserDisruptions:
         df_cancel['Diff'] = df_cancel['Cancellation Time'].diff()
         df_cancel['Diff Original and Cancel'] = df_cancel['Original Planned Pickup Time'] - \
             df_cancel['Cancellation Time']
-        df_cancel.to_csv(config("data_processed_path_analysis"))
 
         '''
         diff_dict = dict()
@@ -393,10 +370,11 @@ class AnalyserDisruptions:
         # sort on date and time, and count how many requests for each date-time pair
         date_time_dict = dict()
         for index, row in df_cancel.iterrows():
-            if (row['Date'], row['Time']) in date_time_dict:
-                date_time_dict[(row['Date'], row['Time'])] += 1
-            else:
-                date_time_dict[(row['Date'], row['Time'])] = 1
+            if row['Diff Original and Cancel'].total_seconds()/60 <= 480:
+                if (row['Date'], row['Time']) in date_time_dict:
+                    date_time_dict[(row['Date'], row['Time'])] += 1
+                else:
+                    date_time_dict[(row['Date'], row['Time'])] = 1
 
         # group by time across all dates and create list of how many requests per date
         time_interval_dict = dict()
@@ -432,8 +410,9 @@ class AnalyserDisruptions:
         # probability density function time between planned pickup and cancellation
         waiting_times = []
         for index, row in df_cancel.iterrows():
-            waiting_times.append(
-                row['Diff Original and Cancel'].total_seconds()/60)
+            if row['Diff Original and Cancel'].total_seconds() / 60 <= 480:
+                waiting_times.append(
+                    row['Diff Original and Cancel'].total_seconds()/60)
 
         sns.displot(data=waiting_times, kind="kde")
         sns.displot(data=waiting_times, kind="hist")
@@ -441,6 +420,26 @@ class AnalyserDisruptions:
         plt.show()
         print(min(waiting_times))
         print(np.mean(waiting_times))
+
+        # find best distribution
+        f = Fitter(waiting_times, distributions=[
+            'lognorm', "beta", "norm"])
+        f.fit()
+        print(f.summary())
+        print(f.get_best(method='sumsquare_error'))
+        plt.show()
+
+        # find best parameters for distribution
+        xlin = np.linspace(0, 500, 50)
+
+        fit_a, fit_b, fit_loc, fit_scale = beta.fit(waiting_times)
+        print([fit_a, fit_b, fit_loc, fit_scale])
+        # plt.hist(waiting_times, bins=50, density=True)
+        plt.plot(xlin, beta.pdf(xlin, a=fit_a,
+                                b=fit_b, loc=fit_loc, scale=fit_scale), '#A0BCD4')
+        plt.xlabel('Minutes between cancellation and planned pick-up')
+        plt.ylabel('Probability density')
+        plt.show()
 
     def event_per_total(self):
         df = pd.read_csv(self.data_path)
@@ -560,9 +559,9 @@ def main():
             data_path=config("data_processed_path"))
         # analyser.event_per_total()
         # analyser.no_show()
-        # analyser.cancel()
+        analyser.cancel()
         # analyser.new_request()
-        analyser.delay(5)
+        # analyser.delay(5)
 
     except Exception as e:
         print("ERROR:", e)
