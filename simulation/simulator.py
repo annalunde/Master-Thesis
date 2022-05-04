@@ -2,7 +2,6 @@ from config.main_config import *
 from simulation.poisson import *
 from config.simulation_config import *
 import random
-from random import choice
 from scipy.stats import gamma, beta
 from numpy.random import rand, seed
 import pandas as pd
@@ -175,29 +174,34 @@ class Simulator:
 
     def cancel(self, cancel, current_route_plan):
 
+        # draw duration of delay
+        cancel_time = timedelta(minutes=beta.rvs(
+            cancel_fit_a, cancel_fit_b, cancel_fit_loc, cancel_fit_scale))
+
         indices = []
 
-        # potential cancellations - pickup nodes with planned pickup after disruption time of cancellation
+        # potential cancellations - pickup nodes with planned pickup after disruption time of cancellation + cancel_time
         vehicle_index = 0
         for row in current_route_plan:
             for col in range(1, len(row)):
                 temp_rid = row[col][0]
                 s = S_W if row[col][5]["Wheelchair"] else S_P
                 temp_planned_time = row[col][1] - timedelta(minutes=s)
-                if not temp_rid % int(temp_rid) and temp_planned_time >= cancel:
+                if not temp_rid % int(temp_rid) and temp_planned_time >= cancel + cancel_time:
                     for i in range(col, len(row)):
                         if row[i][0] == temp_rid + 0.5:
                             indices.append(
-                                (vehicle_index, col, i, temp_rid, row[i][0]))
+                                (vehicle_index, col, i, temp_rid, row[i][0], temp_planned_time))
             vehicle_index += 1
 
         # check whether there are any cancellations, if not, another disruption will be chosen
         # if yes, pick a random pickup node as the cancellation
         if len(indices) > 0:
-            index = choice(indices)
-            return index[0], index[1], index[2], index[3], index[4]
+            indices.sort(reverse=False, key=lambda x: x[5])
+            return indices[0][0], indices[0][1], indices[0][2], indices[0][3], indices[0][4]
         else:
             return -1, -1, -1, -1, -1
+
 
     def no_show(self, initial_no_show, current_route_plan):
         indices, planned_pickup_times = [], []

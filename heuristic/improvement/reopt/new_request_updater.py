@@ -24,9 +24,11 @@ class NewRequestUpdater:
         self.preprocessed = copy(constructor.preprocessed)
         self.alpha = constructor.alpha
         self.beta = constructor.beta
-        self.gamma = self.alpha * 4 * \
+        self.gamma = timedelta(seconds=8400000)
+
+        """self.alpha * 4 * \
             timedelta(seconds=np.amax(self.T_ij)) + self.beta * \
-            timedelta(minutes=15) * 2 * (self.n / V)
+            timedelta(minutes=15) * 2 * (self.n / V)"""
 
     def set_parameters(self, new_request):
         updated_new_request = self.compute_pickup_time(new_request)
@@ -76,7 +78,7 @@ class NewRequestUpdater:
                         infeasible.append(n_k+1)
         return np.append(self.preprocessed, [set(infeasible)], axis=0)
 
-    def greedy_insertion_new_request(self, current_route_plan, current_infeasible_set, new_request, sim_clock, vehicle_clocks, i):
+    def greedy_insertion_new_request(self, current_route_plan, current_infeasible_set, new_request, sim_clock, vehicle_clocks, i, current_objective):
         rid = len(self.requests.index)
         route_plan = list(map(list, current_route_plan))
         infeasible_set = copy(current_infeasible_set)
@@ -89,7 +91,7 @@ class NewRequestUpdater:
             route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=None,
             index_removed=None, sim_clock=sim_clock, vehicle_clocks=vehicle_clocks,
             objectives=False, delayed=(False, None, None), still_delayed_nodes=[],
-            prev_objective=self.current_objective)
+            prev_objective=current_objective)
 
         rejection = False if (rid, request) not in infeasible_set else True
         infeasible_set = [] if rejection else infeasible_set
@@ -123,9 +125,10 @@ class NewRequestUpdater:
             total_deviation + self.gamma*total_infeasible
         return updated
 
-    def total_objective(self, current_objective, cumulative_objective, cumulative_recalibration):
+    def total_objective(self, current_objective, cumulative_objective, cumulative_recalibration, cumulative_rejected, rejection):
+        cum_rej = cumulative_rejected if not rejection else cumulative_rejected - 1
         total_objective = current_objective + \
-            cumulative_objective + cumulative_recalibration
+            cumulative_objective + cumulative_recalibration + self.gamma*cum_rej
         return total_objective
 
     def travel_matrix(self, df):

@@ -35,9 +35,11 @@ class ConstructionHeuristic:
         self.preprocessed = self.preprocess_requests()
         self.alpha = alpha
         self.beta = beta
-        self.gamma = self.alpha * 4 * \
+        self.gamma = timedelta(seconds=8400000)
+
+        """self.alpha * 4 * \
             timedelta(seconds=np.amax(self.T_ij)) + self.beta * \
-            timedelta(minutes=15) * 2 * (self.n / V)
+            timedelta(minutes=15) * 2 * (self.n / V)"""
 
     def compute_pickup_time(self, requests):
         requests["Requested Pickup Time"] = pd.to_datetime(
@@ -101,6 +103,8 @@ class ConstructionHeuristic:
 
             # update current objective
             self.current_objective = new_objective
+
+            prev_objective = new_objective
 
             rid += 1
         return route_plan, self.current_objective, self.infeasible_set
