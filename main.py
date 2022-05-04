@@ -15,7 +15,7 @@ from heuristic.improvement.reopt.disruption_updater import DisruptionUpdater
 from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
 
 
-def main(test_instance, test_instance_date):
+def main(test_instance, test_instance_date, run):
     constructor, simulator = None, None
 
     try:
@@ -67,7 +67,7 @@ def main(test_instance, test_instance_date):
         current_objective -= delta_dev_objective
 
         df_runtime.append(
-            ["Initial", (datetime.now() - start_time).total_seconds(), current_objective.total_seconds()])
+            [run, "Initial", (datetime.now() - start_time).total_seconds(), current_objective.total_seconds()])
         print("Initial objective", current_objective.total_seconds())
         print("Initial rejected", cumulative_rejected)
 
@@ -131,7 +131,7 @@ def main(test_instance, test_instance_date):
                             break
                 current_infeasible_set = []
                 df_reqs.append(
-                    [rid, (datetime.now() - start_time).total_seconds()])
+                    [run, rid, (datetime.now() - start_time).total_seconds()])
             else:
                 current_route_plan, vehicle_clocks = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
@@ -184,7 +184,7 @@ def main(test_instance, test_instance_date):
                                                                   cumulative_objective,
                                                                   cumulative_recalibration, cumulative_rejected, rejection)
             df_runtime.append(
-                [str(disruption_type), (datetime.now() - start_time).total_seconds(), total_objective.total_seconds()])
+                [run, str(disruption_type), (datetime.now() - start_time).total_seconds(), total_objective.total_seconds()])
             print("Disruption type", str(disruption_type),
                   total_objective.total_seconds())
 
@@ -208,7 +208,7 @@ def main(test_instance, test_instance_date):
 
 if __name__ == "__main__":
     """
-    # Profiling
+    # Profilinga
     profile = Profile()
     cProfile.run('main()', 'profiling/restats')
     profile.display()
@@ -221,15 +221,22 @@ if __name__ == "__main__":
         test_instance_d[4:6] + "-" + \
         test_instance_d[6:8] + " 10:00:00"
     print("Test instance:", test_instance)
-    df_runtime, df_req_runtime = main(test_instance, test_instance_date)
+
+    runs = 5
+    df_requests_runs, df_runtime_runs = [], []
+    for run in range(runs):
+        df_runtime, df_req_runtime = main(
+            test_instance, test_instance_date, run)
+        df_requests_runs.append(df_req_runtime)
+        df_runtime_runs.append(df_runtime)
 
     df_track_req_runtime = pd.DataFrame(
-        df_req_runtime, columns=["Request", "Response Time"])
+        df_requests_runs, columns=["Run", "Request", "Response Time"])
     df_track_req_runtime.to_csv(
         config("run_path") + test_instance + "runtime_reqs" + ".csv")
 
     df_track_runtime = pd.DataFrame(
-        df_runtime, columns=["Disruption Type", "Solution Time", "Objective"])
+        df_runtime_runs, columns=["Run", "Disruption Type", "Solution Time", "Objective"])
     df_track_runtime.to_csv(config("run_path") +
                             test_instance + "disruption_time" + ".csv")
     print("DONE WITH ALL RUNS")
