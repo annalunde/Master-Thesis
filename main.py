@@ -68,6 +68,8 @@ def main(test_instance, test_instance_date):
 
         df_runtime.append(
             ["Initial", (datetime.now() - start_time).total_seconds(), current_objective.total_seconds()])
+        print("Initial objective", current_objective.total_seconds())
+        print("Initial rejected", cumulative_rejected)
 
         # SIMULATION
         print("Start simulation")
@@ -113,7 +115,7 @@ def main(test_instance, test_instance_date):
                     cumulative_objective) + copy(updated_objective) - copy(filter_objective)
                 current_route_plan, current_objective, current_infeasible_set, vehicle_clocks, rejection, rid = new_request_updater.\
                     greedy_insertion_new_request(
-                        current_route_plan, current_infeasible_set, disruption_info, disruption_time, vehicle_clocks, i)
+                        current_route_plan, current_infeasible_set, disruption_info, disruption_time, vehicle_clocks, i, filter_objective)
                 disruption_type = str(disruption_type) + "_False"
                 if rejection:
                     disruption_type = str(disruption_type) + "_True"
@@ -122,7 +124,7 @@ def main(test_instance, test_instance_date):
                     for i in range(1, N_R+1):
                         current_route_plan, current_objective, current_infeasible_set, vehicle_clocks, rejection, rid = new_request_updater.\
                             greedy_insertion_new_request(
-                                current_route_plan, current_infeasible_set, disruption_info, disruption_time, vehicle_clocks, i)
+                                current_route_plan, current_infeasible_set, disruption_info, disruption_time, vehicle_clocks, i, filter_objective)
                         if not rejection:
                             rejected.remove(rid)
                             cumulative_rejected -= 1
@@ -174,15 +176,17 @@ def main(test_instance, test_instance_date):
                         current_route_plan, disruption_info, still_delayed_nodes)
 
                     delta_dev_objective = new_request_updater.get_delta_objective(
-                        current_route_plan, [], current_objective)
+                        current_route_plan, current_infeasible_set, current_objective)
                     cumulative_recalibration += delta_dev_objective
                     current_objective -= delta_dev_objective
 
             total_objective = new_request_updater.total_objective(current_objective,
                                                                   cumulative_objective,
-                                                                  cumulative_recalibration)
+                                                                  cumulative_recalibration, cumulative_rejected, rejection)
             df_runtime.append(
                 [str(disruption_type), (datetime.now() - start_time).total_seconds(), total_objective.total_seconds()])
+            print("Disruption type", str(disruption_type),
+                  total_objective.total_seconds())
 
         print("End simulation")
         print("Rejected rids", rejected)
@@ -216,7 +220,7 @@ if __name__ == "__main__":
     test_instance_date = test_instance_d[0:4] + "-" + \
         test_instance_d[4:6] + "-" + \
         test_instance_d[6:8] + " 10:00:00"
-
+    print("Test instance:", test_instance)
     df_runtime, df_req_runtime = main(test_instance, test_instance_date)
 
     df_track_req_runtime = pd.DataFrame(

@@ -102,6 +102,8 @@ class ConstructionHeuristic:
             # update current objective
             self.current_objective = new_objective
 
+            prev_objective = new_objective
+
             rid += 1
         return route_plan, self.current_objective, self.infeasible_set
 

@@ -135,6 +135,10 @@ class ALNS:
                     len(self.destroy_operators), dtype=np.float16), np.zeros(
                     len(self.repair_operators), dtype=np.float16)
 
+        if delayed[0]:
+            still_delayed_nodes = self.filter_still_delayed(
+                delayed, best, initial_route_plan)
+
         return best, best_objective, best_infeasible_set, still_delayed_nodes
 
     def set_operators(self, operators):
