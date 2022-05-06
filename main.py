@@ -71,8 +71,6 @@ def main(test_instance, test_instance_date, run):
         print("Initial objective", current_objective.total_seconds())
         print("Initial rejected", cumulative_rejected)
 
-        print("Initial objective", current_objective.total_seconds())
-        print("Initial rejected", cumulative_rejected)
         # SIMULATION
         print("Start simulation")
         sim_clock = datetime.strptime(
@@ -83,7 +81,6 @@ def main(test_instance, test_instance_date, run):
         disruption_updater = DisruptionUpdater(new_request_updater)
         first_iteration, rejected = True, []
         print("Length of disruption stack", len(simulator.disruptions_stack))
-        print(simulator.disruptions_stack)
         while len(simulator.disruptions_stack) > 0:
             start_time = datetime.now()
             prev_inf_len = cumulative_rejected
@@ -190,9 +187,6 @@ def main(test_instance, test_instance_date, run):
             print("Disruption type", str(disruption_type),
                   total_objective.total_seconds())
 
-            print("Disruption type", str(disruption_type),
-                  total_objective.total_seconds())
-
         print("End simulation")
         print("Rejected rids", rejected)
 
@@ -232,16 +226,16 @@ if __name__ == "__main__":
     for run in range(runs):
         df_runtime, df_req_runtime = main(
             test_instance, test_instance_date, run)
-        df_requests_runs.append(df_req_runtime)
-        df_runtime_runs.append(df_runtime)
+        df_requests_runs.append(pd.DataFrame(df_req_runtime, columns=[
+            "Run", "Request", "Response Time"]))
+        df_runtime_runs.append(pd.DataFrame(df_runtime, columns=[
+            "Run", "Disruption Type", "Solution Time", "Objective"]))
 
-    df_track_req_runtime = pd.DataFrame(
-        df_requests_runs, columns=["Run", "Request", "Response Time"])
+    df_track_req_runtime = pd.concat(df_requests_runs)
     df_track_req_runtime.to_csv(
         config("run_path") + test_instance + "runtime_reqs" + ".csv")
 
-    df_track_runtime = pd.DataFrame(
-        df_runtime_runs, columns=["Run", "Disruption Type", "Solution Time", "Objective"])
+    df_track_runtime = pd.concat(df_runtime_runs)
     df_track_runtime.to_csv(config("run_path") +
-                            test_instance + "disruption_time" + ".csv")
+                            test_instance + "computational_time" + ".csv")
     print("DONE WITH ALL RUNS")

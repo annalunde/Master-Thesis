@@ -83,5 +83,5 @@ destruction_degree = 0.4
 
 
 # Running data
-#"test_instance_small_1_20210703", "test_instance_small_2_20210724", "test_instance_small_3_20210918", "test_instance_medium_1_20210706", "test_instance_medium_2_20210830", "test_instance_medium_3_20211015", "test_instance_large_1_20211005", "test_instance_large_2_20211014", "test_instance_large_3_20220112"
-test_instance = "test_instance_large_2_20211014"
+# "comp_instance_1_20220110", "comp_instance_2_20211007","comp_instance_3_20211215"
+test_instance = "comp_instance_3_20211215"
