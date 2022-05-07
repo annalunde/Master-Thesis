@@ -4,6 +4,7 @@ import numpy.random as rnd
 from math import ceil
 from numpy import log
 from config.main_config import *
+from datetime import datetime, timedelta
 from heuristic.improvement.destroy_repair_updater import Destroy_Repair_Updater
 
 
@@ -25,7 +26,8 @@ class ALNS:
         self.destroy_repair_updater = Destroy_Repair_Updater(constructor)
 
     # Run ALNS algorithm
-    def iterate(self, num_iterations, z, disrupted, index_removed, disruption_time, delayed, reopt):
+    def iterate(self, num_iterations, z, disrupted, index_removed, disruption_time, delayed, reopt, df_operators, run):
+
         N_U = N_U_reopt if reopt else N_U_init
         weights = np.asarray(self.weights, dtype=np.float16)
         best, current_route_plan, initial_route_plan = list(map(list, self.route_plan)), list(
@@ -49,6 +51,8 @@ class ALNS:
                 current_route_plan, index_removed, disruption_time)
 
         for i in range(num_iterations):
+            start_time = datetime.now()
+            updated_now = False
             already_found = False
             still_delayed_nodes = []
 
@@ -111,7 +115,7 @@ class ALNS:
             # After a certain number of iterations, update weight
             if (i+1) % ceil(num_iterations * N_U) == 0:
                 # Update weights with scores
-
+                updated_now = False
                 for destroy in range(len(d_weights)):
                     if d_count[destroy] == 0:
                         continue
@@ -135,11 +139,14 @@ class ALNS:
                     len(self.destroy_operators), dtype=np.float16), np.zeros(
                     len(self.repair_operators), dtype=np.float16)
 
+            df_operators.append([run, not reopt, i, d_operator, r_operator, d_weights[destroy], r_weights[repair], d_scores[destroy],
+                                 r_scores[repair], d_count[destroy], r_count[repair], (datetime.now() - start_time).total_seconds(), updated_now])
+
         if delayed[0]:
             still_delayed_nodes = self.filter_still_delayed(
                 delayed, best, initial_route_plan)
 
-        return best, best_objective, best_infeasible_set, still_delayed_nodes
+        return df_operators, best, best_objective, best_infeasible_set, still_delayed_nodes
 
     def set_operators(self, operators):
         # Add destroy operators

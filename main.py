@@ -21,7 +21,7 @@ def main(test_instance, test_instance_date, run):
     try:
         # TRACKING
         start_time = datetime.now()
-        df_runtime, df_reqs = [], []
+        df_operators = []
 
         # CUMULATIVE OBJECTIVE
         cumulative_rejected, cumulative_recalibration, cumulative_objective = 0, timedelta(
@@ -47,8 +47,8 @@ def main(test_instance, test_instance_date, run):
         # Run ALNS
         delayed = (False, None, None)
 
-        current_route_plan, current_objective, current_infeasible_set, _ = alns.iterate(
-            initial_iterations, initial_Z, None, None, None, delayed, False)
+        df_operators, current_route_plan, current_objective, current_infeasible_set, _ = alns.iterate(
+            initial_iterations, initial_Z, None, None, None, delayed, False, df_operators, run)
 
         if current_infeasible_set:
             cumulative_rejected = len(current_infeasible_set)
@@ -66,8 +66,6 @@ def main(test_instance, test_instance_date, run):
         cumulative_recalibration += delta_dev_objective
         current_objective -= delta_dev_objective
 
-        df_runtime.append(
-            [run, "Initial", (datetime.now() - start_time).total_seconds(), current_objective.total_seconds()])
         print("Initial objective", current_objective.total_seconds())
         print("Initial rejected", cumulative_rejected)
 
@@ -129,8 +127,7 @@ def main(test_instance, test_instance_date, run):
                             cumulative_rejected -= 1
                             break
                 current_infeasible_set = []
-                df_reqs.append(
-                    [run, rid, (datetime.now() - start_time).total_seconds()])
+
             else:
                 current_route_plan, vehicle_clocks = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
@@ -166,8 +163,8 @@ def main(test_instance, test_instance_date, run):
                 alns.set_operators(operators)
 
                 # Run ALNS
-                current_route_plan, current_objective, current_infeasible_set, still_delayed_nodes = alns.iterate(
-                    reopt_iterations, reopt_Z, disrupt[0], disrupt[1], disruption_time, delayed, True)
+                df_operators, current_route_plan, current_objective, current_infeasible_set, still_delayed_nodes = alns.iterate(
+                    reopt_iterations, reopt_Z, disrupt[0], disrupt[1], disruption_time, delayed, True, df_operators, run)
 
                 if delayed[0]:
                     delay_deltas[-1] = delay_deltas[-1] - current_objective
@@ -182,8 +179,7 @@ def main(test_instance, test_instance_date, run):
             total_objective = new_request_updater.total_objective(current_objective,
                                                                   cumulative_objective,
                                                                   cumulative_recalibration, cumulative_rejected, rejection)
-            df_runtime.append(
-                [run, str(disruption_type), (datetime.now() - start_time).total_seconds(), total_objective.total_seconds()])
+
             print("Disruption type", str(disruption_type),
                   total_objective.total_seconds())
 
@@ -202,7 +198,7 @@ def main(test_instance, test_instance_date, run):
         print("File name: ", filename)
         print("Line number: ", line_number)
 
-    return df_runtime, df_reqs
+    return df_operators
 
 
 if __name__ == "__main__":
@@ -222,20 +218,15 @@ if __name__ == "__main__":
     print("Test instance:", test_instance)
 
     runs = 5
-    df_requests_runs, df_runtime_runs = [], []
+    df_operators_runs = []
     for run in range(runs):
-        df_runtime, df_req_runtime = main(
+        df_operators = main(
             test_instance, test_instance_date, run)
-        df_requests_runs.append(pd.DataFrame(df_req_runtime, columns=[
-            "Run", "Request", "Response Time"]))
-        df_runtime_runs.append(pd.DataFrame(df_runtime, columns=[
-            "Run", "Disruption Type", "Solution Time", "Objective"]))
+        df_operators.append(pd.DataFrame(df_req_runtime, columns=[
+            "Run", "Initial", "Iteration", "Destroy Operator", "Repair Operator", "Destroy Weight", "Repair Weight", "Update destroy weight score", "Update repair weight score", "Repair Used", "Destroy Used", "Runtime", "Updated this round"]))
 
-    df_track_req_runtime = pd.concat(df_requests_runs)
-    df_track_req_runtime.to_csv(
+    df_operators_runs = pd.concat(df_operators)
+    df_operators_runs.to_csv(
         config("run_path") + test_instance + "runtime_reqs" + ".csv")
 
-    df_track_runtime = pd.concat(df_runtime_runs)
-    df_track_runtime.to_csv(config("run_path") +
-                            test_instance + "computational_time" + ".csv")
     print("DONE WITH ALL RUNS")
