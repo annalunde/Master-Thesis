@@ -15,7 +15,7 @@ from heuristic.improvement.reopt.disruption_updater import DisruptionUpdater
 from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
 
 
-def main(test_instance, test_instance_date, run):
+def main(test_instance, test_instance_date, run, repair_removed, destroy_removed):
     constructor, simulator = None, None
 
     try:
@@ -42,7 +42,7 @@ def main(test_instance, test_instance_date, run):
 
         operators = Operators(alns)
 
-        alns.set_operators(operators)
+        alns.set_operators(operators, repair_removed, destroy_removed)
 
         # Run ALNS
         delayed = (False, None, None)
@@ -160,7 +160,7 @@ def main(test_instance, test_instance_date, run):
                 operators = ReOptOperators(
                     alns, disruption_time, vehicle_clocks)
 
-                alns.set_operators(operators)
+                alns.set_operators(operators, repair_removed, destroy_removed)
 
                 # Run ALNS
                 df_operators, current_route_plan, current_objective, current_infeasible_set, still_delayed_nodes = alns.iterate(
@@ -221,12 +221,28 @@ if __name__ == "__main__":
     df_operators_runs = []
     for run in range(runs):
         df_operators = main(
-            test_instance, test_instance_date, run)
+            test_instance, test_instance_date, run, repair_removed, destroy_removed)
         df_operators_runs.append(pd.DataFrame(df_operators, columns=[
-            "Run", "Initial", "Iteration", "Destroy Operator", "Repair Operator", "Destroy Weight", "Repair Weight", "Update destroy weight score", "Update repair weight score", "Repair Used", "Destroy Used", "Runtime", "Updated this round"]))
+            "Run", "Initial", "Iteration", "Destroy Operator", "Repair Operator", "Destroy Weight", "Repair Weight", "Update destroy weight score", "Update repair weight score", "Repair Used", "Destroy Used", "Runtime", "Updated this round", "Objective"]))
 
-    df_operators_runs = pd.concat(df_operators)
-    df_operators_runs.to_csv(
-        config("run_path") + test_instance + "_impact_operators" + ".csv")
+    df_operators_total = pd.concat(df_operators_runs)
+    df_operators_total.to_csv(
+        config("run_path") + test_instance + "_impact_removed_repair:" + repair_removed + "_impact_removed_destroy:" + destroy_removed + ".csv")
 
     print("DONE WITH ALL RUNS")
+
+"""
+TODO:
+    - Add index to removed repair operator:
+        - None = none removed 
+        - 0 = greedy_repair
+        - 1 = regret_2_repair
+        - 2 = regret_3_repair
+    - Add index to removed destroy operator:
+        - None = none removed
+        - 0 = random_removal
+        - 1 = time_related_removal
+        - 2 = distance_related_removal
+        - 3 = related_removal
+        - 4 = worst_deviation_removal
+"""

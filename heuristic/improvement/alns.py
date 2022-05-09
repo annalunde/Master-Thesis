@@ -140,7 +140,7 @@ class ALNS:
                     len(self.repair_operators), dtype=np.float16)
 
             df_operators.append([run, not reopt, i, d_operator, r_operator, d_weights[destroy], r_weights[repair], d_scores[destroy],
-                                 r_scores[repair], d_count[destroy], r_count[repair], (datetime.now() - start_time).total_seconds(), updated_now])
+                                 r_scores[repair], d_count[destroy], r_count[repair], (datetime.now() - start_time).total_seconds(), updated_now, best_objective])
 
         if delayed[0]:
             still_delayed_nodes = self.filter_still_delayed(
@@ -148,18 +148,22 @@ class ALNS:
 
         return df_operators, best, best_objective, best_infeasible_set, still_delayed_nodes
 
-    def set_operators(self, operators):
+    def set_operators(self, operators, repair_removed, destroy_removed):
         # Add destroy operators
         self.add_destroy_operator(operators.random_removal)
         self.add_destroy_operator(operators.time_related_removal)
         self.add_destroy_operator(operators.distance_related_removal)
         self.add_destroy_operator(operators.related_removal)
         self.add_destroy_operator(operators.worst_deviation_removal)
+        if destroy_removed is not None:
+            self.destroy_operators.pop(destroy_removed)
 
         # Add repair operators
         self.add_repair_operator(operators.greedy_repair)
         self.add_repair_operator(operators.regret_2_repair)
         self.add_repair_operator(operators.regret_3_repair)
+        if repair_removed is not None:
+            self.repair_operators.pop(repair_removed)
 
     # Add operator to the heuristic instance
 
@@ -170,13 +174,13 @@ class ALNS:
         self.repair_operators.append(operator)
 
     # Select destroy/repair operator
-    @staticmethod
+    @ staticmethod
     def select_operator(operators, weights, rnd_state):
         w = weights / np.sum(weights)
         a = [i for i in range(len(operators))]
         return rnd_state.choice(a=a, p=w)
 
-    @staticmethod
+    @ staticmethod
     def filter_still_delayed(delayed, current_route_plan, initial_route_plan):
         initial_delayed_nodes = [i[0]
                                  for i in initial_route_plan[delayed[1]][delayed[2]:]]
