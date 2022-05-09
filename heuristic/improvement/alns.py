@@ -115,7 +115,7 @@ class ALNS:
             # After a certain number of iterations, update weight
             if (i+1) % ceil(num_iterations * N_U) == 0:
                 # Update weights with scores
-                updated_now = False
+                updated_now = True
                 for destroy in range(len(d_weights)):
                     if d_count[destroy] == 0:
                         continue
