@@ -222,11 +222,11 @@ if __name__ == "__main__":
     for run in range(runs):
         df_operators = main(
             test_instance, test_instance_date, run)
-        df_operators.append(pd.DataFrame(df_req_runtime, columns=[
+        df_operators_runs.append(pd.DataFrame(df_operators, columns=[
             "Run", "Initial", "Iteration", "Destroy Operator", "Repair Operator", "Destroy Weight", "Repair Weight", "Update destroy weight score", "Update repair weight score", "Repair Used", "Destroy Used", "Runtime", "Updated this round"]))
 
     df_operators_runs = pd.concat(df_operators)
     df_operators_runs.to_csv(
-        config("run_path") + test_instance + "runtime_reqs" + ".csv")
+        config("run_path") + test_instance + "_impact_operators" + ".csv")
 
     print("DONE WITH ALL RUNS")

@@ -23,17 +23,18 @@ class Destroy_Repair_Updater:
             new_dict = {k: v for k, v in index_removed_requests.items()
                         if k[0] == row and k[1] < c}
             removed_counter = sum([len(i[1]) for i in new_dict.items()])
-            left_idx = None if c == 0 else first_element[2] - \
-                1 - removed_counter
+            left_idx = None if first_element[2] == 0 else first_element[2] - \
+                1
+            left_idx = left_idx if c == 0 else left_idx - removed_counter
             right_idx = first_element[2] if c == 0 else first_element[2] - \
                 removed_counter
 
             left_node = None if left_idx == None else vehicle_route[left_idx]
-            right_node = vehicle_route[right_idx] if right_idx != len(
-                vehicle_route) else None
+            right_node = None if right_idx >= len(
+                vehicle_route) or right_idx < 0 else vehicle_route[right_idx]
 
             if left_node and left_node[0] == 0 and disruption_time is None:
-                if right_idx != len(vehicle_route):
+                if right_idx is not None:
                     s = S_W if right_node[5]["Wheelchair"] else S_P
                     service_time_depot = right_node[1] + timedelta(minutes=s) - \
                         self.heuristic.travel_time(
