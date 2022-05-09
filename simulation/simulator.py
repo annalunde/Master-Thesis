@@ -31,8 +31,7 @@ class Simulator:
             arrival_rate_cancel, self.sim_clock, 2)
         initial_no_show = self.poisson.disruption_times(
             arrival_rate_no_show, self.sim_clock, 3)
-        #disruption_stack = request + delay + cancel + initial_no_show
-        disruption_stack = request
+        disruption_stack = request + delay + cancel + initial_no_show
         disruption_stack.sort(reverse=True, key=lambda x: x[1])
         return disruption_stack
 

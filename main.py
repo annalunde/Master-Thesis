@@ -217,17 +217,22 @@ if __name__ == "__main__":
         test_instance_d[6:8] + " 10:00:00"
     print("Test instance:", test_instance)
 
-    runs = 5
+    repair_removed = None
+    destroy_removed = None
+    runs = 1
     df_operators_runs = []
     for run in range(runs):
         df_operators = main(
             test_instance, test_instance_date, run, repair_removed, destroy_removed)
         df_operators_runs.append(pd.DataFrame(df_operators, columns=[
-            "Run", "Initial", "Iteration", "Destroy Operator", "Repair Operator", "Destroy Weight", "Repair Weight", "Update destroy weight score", "Update repair weight score", "Repair Used", "Destroy Used", "Runtime", "Updated this round", "Objective"]))
+            "Run", "Initial", "Iteration", "Destroy Operator", "Repair Operator", "Destroy Weight", "Repair Weight", "Update destroy weight score", "Update repair weight score", "Destroy Used", "Repair Used", "Runtime", "Updated this round", "Best Objective"]))
 
     df_operators_total = pd.concat(df_operators_runs)
     df_operators_total.to_csv(
-        config("run_path") + test_instance + "_impact_removed_repair:" + repair_removed + "_impact_removed_destroy:" + destroy_removed + ".csv")
+        config("run_path") + test_instance + "run: " + "1" + ".csv")
+
+    # df_operators_total.to_csv(
+    #    config("run_path") + test_instance + "_impact_removed_repair:" + repair_removed + "_impact_removed_destroy:" + destroy_removed + ".csv")
 
     print("DONE WITH ALL RUNS")
 

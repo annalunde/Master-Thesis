@@ -109,8 +109,8 @@ class ALNS:
 
             if not already_found:
                 # Update scores
-                d_scores[destroy] += weight_score
-                r_scores[repair] += weight_score
+                d_scores[destroy] += weights[weight_score]
+                r_scores[repair] += weights[weight_score]
 
             # After a certain number of iterations, update weight
             if (i+1) % ceil(num_iterations * N_U) == 0:
