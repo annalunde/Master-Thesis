@@ -56,27 +56,27 @@ initial_iterations = 100
 reopt_iterations = 100
 
 # Weight of ride time in objective function
-alpha = 1
+alpha = 2
 
 # Weight of deviation in objective function
 beta = 100
 
 # Start temperature control parameter
-initial_Z = 0.3
-reopt_Z = 0.3
+initial_Z = 0.8
+reopt_Z = 0.8
 
 # Cooling rate
-cooling_rate = 0.96
+cooling_rate = 0.98
 
 # Weight scores
-weights = [10, 5, 1, 0]
+weights = [15, 10, 5, 0]
 
 # Reaction factor
-reaction_factor = 0.6
+reaction_factor = 0.7
 
 # Number of destroy/repair pairs before updating weights in initial
-N_U_init = 0.3
-N_U_reopt = 0.3
+N_U_init = 0.2
+N_U_reopt = 0.2
 
 # Destruction degree
 destruction_degree = 0.4
@@ -84,4 +84,9 @@ destruction_degree = 0.4
 
 # Running data
 # "comp_instance_1_20220110", "comp_instance_2_20211007","comp_instance_3_20211215"
-test_instance = "comp_instance_1_20220110"
+
+# "test_instance_small_1_20210703", "test_instance_small_2_20210724", "test_instance_small_3_20210918",
+# "test_instance_medium_1_20210706",test_instance_medium_2_20210830", "test_instance_medium_3_20211015",
+# "test_instance_large_1_20211005","test_instance_large_2_20211014", "test_instance_large_3_20220112"
+test_instances = ["test_instance_small_1_20210703", "test_instance_small_2_20210724", "test_instance_small_3_20210918", "test_instance_medium_1_20210706", "test_instance_medium_2_20210830", "test_instance_medium_3_20211015", "test_instance_large_1_20211005",
+                  "test_instance_large_2_20211014", "test_instance_large_3_20220112"]
