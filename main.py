@@ -103,7 +103,7 @@ if __name__ == "__main__":
                 test_instance_d[6:8] + " 10:00:00"
     """
     runs = 10
-    print("Cooling rate:", cooling_rate)
+    print("Batch:", N_U_init)
 
     for test_instance in test_instances:
         tracking = []
@@ -117,6 +117,6 @@ if __name__ == "__main__":
 
         df_tracking = pd.DataFrame(
             tracking, columns=["Run", "Current Objective", "Solution Time", "Rejected", "Norm Rejected Objective", "Norm Deviation Objective", "Norm Ride Time Objective"])
-        df_tracking.to_csv(config("tuning_path") + "param_tuning_" + str(cooling_rate) +
+        df_tracking.to_csv(config("tuning_path") + "param_tuning_batch_" + str(N_U_init) +
                            "_" + test_instance + ".csv")  # Path:  param_tuning_iterations_instance
     print("DONE WITH ALL RUNS")

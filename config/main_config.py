@@ -62,21 +62,21 @@ alpha = 2
 beta = 100
 
 # Start temperature control parameter
-initial_Z = 0.8
-reopt_Z = 0.8
+initial_Z = 0.6
+reopt_Z = 0.6
 
 # Cooling rate
-cooling_rate = 0.98
+cooling_rate = 0.96
 
 # Weight scores
-weights = [15, 10, 5, 0]
+weights = [10, 5, 1, 0]
 
 # Reaction factor
 reaction_factor = 0.7
 
 # Number of destroy/repair pairs before updating weights in initial
-N_U_init = 0.2
-N_U_reopt = 0.2
+N_U_init = 0.6
+N_U_reopt = 0.6
 
 # Destruction degree
 destruction_degree = 0.4
