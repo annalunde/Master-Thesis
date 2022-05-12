@@ -21,12 +21,12 @@ class ReOptRepairGenerator:
 
         for introduced_vehicle in self.introduced_vehicles:
             # generate all possible insertions
-            if len(route_plan[introduced_vehicle]) == 1:
+            if len(route_plan[introduced_vehicle]) == 1 and route_plan[introduced_vehicle][0][0] == 0:
                 # it is trivial to add the new request
                 temp_route_plan = list(map(list, route_plan))
                 temp_route_plan[introduced_vehicle], depot_check = self.add_initial_nodes(
                     request=request, introduced_vehicle=introduced_vehicle, rid=rid,
-                    vehicle_route=temp_route_plan[introduced_vehicle], depot=True, sim_clock=sim_clock)
+                    vehicle_route=temp_route_plan[introduced_vehicle], depot=True, sim_clock=vehicle_clocks[introduced_vehicle])
 
                 if depot_check:
                     break
@@ -601,7 +601,7 @@ class ReOptRepairGenerator:
                 rid-1, 2*self.heuristic.n + introduced_vehicle, True)
             if service_time >= sim_clock:
                 vehicle_route.append(
-                    (0, service_time, None, 0, 0, None))
+                    (0, sim_clock, None, 0, 0, None))
                 vehicle_route.append(
                     (rid,
                      request["Requested Pickup Time"] +
@@ -643,7 +643,7 @@ class ReOptRepairGenerator:
             service_time = request["Requested Pickup Time"] + timedelta(minutes=s) - self.heuristic.travel_time(
                 rid-1, 2*self.heuristic.n + introduced_vehicle, True)
             if service_time >= sim_clock:
-                vehicle_route[0] = (0, service_time, None, 0, 0, None)
+                vehicle_route[0] = (0, sim_clock, None, 0, 0, None)
                 vehicle_route.insert(
                     1, (rid, request["Requested Pickup Time"] + timedelta(minutes=s), timedelta(0),
                         request["Number of Passengers"], request["Wheelchair"], request)
