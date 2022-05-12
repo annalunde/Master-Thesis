@@ -133,7 +133,8 @@ class DisruptionUpdater:
 
     def filter_route_plan(self, current_route_plan, vehicle_clocks, disruption_info):
         route_plan = list(map(list, current_route_plan))
-        before_filtering = len(route_plan[disruption_info[0]])
+        before_filtering = len(
+            route_plan[disruption_info[0]]) if disruption_info is not None else 0
         for idx in range(len(route_plan)):
             vehicle_route = route_plan[idx]
             vehicle_clock = vehicle_clocks[idx]
@@ -162,4 +163,5 @@ class DisruptionUpdater:
                 filtered_vehicle_route) else [(0, vehicle_clock, None, 0, 0, None)]
             if idx == disruption_info[0]:
                 after_filtering = len(route_plan[disruption_info[0]])
+        after_filtering = 0 if disruption_info is None else after_filtering
         return route_plan, before_filtering - after_filtering
