@@ -103,7 +103,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             if disruption_type == 4:  # No disruption
                 continue
             elif disruption_type == 0:  # Disruption: new request
-                current_route_plan, vehicle_clocks = disruption_updater.update_route_plan(
+                current_route_plan, vehicle_clocks, artificial_depot = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
                 updated_objective = new_request_updater.new_objective(
                     current_route_plan, [], False)
@@ -134,7 +134,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                     [run, rid, (datetime.now() - start_time).total_seconds()])
 
             else:
-                current_route_plan, vehicle_clocks = disruption_updater.update_route_plan(
+                current_route_plan, vehicle_clocks, artificial_depot = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
                 updated_objective = new_request_updater.new_objective(
                     current_route_plan, [], False)
@@ -149,6 +149,8 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                 if disruption_type == 2 or disruption_type == 3:  # Disruption: cancel or no show
                     index_removed = [(disruption_info[3], disruption_info[0], disruption_info[1]),
                                      (disruption_info[4], disruption_info[0], disruption_info[2])]
+                    index_removed[0] = (
+                        None, None, None) if artificial_depot or disruption_type == 3 else index_removed[0]
                     disrupt = (True, index_removed)
                 elif disruption_type == 1:  # Disruption: delay
                     delayed = (True, disruption_info[0], disruption_info[1])

@@ -67,7 +67,7 @@ class DisruptionUpdater:
             # remove dropoff node
             del updated_route_plan[disruption_info[0]][disruption_info[2]]
 
-        return updated_route_plan, vehicle_clocks
+        return updated_route_plan, vehicle_clocks, artificial_depot
 
     def update_with_delay(self, current_route_plan, disruption_info):
         delay_duration = disruption_info[2]

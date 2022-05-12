@@ -25,7 +25,8 @@ class Destroy_Repair_Updater:
             removed_counter = sum([len(i[1]) for i in new_dict.items()])
             left_idx = None if first_element[2] == 0 else first_element[2] - \
                 1
-            left_idx = left_idx if c == 0 else left_idx - removed_counter
+            if left_idx is not None:
+                left_idx = left_idx if c == 0 else left_idx - removed_counter
             right_idx = first_element[2] if c == 0 else first_element[2] - \
                 removed_counter
 
@@ -200,7 +201,7 @@ class Destroy_Repair_Updater:
 
     def filter_indexes(self, index_removed_requests):
         bundles = dict()  # (row, counter) --> sequences([(node,row,col),...])
-        rows = set([i[1] for i in index_removed_requests])
+        rows = set([i[1] for i in index_removed_requests if i[1] is not None])
         for row in rows:
             values = [x for x in index_removed_requests if x[1] == row]
             values.sort(key=lambda x: x[2])
