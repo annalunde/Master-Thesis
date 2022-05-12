@@ -136,10 +136,11 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             else:
                 current_route_plan, vehicle_clocks, artificial_depot = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
+                before_route_plan = list(map(list, current_route_plan))
                 updated_objective = new_request_updater.new_objective(
                     current_route_plan, [], False)
-                current_route_plan = disruption_updater.filter_route_plan(
-                    current_route_plan, vehicle_clocks)  # Filter route plan
+                current_route_plan, removed_filtering = disruption_updater.filter_route_plan(
+                    current_route_plan, vehicle_clocks, disruption_info)  # Filter route plan
                 filter_objective = new_request_updater.new_objective(
                     current_route_plan, [], False)
                 cumulative_objective = copy(
@@ -147,15 +148,16 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                 current_objective = new_request_updater.new_objective(
                     current_route_plan, current_infeasible_set, False)
                 if disruption_type == 2 or disruption_type == 3:  # Disruption: cancel or no show
-                    index_removed = [(disruption_info[3], disruption_info[0], disruption_info[1]),
-                                     (disruption_info[4], disruption_info[0], disruption_info[2])]
+                    index_removed = [(disruption_info[3], disruption_info[0], disruption_info[1] - removed_filtering),
+                                     (disruption_info[4], disruption_info[0], disruption_info[2] - removed_filtering)]
                     index_removed[0] = (
                         None, None, None) if artificial_depot or disruption_type == 3 else index_removed[0]
                     disrupt = (True, index_removed)
                 elif disruption_type == 1:  # Disruption: delay
-                    delayed = (True, disruption_info[0], disruption_info[1])
+                    node_idx = next(i for i, (node, *_) in enumerate(current_route_plan[disruption_info[0]]) if
+                                    node == disruption_info[3])
+                    delayed = (True, disruption_info[0], node_idx)
                     delay_deltas.append(current_objective)
-
             if not rejection:
                 # Heuristic
                 criterion = SimulatedAnnealing(cooling_rate)

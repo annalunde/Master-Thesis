@@ -98,7 +98,7 @@ class DisruptionUpdater:
         vehicle_clocks = []
         for vehicle_route in current_route_plan:
             if len(vehicle_route) > 1:
-                if vehicle_route[0][1] < sim_clock:
+                if vehicle_route[0][1] <= sim_clock:
                     prev_idx = 0
                     for idx, (node, time, deviation, passenger, wheelchair, _) in enumerate(vehicle_route):
                         if time <= sim_clock:
@@ -131,8 +131,9 @@ class DisruptionUpdater:
             vehicle_route_temp + vehicle_route[dropoff_id:]
         return vehicle_route_result
 
-    def filter_route_plan(self, current_route_plan, vehicle_clocks):
+    def filter_route_plan(self, current_route_plan, vehicle_clocks, disruption_info):
         route_plan = list(map(list, current_route_plan))
+        before_filtering = len(route_plan[disruption_info[0]])
         for idx in range(len(route_plan)):
             vehicle_route = route_plan[idx]
             vehicle_clock = vehicle_clocks[idx]
@@ -159,4 +160,6 @@ class DisruptionUpdater:
                         filtered_vehicle_route.insert(0, i[1])
             route_plan[idx] = filtered_vehicle_route if len(
                 filtered_vehicle_route) else [(0, vehicle_clock, None, 0, 0, None)]
-        return route_plan
+            if idx == disruption_info[0]:
+                after_filtering = len(route_plan[disruption_info[0]])
+        return route_plan, before_filtering - after_filtering

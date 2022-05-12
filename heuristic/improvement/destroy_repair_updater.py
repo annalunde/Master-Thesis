@@ -123,7 +123,6 @@ class Destroy_Repair_Updater:
 
                 updated_solution[row] = vehicle_route
 
-        tid = 2
         return updated_solution
 
     def update_backward(self, vehicle_route, start_idx, push_backward, disruption_time):

@@ -50,10 +50,10 @@ class Simulator:
                 disruption_info = None
 
         elif disruption_type == 1:
-            delay_vehicle_index, delay_rid_index, duration_delay = self.delay(
+            delay_vehicle_index, delay_rid_index, duration_delay, delay_rid = self.delay(
                 disruption_time, current_route_plan)
             disruption_info = (delay_vehicle_index,
-                               delay_rid_index, duration_delay)
+                               delay_rid_index, duration_delay, delay_rid)
             if delay_rid_index < 0:
                 disruption_type = 4
                 disruption_info = None
@@ -149,7 +149,7 @@ class Simulator:
         delay = timedelta(minutes=beta.rvs(
             delay_fit_a, delay_fit_b, delay_fit_loc, delay_fit_scale))
 
-        rids_indices, planned_times, vehicle_indices = [], [], []
+        rids_indices, planned_times, vehicle_indices, rids = [], [], [], []
 
         # potential delays - nodes with planned pickup time after initial_delay
         vehicle_index = 0
@@ -161,6 +161,7 @@ class Simulator:
                     rids_indices.append(col)
                     planned_times.append(temp_planned_time)
                     vehicle_indices.append(vehicle_index)
+                    rids.append(row[col][0])
             vehicle_index += 1
 
         # check whether there are any delays, if not, another disruption type will be chosen
@@ -171,9 +172,10 @@ class Simulator:
                 temp_actual_disruption_time)]
             vehicle_index = vehicle_indices[planned_times.index(
                 temp_actual_disruption_time)]
-            return vehicle_index, rid_index, delay
+            rid = rids[planned_times.index(temp_actual_disruption_time)]
+            return vehicle_index, rid_index, delay, rid
         else:
-            return -1, -1, -1
+            return -1, -1, -1, -1
 
     def cancel(self, cancel, current_route_plan):
         seed(int(cancel.timestamp()))
