@@ -107,8 +107,8 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                     current_route_plan, disruption_type, disruption_info, disruption_time)
                 updated_objective = new_request_updater.new_objective(
                     current_route_plan, [], False)
-                current_route_plan = disruption_updater.filter_route_plan(
-                    current_route_plan, vehicle_clocks, disruption_info)  # Filter route plan
+                current_route_plan, removed_filtering = disruption_updater.filter_route_plan(
+                    current_route_plan, vehicle_clocks, None)  # Filter route plan
                 filter_objective = new_request_updater.new_objective(
                     current_route_plan, [], False)
                 cumulative_objective = copy(
