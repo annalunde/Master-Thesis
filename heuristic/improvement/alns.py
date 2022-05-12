@@ -112,7 +112,6 @@ class ALNS:
                 d_scores[destroy] += weights[weight_score]
                 r_scores[repair] += weights[weight_score]
 
-            """
             # After a certain number of iterations, update weight
             if (i+1) % ceil(num_iterations * N_U) == 0:
                 # Update weights with scores
@@ -139,7 +138,7 @@ class ALNS:
                 d_count, r_count = np.zeros(
                     len(self.destroy_operators), dtype=np.float16), np.zeros(
                     len(self.repair_operators), dtype=np.float16)
-            """
+
             df_operators.append([run, not reopt, i, d_operator, r_operator, d_weights[destroy], r_weights[repair], d_scores[destroy],
                                  r_scores[repair], d_count[destroy], r_count[repair], (datetime.now() - start_time).total_seconds(), updated_now, best_objective])
 
