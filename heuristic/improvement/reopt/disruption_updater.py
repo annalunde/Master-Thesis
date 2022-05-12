@@ -161,7 +161,7 @@ class DisruptionUpdater:
                         filtered_vehicle_route.insert(0, i[1])
             route_plan[idx] = filtered_vehicle_route if len(
                 filtered_vehicle_route) else [(0, vehicle_clock, None, 0, 0, None)]
-            if idx == disruption_info[0]:
+            if disruption_info is not None and idx == disruption_info[0]:
                 after_filtering = len(route_plan[disruption_info[0]])
         after_filtering = 0 if disruption_info is None else after_filtering
         return route_plan, before_filtering - after_filtering
