@@ -127,8 +127,16 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                             cumulative_rejected -= 1
                             break
                 current_infeasible_set = []
-                df_reqs.append(
-                    [rid, disruption_time, disruption_info])
+                df_req_runtime.append(
+                    [rid, disruption_time,
+                     disruption_info.iloc[0]['Requested Pickup Time'],
+                     disruption_info.iloc[0]['Requested Dropoff Time'],
+                     disruption_info.iloc[0]['Wheelchair'],
+                     disruption_info.iloc[0]['Number of Passengers'],
+                     disruption_info.iloc[0]['Origin Lat'],
+                     disruption_info.iloc[0]['Origin Lng'],
+                     disruption_info.iloc[0]['Destination Lat'],
+                     disruption_info.iloc[0]['Destination Lng']])
 
             else:
                 current_route_plan, vehicle_clocks, artificial_depot = disruption_updater.update_route_plan(
@@ -231,7 +239,8 @@ if __name__ == "__main__":
         df_cancel, df_req_runtime = main(
             test_instance, test_instance_date, run, repair_removed, destroy_removed)
         df_requests_runs.append(pd.DataFrame(df_req_runtime, columns=[
-            "Rid", "Request Creation Time", "Request Info"]))
+            "Rid", "Request Creation Time", "Requested Pickup Time", "Requested Dropoff Time", "Wheelchair",
+            "Number of Passengers", "Origin Lat", "Origin Lng", "Destination Lat", "Destination Lng"]))
 
         df_cancel_runs.append(pd.DataFrame(df_cancel, columns=[
             "Cancelation Time", "pickup rid", "dropoff rid"]))
