@@ -21,7 +21,8 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
     try:
         # TRACKING
         start_time = datetime.now()
-        df_cancel, df_req_runtime = [], []
+        df_run = []
+        cost_per_trip_passengers, cost_per_trip_hours, cost_per_trip_vehicles, ride_sharing_passengers, ride_sharing_arcs = 0, 0, 0, 0, 0
 
         # CUMULATIVE OBJECTIVE
         cumulative_rejected, cumulative_recalibration, cumulative_objective = 0, timedelta(
@@ -35,6 +36,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
 
         # IMPROVEMENT OF INITIAL SOLUTION
+        """
         criterion = SimulatedAnnealing(cooling_rate)
 
         alns = ALNS(weights, reaction_factor, initial_route_plan, initial_objective, initial_infeasible_set, criterion,
@@ -49,6 +51,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
 
         current_route_plan, current_objective, current_infeasible_set, _ = alns.iterate(
             initial_iterations, initial_Z, None, None, None, delayed, False, run)
+        """
 
         if current_infeasible_set:
             cumulative_rejected = len(current_infeasible_set)
@@ -66,9 +69,13 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         cumulative_recalibration += delta_dev_objective
         current_objective -= delta_dev_objective
 
+        ride_sharing_passengers, ride_sharing_arcs = ride_sharing(
+            current_route_plan, ride_sharing_passengers, ride_sharing_arcs)
+
         print("Initial objective", current_objective.total_seconds())
         print("Initial rejected", cumulative_rejected)
 
+        # TODO: ha med initial i tracking?
         # SIMULATION
         print("Start simulation")
         sim_clock = datetime.strptime(
@@ -104,7 +111,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                     current_route_plan, disruption_type, disruption_info, disruption_time)
                 updated_objective = new_request_updater.new_objective(
                     current_route_plan, [], False)
-                current_route_plan, removed_filtering = disruption_updater.filter_route_plan(
+                current_route_plan, removed_filtering, filtered_away = disruption_updater.filter_route_plan(
                     current_route_plan, vehicle_clocks, None)  # Filter route plan
                 filter_objective = new_request_updater.new_objective(
                     current_route_plan, [], False)
@@ -127,16 +134,6 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                             cumulative_rejected -= 1
                             break
                 current_infeasible_set = []
-                df_req_runtime.append(
-                    [rid, disruption_time,
-                     disruption_info.iloc[0]['Requested Pickup Time'],
-                     disruption_info.iloc[0]['Requested Dropoff Time'],
-                     disruption_info.iloc[0]['Wheelchair'],
-                     disruption_info.iloc[0]['Number of Passengers'],
-                     disruption_info.iloc[0]['Origin Lat'],
-                     disruption_info.iloc[0]['Origin Lng'],
-                     disruption_info.iloc[0]['Destination Lat'],
-                     disruption_info.iloc[0]['Destination Lng']])
 
             else:
                 current_route_plan, vehicle_clocks, artificial_depot = disruption_updater.update_route_plan(
@@ -144,7 +141,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                 before_route_plan = list(map(list, current_route_plan))
                 updated_objective = new_request_updater.new_objective(
                     current_route_plan, [], False)
-                current_route_plan, removed_filtering = disruption_updater.filter_route_plan(
+                current_route_plan, removed_filtering, filtered_away = disruption_updater.filter_route_plan(
                     current_route_plan, vehicle_clocks, disruption_info)  # Filter route plan
                 filter_objective = new_request_updater.new_objective(
                     current_route_plan, [], False)
@@ -158,14 +155,19 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                     index_removed[0] = (
                         None, None, None) if artificial_depot or disruption_type == 3 else index_removed[0]
                     disrupt = (True, index_removed)
-                    if disruption_type == 2:
-                        df_cancel.append(
-                            [disruption_time, disruption_info[3], disruption_info[4]])
                 elif disruption_type == 1:  # Disruption: delay
                     node_idx = next(i for i, (node, *_) in enumerate(current_route_plan[disruption_info[0]]) if
                                     node == disruption_info[3])
                     delayed = (True, disruption_info[0], node_idx)
                     delay_deltas.append(current_objective)
+
+            ride_sharing_passengers, ride_sharing_arcs = ride_sharing(
+                filtered_away, ride_sharing_passengers, ride_sharing_arcs)
+            if len(simulator.disruptions_stack) == 0:
+                ride_sharing_passengers, ride_sharing_arcs = ride_sharing(
+                    current_route_plan, ride_sharing_passengers, ride_sharing_arcs)
+
+            """
             if not rejection:
                 # Heuristic
                 criterion = SimulatedAnnealing(cooling_rate)
@@ -181,7 +183,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
 
                 # Run ALNS
                 current_route_plan, current_objective, current_infeasible_set, still_delayed_nodes = alns.iterate(
-                    reopt_iterations, reopt_Z, disrupt[0], disrupt[1], disruption_time, delayed, True,  run)
+                    reopt_iterations, reopt_Z, disrupt[0], disrupt[1], disruption_time, delayed, True, run)
 
                 if delayed[0]:
                     delay_deltas[-1] = delay_deltas[-1] - current_objective
@@ -192,10 +194,13 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                         current_route_plan, current_infeasible_set, current_objective)
                     cumulative_recalibration += delta_dev_objective
                     current_objective -= delta_dev_objective
-
+            """
             total_objective = new_request_updater.total_objective(current_objective,
                                                                   cumulative_objective,
                                                                   cumulative_recalibration, cumulative_rejected, rejection)
+            ride_sharing = ide_sharing_passengers / ride_sharing_arcs
+            df_run.append([run, total_objective.total_seconds(), cumulative_rejected,
+                          deviation_objective.total_seconds(), ride_time_objective.total_seconds(), ride_sharing])
 
         print("End simulation")
         print("Rejected rids", rejected)
@@ -212,7 +217,20 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         print("File name: ", filename)
         print("Line number: ", line_number)
 
-    return df_cancel, df_req_runtime
+    return df_run
+
+
+@staticmethod
+def ride_sharing(current_route_plan, ride_sharing_passengers, ride_sharing_arcs):
+    vehicles = len(current_route_plan)
+    for vehicle in range(vehicles):
+        vehicle_route = current_route_plan[vehicle]
+        for node in vehicle_route:
+            ride_sharing_passengers += node[3]
+            ride_sharing_passengers += node[4]
+            ride_sharing_arcs += 1
+    ride_sharing_arcs = ride_sharing_arcs - 1
+    return ride_sharing_passengers, ride_sharing_arcs
 
 
 if __name__ == "__main__":
@@ -233,25 +251,17 @@ if __name__ == "__main__":
 
     repair_removed = None
     destroy_removed = None
-    runs = 1
-    df_requests_runs, df_cancel_runs = [], []
+    runs = 5
+    df_runs = []
     for run in range(runs):
-        df_cancel, df_req_runtime = main(
+        df_run = main(
             test_instance, test_instance_date, run, repair_removed, destroy_removed)
-        df_requests_runs.append(pd.DataFrame(df_req_runtime, columns=[
-            "Rid", "Request Creation Time", "Requested Pickup Time", "Requested Dropoff Time", "Wheelchair",
-            "Number of Passengers", "Origin Lat", "Origin Lng", "Destination Lat", "Destination Lng"]))
+        df_runs.append(pd.DataFrame(df_run, columns=[
+            "Run", "Current Objective", "Solution Time", "Rejected", "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))  # TODO
 
-        df_cancel_runs.append(pd.DataFrame(df_cancel, columns=[
-            "Cancelation Time", "pickup rid", "dropoff rid"]))
-
-    df_track_req_runtime = pd.concat(df_requests_runs)
-    df_track_req_runtime.to_csv(
-        config("run_path") + "regular_w_disrupt_info" + test_instance + "runtime_reqs" + ".csv")
-
-    df_cancel_total = pd.concat(df_cancel_runs)
-    df_cancel_total.to_csv(
-        config("run_path") + "regular_w_disrupt_info" + test_instance + "cancel_info" + ".csv")
+    df_track_run = pd.concat(df_runs)
+    df_track_run.to_csv(
+        config("run_path") + "heuristic/naive" + test_instance + "runtime_reqs" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
