@@ -21,7 +21,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
     try:
         # TRACKING
         start_time = datetime.now()
-        df_operators, df_runtime, df_reqs = [], [], []
+        df_cancel, df_req_runtime = [], []
 
         # CUMULATIVE OBJECTIVE
         cumulative_rejected, cumulative_recalibration, cumulative_objective = 0, timedelta(
@@ -47,8 +47,8 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         # Run ALNS
         delayed = (False, None, None)
 
-        df_operators, current_route_plan, current_objective, current_infeasible_set, _ = alns.iterate(
-            initial_iterations, initial_Z, None, None, None, delayed, False, df_operators, run)
+        current_route_plan, current_objective, current_infeasible_set, _ = alns.iterate(
+            initial_iterations, initial_Z, None, None, None, delayed, False, run)
 
         if current_infeasible_set:
             cumulative_rejected = len(current_infeasible_set)
@@ -65,9 +65,6 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             current_route_plan, [i for i in range(cumulative_rejected)], current_objective)
         cumulative_recalibration += delta_dev_objective
         current_objective -= delta_dev_objective
-
-        df_runtime.append(
-            [run, "Initial", (datetime.now() - start_time).total_seconds(), current_objective.total_seconds()])
 
         print("Initial objective", current_objective.total_seconds())
         print("Initial rejected", cumulative_rejected)
@@ -131,7 +128,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                             break
                 current_infeasible_set = []
                 df_reqs.append(
-                    [run, rid, (datetime.now() - start_time).total_seconds()])
+                    [rid, disruption_time, disruption_info])
 
             else:
                 current_route_plan, vehicle_clocks, artificial_depot = disruption_updater.update_route_plan(
@@ -153,6 +150,9 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                     index_removed[0] = (
                         None, None, None) if artificial_depot or disruption_type == 3 else index_removed[0]
                     disrupt = (True, index_removed)
+                    if disruption_type == 2:
+                        df_cancel.append(
+                            [disruption_time, disruption_info[3], disruption_info[4]])
                 elif disruption_type == 1:  # Disruption: delay
                     node_idx = next(i for i, (node, *_) in enumerate(current_route_plan[disruption_info[0]]) if
                                     node == disruption_info[3])
@@ -172,8 +172,8 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                 alns.set_operators(operators, repair_removed, destroy_removed)
 
                 # Run ALNS
-                df_operators, current_route_plan, current_objective, current_infeasible_set, still_delayed_nodes = alns.iterate(
-                    reopt_iterations, reopt_Z, disrupt[0], disrupt[1], disruption_time, delayed, True, df_operators, run)
+                current_route_plan, current_objective, current_infeasible_set, still_delayed_nodes = alns.iterate(
+                    reopt_iterations, reopt_Z, disrupt[0], disrupt[1], disruption_time, delayed, True,  run)
 
                 if delayed[0]:
                     delay_deltas[-1] = delay_deltas[-1] - current_objective
@@ -188,9 +188,6 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             total_objective = new_request_updater.total_objective(current_objective,
                                                                   cumulative_objective,
                                                                   cumulative_recalibration, cumulative_rejected, rejection)
-
-            df_runtime.append(
-                [run, str(disruption_type), (datetime.now() - start_time).total_seconds(), total_objective.total_seconds()])
 
         print("End simulation")
         print("Rejected rids", rejected)
@@ -207,7 +204,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         print("File name: ", filename)
         print("Line number: ", line_number)
 
-    return df_operators, df_runtime, df_reqs
+    return df_cancel, df_req_runtime
 
 
 if __name__ == "__main__":
@@ -228,29 +225,24 @@ if __name__ == "__main__":
 
     repair_removed = None
     destroy_removed = None
-    runs = 5
-    df_requests_runs, df_runtime_runs, df_operators_runs = [], [], []
+    runs = 1
+    df_requests_runs, df_cancel_runs = [], []
     for run in range(runs):
-        df_operators, df_runtime, df_req_runtime = main(
+        df_cancel, df_req_runtime = main(
             test_instance, test_instance_date, run, repair_removed, destroy_removed)
         df_requests_runs.append(pd.DataFrame(df_req_runtime, columns=[
-            "Run", "Request", "Response Time"]))
-        df_runtime_runs.append(pd.DataFrame(df_runtime, columns=[
-            "Run", "Disruption Type", "Solution Time", "Objective"]))
-        df_operators_runs.append(pd.DataFrame(df_operators, columns=[
-            "Run", "Initial", "Iteration", "Destroy Operator", "Repair Operator", "Destroy Weight", "Repair Weight", "Update destroy weight score", "Update repair weight score", "Destroy Used", "Repair Used", "Runtime", "Updated this round", "Best Objective"]))
+            "Rid", "Request Creation Time", "Request Info"]))
+
+        df_cancel_runs.append(pd.DataFrame(df_cancel, columns=[
+            "Cancelation Time", "pickup rid", "dropoff rid"]))
 
     df_track_req_runtime = pd.concat(df_requests_runs)
     df_track_req_runtime.to_csv(
-        config("run_path") + "impact_of_operators" + "repair_removed:_" + str(repair_removed) + "destroy_removed:_" + str(destroy_removed) + test_instance + "runtime_reqs" + ".csv")
+        config("run_path") + "regular_w_disrupt_info" + test_instance + "runtime_reqs" + ".csv")
 
-    df_track_runtime = pd.concat(df_runtime_runs)
-    df_track_runtime.to_csv(config("run_path") + "impact_of_operators" + "repair_removed:_" + str(repair_removed) + "destroy_removed:_" + str(destroy_removed) +
-                            test_instance + "computational_time" + ".csv")
-
-    df_operators_total = pd.concat(df_operators_runs)
-    df_operators_total.to_csv(
-        config("run_path") + "impact_of_operators" + "repair_removed:_" + str(repair_removed) + "destroy_removed:_" + str(destroy_removed) + test_instance + "impact_operators" + ".csv")
+    df_cancel_total = pd.concat(df_cancel_runs)
+    df_cancel_total.to_csv(
+        config("run_path") + "regular_w_disrupt_info" + test_instance + "cancel_info" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
