@@ -13,7 +13,7 @@ from heuristic.improvement.simulated_annealing import SimulatedAnnealing
 from simulation.simulator import Simulator
 from heuristic.improvement.reopt.disruption_updater import DisruptionUpdater
 from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
-
+from measures import Measures
 
 def main(test_instance, test_instance_date, run, repair_removed, destroy_removed):
     constructor, simulator = None, None
@@ -22,7 +22,8 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         # TRACKING
         start_time = datetime.now()
         df_run = []
-        cost_per_trip_passengers, cost_per_trip_hours, cost_per_trip_vehicles, ride_sharing_passengers, ride_sharing_arcs = 0, 0, 0, 0, 0
+        cost_per_trip, ride_sharing_passengers, ride_sharing_arcs, processed_nodes, cpt = {
+            idx: (0, None) for idx in range(V)}, 0, 0, set(), 0
 
         # CUMULATIVE OBJECTIVE
         cumulative_rejected, cumulative_recalibration, cumulative_objective = 0, timedelta(
@@ -33,7 +34,8 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         constructor = ConstructionHeuristic(
             requests=df, vehicles=V, alpha=alpha, beta=beta)
         print("Constructing initial solution")
-        initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
+        current_route_plan, current_objective, current_infeasible_set = constructor.construct_initial()
+        measures = Measures()
 
         # IMPROVEMENT OF INITIAL SOLUTION
         """
@@ -68,9 +70,6 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             current_route_plan, [i for i in range(cumulative_rejected)], current_objective)
         cumulative_recalibration += delta_dev_objective
         current_objective -= delta_dev_objective
-
-        ride_sharing_passengers, ride_sharing_arcs = ride_sharing(
-            current_route_plan, ride_sharing_passengers, ride_sharing_arcs)
 
         print("Initial objective", current_objective.total_seconds())
         print("Initial rejected", cumulative_rejected)
@@ -109,6 +108,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             elif disruption_type == 0:  # Disruption: new request
                 current_route_plan, vehicle_clocks, artificial_depot = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
+                before_route_plan = list(map(list, current_route_plan))
                 updated_objective = new_request_updater.new_objective(
                     current_route_plan, [], False)
                 current_route_plan, removed_filtering, filtered_away = disruption_updater.filter_route_plan(
@@ -138,7 +138,6 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             else:
                 current_route_plan, vehicle_clocks, artificial_depot = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
-                before_route_plan = list(map(list, current_route_plan))
                 updated_objective = new_request_updater.new_objective(
                     current_route_plan, [], False)
                 current_route_plan, removed_filtering, filtered_away = disruption_updater.filter_route_plan(
@@ -161,11 +160,19 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                     delayed = (True, disruption_info[0], node_idx)
                     delay_deltas.append(current_objective)
 
-            ride_sharing_passengers, ride_sharing_arcs = ride_sharing(
-                filtered_away, ride_sharing_passengers, ride_sharing_arcs)
+            if first_iteration:
+                cost_per_trip = measures.cpt_calc(
+                    filtered_away, cost_per_trip, True, False)
+
+            ride_sharing_passengers, ride_sharing_arcs, processed_nodes = measures.ride_sharing(
+                filtered_away, ride_sharing_passengers, ride_sharing_arcs, processed_nodes)
             if len(simulator.disruptions_stack) == 0:
-                ride_sharing_passengers, ride_sharing_arcs = ride_sharing(
-                    current_route_plan, ride_sharing_passengers, ride_sharing_arcs)
+                cost_per_trip = measures.cpt_calc(
+                    filtered_away, cost_per_trip, False, True)
+                cpt = sum(elem[0]/elem[1]
+                          for elem in cost_per_trip.items())/len(cost_per_trip)
+                ride_sharing_passengers, ride_sharing_arcs, processed_nodes = measures.ride_sharing(
+                    current_route_plan, ride_sharing_passengers, ride_sharing_arcs, processed_nodes)
 
             """
             if not rejection:
@@ -198,9 +205,11 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             total_objective = new_request_updater.total_objective(current_objective,
                                                                   cumulative_objective,
                                                                   cumulative_recalibration, cumulative_rejected, rejection)
-            ride_sharing = ide_sharing_passengers / ride_sharing_arcs
+            ride_sharing = ride_sharing_passengers / ride_sharing_arcs
+            '''
             df_run.append([run, total_objective.total_seconds(), cumulative_rejected,
                           deviation_objective.total_seconds(), ride_time_objective.total_seconds(), ride_sharing])
+            '''
 
         print("End simulation")
         print("Rejected rids", rejected)
@@ -218,19 +227,6 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         print("Line number: ", line_number)
 
     return df_run
-
-
-@staticmethod
-def ride_sharing(current_route_plan, ride_sharing_passengers, ride_sharing_arcs):
-    vehicles = len(current_route_plan)
-    for vehicle in range(vehicles):
-        vehicle_route = current_route_plan[vehicle]
-        for node in vehicle_route:
-            ride_sharing_passengers += node[3]
-            ride_sharing_passengers += node[4]
-            ride_sharing_arcs += 1
-    ride_sharing_arcs = ride_sharing_arcs - 1
-    return ride_sharing_passengers, ride_sharing_arcs
 
 
 if __name__ == "__main__":
