@@ -21,7 +21,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
     try:
         # TRACKING
         start_time = datetime.now()
-        df_operators, df_runtime, df_reqs = [], [], []
+        df_runtime = []
 
         # CUMULATIVE OBJECTIVE
         cumulative_rejected, cumulative_recalibration, cumulative_objective = 0, timedelta(
@@ -47,8 +47,8 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         # Run ALNS
         delayed = (False, None, None)
 
-        df_operators, current_route_plan, current_objective, current_infeasible_set, _ = alns.iterate(
-            initial_iterations, initial_Z, None, None, None, delayed, False, df_operators, run)
+        current_route_plan, current_objective, current_infeasible_set, _ = alns.iterate(
+            initial_iterations, initial_Z, None, None, None, delayed, False, run)
 
         if current_infeasible_set:
             cumulative_rejected = len(current_infeasible_set)
@@ -130,8 +130,6 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                             cumulative_rejected -= 1
                             break
                 current_infeasible_set = []
-                df_reqs.append(
-                    [run, rid, (datetime.now() - start_time).total_seconds()])
 
             else:
                 current_route_plan, vehicle_clocks, artificial_depot = disruption_updater.update_route_plan(
@@ -172,8 +170,8 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                 alns.set_operators(operators, repair_removed, destroy_removed)
 
                 # Run ALNS
-                df_operators, current_route_plan, current_objective, current_infeasible_set, still_delayed_nodes = alns.iterate(
-                    reopt_iterations, reopt_Z, disrupt[0], disrupt[1], disruption_time, delayed, True, df_operators, run)
+                current_route_plan, current_objective, current_infeasible_set, still_delayed_nodes = alns.iterate(
+                    reopt_iterations, reopt_Z, disrupt[0], disrupt[1], disruption_time, delayed, True,  run)
 
                 if delayed[0]:
                     delay_deltas[-1] = delay_deltas[-1] - current_objective
@@ -207,7 +205,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         print("File name: ", filename)
         print("Line number: ", line_number)
 
-    return df_operators, df_runtime, df_reqs
+    return df_runtime
 
 
 if __name__ == "__main__":
@@ -229,31 +227,16 @@ if __name__ == "__main__":
     repair_removed = None
     destroy_removed = None
     runs = 5
-    df_requests_runs, df_runtime_runs, df_operators_runs = [], [], []
+    df_runtime_runs = []
     for run in range(runs):
-        df_operators, df_runtime, df_req_runtime = main(
+        df_runtime = main(
             test_instance, test_instance_date, run, repair_removed, destroy_removed)
-        df_requests_runs.append(pd.DataFrame(df_req_runtime, columns=[
-            "Run", "Request", "Response Time"]))
         df_runtime_runs.append(pd.DataFrame(df_runtime, columns=[
             "Run", "Disruption Type", "Solution Time", "Objective"]))
-        df_operators_runs.append(pd.DataFrame(df_operators, columns=[
-            "Run", "Initial", "Iteration", "Destroy Operator", "Repair Operator", "Destroy Weight", "Repair Weight", "Update destroy weight score", "Update repair weight score", "Destroy Used", "Repair Used", "Runtime", "Updated this round", "Best Objective"]))
-
-    df_track_req_runtime = pd.concat(df_requests_runs)
-    df_track_req_runtime.to_csv(
-        config("run_path") + test_instance + "runtime_reqs" + ".csv")
 
     df_track_runtime = pd.concat(df_runtime_runs)
     df_track_runtime.to_csv(config("run_path") +
                             test_instance + "computational_time" + ".csv")
-
-    df_operators_total = pd.concat(df_operators_runs)
-    df_operators_total.to_csv(
-        config("run_path") + test_instance + "impact_operators" + ".csv")
-
-    # df_operators_total.to_csv(
-    #    config("run_path") + test_instance + "_impact_removed_repair:" + repair_removed + "_impact_removed_destroy:" + destroy_removed + ".csv")
 
     print("DONE WITH ALL RUNS")
 
