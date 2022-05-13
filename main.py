@@ -242,18 +242,15 @@ if __name__ == "__main__":
 
     df_track_req_runtime = pd.concat(df_requests_runs)
     df_track_req_runtime.to_csv(
-        config("run_path") + test_instance + "runtime_reqs" + ".csv")
+        config("run_path") + "value_of_adapt" + test_instance + "runtime_reqs" + ".csv")
 
     df_track_runtime = pd.concat(df_runtime_runs)
-    df_track_runtime.to_csv(config("run_path") +
+    df_track_runtime.to_csv(config("run_path") + "value_of_adapt" +
                             test_instance + "computational_time" + ".csv")
 
     df_operators_total = pd.concat(df_operators_runs)
     df_operators_total.to_csv(
-        config("run_path") + test_instance + "impact_operators" + ".csv")
-
-    # df_operators_total.to_csv(
-    #    config("run_path") + test_instance + "_impact_removed_repair:" + repair_removed + "_impact_removed_destroy:" + destroy_removed + ".csv")
+        config("run_path") + "value_of_adapt"+test_instance + "impact_operators" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
