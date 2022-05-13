@@ -235,7 +235,7 @@ if __name__ == "__main__":
             "Run", "Disruption Type", "Solution Time", "Objective"]))
 
     df_track_runtime = pd.concat(df_runtime_runs)
-    df_track_runtime.to_csv(config("run_path") +
+    df_track_runtime.to_csv(config("run_path") + "N_R" +
                             test_instance + "computational_time" + ".csv")
 
     print("DONE WITH ALL RUNS")
