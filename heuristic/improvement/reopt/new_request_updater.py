@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from copy import copy
-from math import radians
+from math import radians, ceil
 from functools import reduce
 from config.main_config import *
 from sklearn.metrics.pairwise import haversine_distances
@@ -79,8 +79,9 @@ class NewRequestUpdater:
         route_plan = list(map(list, current_route_plan))
         infeasible_set = copy(current_infeasible_set)
         request = self.requests.iloc[-1]
+        frac = U_D if i % 2 else L_D
         request["Requested Pickup Time"] = request["Requested Pickup Time"] + \
-            i*U_D
+            ceil(i/2)*frac if i > 0 else request["Requested Pickup Time"]
 
         self.re_opt_repair_generator.greedy = True
         route_plan, new_objective, infeasible_set, vehicle_clocks = self.re_opt_repair_generator.generate_insertions(
