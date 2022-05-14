@@ -164,6 +164,7 @@ class ALNS:
         self.add_repair_operator(operators.regret_2_repair)
         self.add_repair_operator(operators.regret_3_repair)
         if repair_removed is not None:
+            print("Repair", self.repair_operators)
             for idx in repair_removed:
                 self.repair_operators.pop(idx)
 
