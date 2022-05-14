@@ -156,7 +156,7 @@ class ConstructionHeuristic:
 
         objective = self.alpha*total_travel_time + self.beta * \
             total_deviation + self.gamma*total_infeasible
-
+        total_infeasible = self.gamma*total_infeasible
         #print("Objective", objective)
         #print("Total travel time", total_travel_time.total_seconds())
         #print("Total deviation", total_deviation.total_seconds())

@@ -119,13 +119,13 @@ class NewRequestUpdater:
                 lambda a, b: a+b, [i-P_S_R if i > P_S_R else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(0)
         updated = self.alpha*total_travel_time + self.beta * \
             total_deviation + self.gamma*total_infeasible
-        return updated
+        return updated, total_travel_time, total_deviation, self.gamma*total_infeasible
 
     def total_objective(self, current_objective, cumulative_objective, cumulative_recalibration, cumulative_rejected, rejection):
         cum_rej = cumulative_rejected if not rejection else cumulative_rejected - 1
         total_objective = current_objective + \
             cumulative_objective + cumulative_recalibration + self.gamma*cum_rej
-        return total_objective
+        return total_objective, self.gamma*cum_rej
 
     def travel_matrix(self, df):
         # Lat and lon for each request
