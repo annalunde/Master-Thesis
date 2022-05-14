@@ -28,7 +28,8 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
 
         # CUMULATIVE OBJECTIVE
         cumulative_rejected, cumulative_recalibration, cumulative_objective, cumulative_travel_time, \
-        cumulative_deviation = 0, timedelta(0), timedelta(0), timedelta(0), timedelta(0)
+            cumulative_deviation = 0, timedelta(
+                0), timedelta(0), timedelta(0), timedelta(0)
 
         # CONSTRUCTION OF INITIAL SOLUTION
         df = pd.read_csv(config(test_instance))
@@ -86,7 +87,6 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         print("Initial objective", current_objective.total_seconds())
         print("Initial rejected", cumulative_rejected)
 
-        # TODO: ha med initial i tracking?
         # SIMULATION
         print("Start simulation")
         sim_clock = datetime.strptime(
@@ -221,27 +221,27 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             total_objective, rejected_objective = new_request_updater.total_objective(current_objective, cumulative_objective,
                                                                                       cumulative_recalibration, cumulative_rejected, rejection)
 
-            _, current_travel_time, current_deviation, _ = new_request_updater.norm_objective(current_route_plan, [], False)
+            _, current_travel_time, current_deviation, _ = new_request_updater.norm_objective(
+                current_route_plan, [], False)
 
-            cumulative_deviation = copy(cumulative_deviation) + copy(cumulative_recalibration)/new_request_updater.beta
+            cumulative_deviation = copy(
+                cumulative_deviation) + copy(cumulative_recalibration)/new_request_updater.beta
 
-            ride_time_objective = copy(cumulative_travel_time) + copy(current_travel_time)
-            deviation_objective = copy(cumulative_deviation) + copy(current_deviation)
+            ride_time_objective = copy(
+                cumulative_travel_time) + copy(current_travel_time)
+            deviation_objective = copy(
+                cumulative_deviation) + copy(current_deviation)
 
-            # TODO: har ikke current dev og current total ride times
-            ride_sharing = ride_sharing_passengers / ride_sharing_arcs
-            cost_per_trip = dict(
-                filter(lambda elem: elem[0] > 0, cost_per_trip.items()))
-            cpt = sum(elem[0]/((elem[2] - elem[1]).total_seconds()/3600)
-                      for elem in cost_per_trip.items())/len(cost_per_trip)
-            """
-            ride_time_objective, deviation_objective, rejected_objective = constructor.print_objective(
-            current_route_plan, [i for i in range(cumulative_rejected)])
+            ride_sharing = ride_sharing_passengers / \
+                ride_sharing_arcs if ride_sharing_arcs > 0 else 0
+            cost_per_trip_filtered = dict(
+                filter(lambda elem: elem[1][0] > 0, cost_per_trip.items()))
+            cpt = sum(elem[1][0]/((elem[1][2] - elem[1][1]).total_seconds()/3600)
+                      for elem in cost_per_trip_filtered.items())/len(cost_per_trip_filtered)
 
-            """
             df_run.append([run, str(disruption_type), total_objective.total_seconds(), (datetime.now() - start_time).total_seconds(), cumulative_rejected, rejected_objective.total_seconds(),
                           deviation_objective.total_seconds(), ride_time_objective.total_seconds(), ride_sharing, cpt])
-            # TODO:rejected objective, cumulative_recal/deviation_objective, ride_time
+
         print("End simulation")
         print("Rejected rids", rejected)
 
