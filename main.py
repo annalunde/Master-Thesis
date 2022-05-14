@@ -226,8 +226,8 @@ if __name__ == "__main__":
         test_instance_d[6:8] + " 10:00:00"
     print("Test instance:", test_instance)
 
-    repair_removed = None
-    destroy_removed = None
+    repair_removed = [1, 2]
+    destroy_removed = [1, 3]
     runs = 5
     df_requests_runs, df_runtime_runs, df_operators_runs = [], [], []
     for run in range(runs):
@@ -245,12 +245,12 @@ if __name__ == "__main__":
         config("run_path") + "impact_of_operators" + "repair_removed:_" + str(repair_removed) + "destroy_removed:_" + str(destroy_removed) + test_instance + "runtime_reqs" + ".csv")
 
     df_track_runtime = pd.concat(df_runtime_runs)
-    df_track_runtime.to_csv(config("run_path") + "impact_of_operators" + "repair_removed:_" + str(repair_removed) + "destroy_removed:_" + str(destroy_removed) +
+    df_track_runtime.to_csv(config("run_path") + "impact_of_operators:" + "repair_removed:_" + str(repair_removed) + "destroy_removed:_" + str(destroy_removed) +
                             test_instance + "computational_time" + ".csv")
 
     df_operators_total = pd.concat(df_operators_runs)
     df_operators_total.to_csv(
-        config("run_path") + "impact_of_operators" + "repair_removed:_" + str(repair_removed) + "destroy_removed:_" + str(destroy_removed) + test_instance + "impact_operators" + ".csv")
+        config("run_path") + "impact_of_operators:" + "repair_removed:_" + str(repair_removed) + "destroy_removed:_" + str(destroy_removed) + test_instance + "impact_operators" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
