@@ -119,6 +119,31 @@ class NewRequestUpdater:
                 lambda a, b: a+b, [i-P_S_R if i > P_S_R else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(0)
         updated = self.alpha*total_travel_time + self.beta * \
             total_deviation + self.gamma*total_infeasible
+        return updated
+
+    def norm_objective(self, new_routeplan, new_infeasible_set, greedy):
+        total_deviation, total_travel_time = timedelta(
+            minutes=0), timedelta(minutes=0)
+        total_infeasible = len(new_infeasible_set)
+        for vehicle, vehicle_route in enumerate(new_routeplan):
+            if len(vehicle_route) >= 2:
+                for i in range(len(vehicle_route) - 1):
+                    sn = vehicle_route[i][0]
+                    en = vehicle_route[i+1][0]
+                    sn_mod = sn % int(sn) if sn else 0
+                    en_mod = en % int(en)
+                    start_id = int(
+                        sn - 0.5 - 1 + self.n if sn_mod else sn - 1) if sn else 2 * self.n + vehicle
+                    end_id = int(en - 0.5 - 1 + self.n if en_mod else en - 1)
+                    total_travel_time += self.travel_time(
+                        start_id, end_id, False)
+
+            pen_dev = [j if j > timedelta(
+                0) else -j for j in [i[2] for i in vehicle_route if i[2] is not None]]
+            total_deviation += reduce(
+                lambda a, b: a+b, [i-P_S_R if i > P_S_R else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(0)
+        updated = self.alpha*total_travel_time + self.beta * \
+            total_deviation + self.gamma*total_infeasible
         return updated, total_travel_time, total_deviation, self.gamma*total_infeasible
 
     def total_objective(self, current_objective, cumulative_objective, cumulative_recalibration, cumulative_rejected, rejection):
