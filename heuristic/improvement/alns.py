@@ -156,6 +156,7 @@ class ALNS:
         self.add_destroy_operator(operators.related_removal)
         self.add_destroy_operator(operators.worst_deviation_removal)
         if destroy_removed is not None:
+            destroy_removed.sort(key=lambda x: x, reverse=True)
             for idx in destroy_removed:
                 self.destroy_operators.pop(idx)
 
@@ -164,7 +165,7 @@ class ALNS:
         self.add_repair_operator(operators.regret_2_repair)
         self.add_repair_operator(operators.regret_3_repair)
         if repair_removed is not None:
-            print("Repair", self.repair_operators)
+            repair_removed.sort(key=lambda x: x, reverse=True)
             for idx in repair_removed:
                 self.repair_operators.pop(idx)
 
