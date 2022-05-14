@@ -226,8 +226,8 @@ if __name__ == "__main__":
         test_instance_d[6:8] + " 10:00:00"
     print("Test instance:", test_instance)
 
-    repair_removed = [1, 2]
-    destroy_removed = [1, 3]
+    repair_removed = [0]
+    destroy_removed = [0, 2]
     runs = 5
     df_requests_runs, df_runtime_runs, df_operators_runs = [], [], []
     for run in range(runs):
