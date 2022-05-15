@@ -132,7 +132,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                 cumulative_travel_time = copy(
                     cumulative_travel_time) + copy(updated_travel_time) - copy(filter_travel_time)
                 cumulative_deviation = copy(
-                    cumulative_deviation) + copy(updated_deviation) - copy(filter_travel_time)
+                    cumulative_deviation) + copy(updated_deviation) - copy(filter_deviation)
                 current_route_plan, current_objective, current_infeasible_set, vehicle_clocks, rejection, rid = new_request_updater.\
                     greedy_insertion_new_request(
                         current_route_plan, current_infeasible_set, disruption_info, disruption_time, vehicle_clocks, i, filter_objective)
@@ -289,7 +289,7 @@ if __name__ == "__main__":
 
     df_track_run = pd.concat(df_runs)
     df_track_run.to_csv(
-        config("run_path") + "heuristic/naive" + test_instance + "runtime_reqs" + ".csv")
+        config("run_path") + "naive:" + str(naive) + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
