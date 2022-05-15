@@ -274,13 +274,16 @@ if __name__ == "__main__":
     test_instance_date = test_instance_d[0:4] + "-" + \
         test_instance_d[4:6] + "-" + \
         test_instance_d[6:8] + " 10:00:00"
-    print("Test instance:", test_instance)
 
     naive = True
     repair_removed = None
     destroy_removed = None
     runs = 5
     df_runs = []
+
+    print("Test instance:", test_instance)
+    print("Naive:", naive)
+
     for run in range(runs):
         df_run = main(
             test_instance, test_instance_date, run, repair_removed, destroy_removed, naive)
@@ -289,7 +292,7 @@ if __name__ == "__main__":
 
     df_track_run = pd.concat(df_runs)
     df_track_run.to_csv(
-        config("run_path") + "heuristic/naive" + test_instance + "runtime_reqs" + ".csv")
+        config("run_path") + "naive:" + str(naive) + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
