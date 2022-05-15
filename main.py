@@ -133,7 +133,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                 cumulative_travel_time = copy(
                     cumulative_travel_time) + copy(updated_travel_time) - copy(filter_travel_time)
                 cumulative_deviation = copy(
-                    cumulative_deviation) + copy(updated_deviation) - copy(filter_travel_time)
+                    cumulative_deviation) + copy(updated_deviation) - copy(filter_deviation)
                 current_route_plan, current_objective, current_infeasible_set, vehicle_clocks, rejection, rid = new_request_updater.\
                     greedy_insertion_new_request(
                         current_route_plan, current_infeasible_set, disruption_info, disruption_time, vehicle_clocks, i, filter_objective)
@@ -166,7 +166,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                 cumulative_travel_time = copy(
                     cumulative_travel_time) + copy(updated_travel_time) - copy(filter_travel_time)
                 cumulative_deviation = copy(
-                    cumulative_deviation) + copy(updated_deviation) - copy(filter_travel_time)
+                    cumulative_deviation) + copy(updated_deviation) - copy(filter_deviation)
                 current_objective = new_request_updater.new_objective(
                     current_route_plan, current_infeasible_set, False)
                 if disruption_type == 2 or disruption_type == 3:  # Disruption: cancel or no show
