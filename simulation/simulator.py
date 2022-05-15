@@ -13,6 +13,32 @@ class Simulator:
         self.sim_clock = sim_clock
         self.poisson = Poisson()
         self.disruptions_stack = self.create_disruption_stack()
+        self.request_disruption_times, self.new_requests, self.initial_requests = self.fixed_request_stack()
+
+    def fixed_request_stack(self):
+        request_disruption_times, new_requests, initial_requests = [], [], []
+        df = pd.read_csv(config("requests_comp_instance_1"))
+        for index, row in df.iterrows():
+            diff_time = row["Requested Pickup Time"] - row["Request Creation Time"]
+            if diff_time < timedelta(hours=1):
+                if row["Requested Pickup Time"] - diff_time <= datetime(
+                        self.sim_clock.year, self.sim_clock.month, self.sim_clock.day, 10, 0, 0):
+                    # add to initial requests
+                    initial_requests.append(row)
+                else:
+                    # add to request stack
+                    request_disruption_times.append((0, row["Requested Pickup Time"] - diff_time))
+                    new_requests.append(row)
+
+        df_new_requests = pd.DataFrame(new_requests, columns=[
+            "Rid", "Request Creation Time", "Requested Pickup Time", "Requested Dropoff Time", "Wheelchair",
+            "Number of Passengers", "Origin Lat", "Origin Lng", "Destination Lat", "Destination Lng"])
+
+        df_initial_requests = pd.DataFrame(new_requests, columns=[
+            "Rid", "Request Creation Time", "Requested Pickup Time", "Requested Dropoff Time", "Wheelchair",
+            "Number of Passengers", "Origin Lat", "Origin Lng", "Destination Lat", "Destination Lng"])
+
+        return request_disruption_times, df_new_requests, df_initial_requests
 
     def create_disruption_stack(self):
         """
@@ -23,8 +49,7 @@ class Simulator:
             no show: 3
             no disruption: 4
         """
-        request = self.poisson.disruption_times(
-            arrival_rate_request, self.sim_clock, 0)
+        request = self.request_disruption_times
         delay = self.poisson.disruption_times(
             arrival_rate_delay, self.sim_clock, 1)
         cancel = self.poisson.disruption_times(

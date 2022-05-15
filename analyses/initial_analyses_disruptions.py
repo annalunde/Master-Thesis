@@ -125,6 +125,9 @@ class AnalyserDisruptions:
         plt.xlabel('Number of minutes between creation and requested pickup time')
         plt.show()
 
+        under_60 = [i for i in waiting_times if i < 60]
+        print("Mean waiting time pick-up", len(under_60)/len(waiting_times))
+
         f = Fitter(waiting_times, distributions=[
                    'gamma', 'lognorm', "norm"])
         f.fit()
@@ -559,8 +562,8 @@ def main():
             data_path=config("data_processed_path"))
         # analyser.event_per_total()
         # analyser.no_show()
-        analyser.cancel()
-        # analyser.new_request()
+        # analyser.cancel()
+        analyser.new_request()
         # analyser.delay(5)
 
     except Exception as e:

@@ -33,6 +33,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
 
         # CONSTRUCTION OF INITIAL SOLUTION
         df = pd.read_csv(config(test_instance))
+        # droppe kolonner som ikke matcher og merge til en dataframe
         constructor = ConstructionHeuristic(
             requests=df, vehicles=V, alpha=alpha, beta=beta)
         print("Constructing initial solution")
