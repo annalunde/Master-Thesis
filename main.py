@@ -16,7 +16,7 @@ from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
 from measures import Measures
 
 
-def main(test_instance, test_instance_date, run, repair_removed, destroy_removed):
+def main(test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive):
     constructor, simulator = None, None
 
     try:
@@ -40,20 +40,25 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         measures = Measures()
 
         # IMPROVEMENT OF INITIAL SOLUTION
-        criterion = SimulatedAnnealing(cooling_rate)
+        if not naive:
+            criterion = SimulatedAnnealing(cooling_rate)
 
-        alns = ALNS(weights, reaction_factor, initial_route_plan, initial_objective, initial_infeasible_set, criterion,
-                    destruction_degree, constructor, rnd_state=rnd.RandomState())
+            alns = ALNS(weights, reaction_factor, initial_route_plan, initial_objective, initial_infeasible_set, criterion,
+                        destruction_degree, constructor, rnd_state=rnd.RandomState())
 
-        operators = Operators(alns)
+            operators = Operators(alns)
 
-        alns.set_operators(operators, repair_removed, destroy_removed)
+            alns.set_operators(operators, repair_removed, destroy_removed)
 
-        # Run ALNS
-        delayed = (False, None, None)
+            # Run ALNS
+            delayed = (False, None, None)
 
-        current_route_plan, current_objective, current_infeasible_set, _ = alns.iterate(
-            initial_iterations, initial_Z, None, None, None, delayed, False, run)
+            current_route_plan, current_objective, current_infeasible_set, _ = alns.iterate(
+                initial_iterations, initial_Z, None, None, None, delayed, False, run, adaptive)
+        else:
+            current_route_plan = copy(initial_route_plan)
+            current_objective = initial_objective
+            current_infeasible_set = copy(initial_infeasible_set)
 
         if current_infeasible_set:
             cumulative_rejected = len(current_infeasible_set)
@@ -175,18 +180,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                     delayed = (True, disruption_info[0], node_idx)
                     delay_deltas.append(current_objective)
 
-            cost_per_trip = measures.cpt_calc(
-                filtered_away, cost_per_trip)
-            ride_sharing_passengers, ride_sharing_arcs, processed_nodes = measures.ride_sharing(
-                filtered_away, ride_sharing_passengers, ride_sharing_arcs, processed_nodes)
-
-            if len(simulator.disruptions_stack) == 0:
-                cost_per_trip = measures.cpt_calc(
-                    current_route_plan, cost_per_trip)
-                ride_sharing_passengers, ride_sharing_arcs, processed_nodes = measures.ride_sharing(
-                    current_route_plan, ride_sharing_passengers, ride_sharing_arcs, processed_nodes)
-
-            if not rejection:
+            if not naive and not rejection:
                 # Heuristic
                 criterion = SimulatedAnnealing(cooling_rate)
 
@@ -201,7 +195,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
 
                 # Run ALNS
                 current_route_plan, current_objective, current_infeasible_set, still_delayed_nodes = alns.iterate(
-                    reopt_iterations, reopt_Z, disrupt[0], disrupt[1], disruption_time, delayed, True,  run)
+                    reopt_iterations, reopt_Z, disrupt[0], disrupt[1], disruption_time, delayed, True, run, adaptive)
 
                 if delayed[0]:
                     delay_deltas[-1] = delay_deltas[-1] - current_objective
@@ -227,12 +221,24 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             deviation_objective = copy(
                 cumulative_deviation) + copy(current_deviation)
 
+            cost_per_trip = measures.cpt_calc(
+                filtered_away, cost_per_trip)
+            ride_sharing_passengers, ride_sharing_arcs, processed_nodes = measures.ride_sharing(
+                filtered_away, ride_sharing_passengers, ride_sharing_arcs, processed_nodes)
+
+            if len(simulator.disruptions_stack) == 0:
+                cost_per_trip = measures.cpt_calc(
+                    current_route_plan, cost_per_trip)
+                ride_sharing_passengers, ride_sharing_arcs, processed_nodes = measures.ride_sharing(
+                    current_route_plan, ride_sharing_passengers, ride_sharing_arcs, processed_nodes)
+
             ride_sharing = ride_sharing_passengers / \
                 ride_sharing_arcs if ride_sharing_arcs > 0 else 0
             cost_per_trip_filtered = dict(
                 filter(lambda elem: elem[1][0] > 0, cost_per_trip.items()))
-            cpt = sum(elem[1][0]/((elem[1][2] - elem[1][1]).total_seconds()/3600)
-                      for elem in cost_per_trip_filtered.items())/len(cost_per_trip_filtered)
+            if len(cost_per_trip_filtered) > 0:
+                cpt = sum(elem[1][0]/((elem[1][2] - elem[1][1]).total_seconds()/3600)
+                          for elem in cost_per_trip_filtered.items())/len(cost_per_trip_filtered)
 
             df_run.append([run, str(disruption_type), total_objective.total_seconds(), (datetime.now() - start_time).total_seconds(), cumulative_rejected, rejected_objective.total_seconds(),
                           deviation_objective.total_seconds(), ride_time_objective.total_seconds(), ride_sharing, cpt])
@@ -270,6 +276,8 @@ if __name__ == "__main__":
         test_instance_d[4:6] + "-" + \
         test_instance_d[6:8] + " 10:00:00"
 
+    naive = True
+    adaptive = False
     repair_removed = None
     destroy_removed = None
     runs = 5
@@ -277,10 +285,11 @@ if __name__ == "__main__":
 
     print("Test instance:", test_instance)
     print("Naive:", naive)
+    print("Adaptive:", adaptive)
 
     for run in range(runs):
         df_run = main(
-            test_instance, test_instance_date, run, repair_removed, destroy_removed)
+            test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive)
         df_runs.append(pd.DataFrame(df_run, columns=[
             "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
 

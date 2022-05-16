@@ -26,7 +26,7 @@ class ALNS:
         self.destroy_repair_updater = Destroy_Repair_Updater(constructor)
 
     # Run ALNS algorithm
-    def iterate(self, num_iterations, z, disrupted, index_removed, disruption_time, delayed, reopt, run):
+    def iterate(self, num_iterations, z, disrupted, index_removed, disruption_time, delayed, reopt, run, adaptive):
 
         N_U = N_U_reopt if reopt else N_U_init
         weights = np.asarray(self.weights, dtype=np.float16)
@@ -112,32 +112,33 @@ class ALNS:
                 d_scores[destroy] += weights[weight_score]
                 r_scores[repair] += weights[weight_score]
 
-            # After a certain number of iterations, update weight
-            if (i+1) % ceil(num_iterations * N_U) == 0:
-                # Update weights with scores
-                updated_now = True
-                for destroy in range(len(d_weights)):
-                    if d_count[destroy] == 0:
-                        continue
-                    d_weights[destroy] = d_weights[destroy] * \
-                        (1 - self.reaction_factor) + \
-                        (self.reaction_factor *
-                         d_scores[destroy] / d_count[destroy])
-                for repair in range(len(r_weights)):
-                    if r_count[repair] == 0:
-                        continue
-                    r_weights[repair] = r_weights[repair] * \
-                        (1 - self.reaction_factor) + \
-                        (self.reaction_factor *
-                         r_scores[repair] / r_count[repair])
+            if adaptive:
+                # After a certain number of iterations, update weight
+                if (i+1) % ceil(num_iterations * N_U) == 0:
+                    # Update weights with scores
+                    updated_now = True
+                    for destroy in range(len(d_weights)):
+                        if d_count[destroy] == 0:
+                            continue
+                        d_weights[destroy] = d_weights[destroy] * \
+                            (1 - self.reaction_factor) + \
+                            (self.reaction_factor *
+                             d_scores[destroy] / d_count[destroy])
+                    for repair in range(len(r_weights)):
+                        if r_count[repair] == 0:
+                            continue
+                        r_weights[repair] = r_weights[repair] * \
+                            (1 - self.reaction_factor) + \
+                            (self.reaction_factor *
+                             r_scores[repair] / r_count[repair])
 
-                # Reset scores
-                d_scores, r_scores = np.ones(
-                    len(self.destroy_operators), dtype=np.float16), np.ones(
-                    len(self.repair_operators), dtype=np.float16)
-                d_count, r_count = np.zeros(
-                    len(self.destroy_operators), dtype=np.float16), np.zeros(
-                    len(self.repair_operators), dtype=np.float16)
+                    # Reset scores
+                    d_scores, r_scores = np.ones(
+                        len(self.destroy_operators), dtype=np.float16), np.ones(
+                        len(self.repair_operators), dtype=np.float16)
+                    d_count, r_count = np.zeros(
+                        len(self.destroy_operators), dtype=np.float16), np.zeros(
+                        len(self.repair_operators), dtype=np.float16)
 
         if delayed[0]:
             still_delayed_nodes = self.filter_still_delayed(
