@@ -16,7 +16,7 @@ from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
 from measures import Measures
 
 
-def main(test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive):
+def main(test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, N_R):
     constructor, simulator = None, None
 
     try:
@@ -180,6 +180,17 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                     delayed = (True, disruption_info[0], node_idx)
                     delay_deltas.append(current_objective)
 
+            cost_per_trip = measures.cpt_calc(
+                filtered_away, cost_per_trip)
+            ride_sharing_passengers, ride_sharing_arcs, processed_nodes = measures.ride_sharing(
+                filtered_away, ride_sharing_passengers, ride_sharing_arcs, processed_nodes)
+
+            if len(simulator.disruptions_stack) == 0:
+                cost_per_trip = measures.cpt_calc(
+                    current_route_plan, cost_per_trip)
+                ride_sharing_passengers, ride_sharing_arcs, processed_nodes = measures.ride_sharing(
+                    current_route_plan, ride_sharing_passengers, ride_sharing_arcs, processed_nodes)
+
             if not naive and not rejection:
                 # Heuristic
                 criterion = SimulatedAnnealing(cooling_rate)
@@ -220,17 +231,6 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                 cumulative_travel_time) + copy(current_travel_time)
             deviation_objective = copy(
                 cumulative_deviation) + copy(current_deviation)
-
-            cost_per_trip = measures.cpt_calc(
-                filtered_away, cost_per_trip)
-            ride_sharing_passengers, ride_sharing_arcs, processed_nodes = measures.ride_sharing(
-                filtered_away, ride_sharing_passengers, ride_sharing_arcs, processed_nodes)
-
-            if len(simulator.disruptions_stack) == 0:
-                cost_per_trip = measures.cpt_calc(
-                    current_route_plan, cost_per_trip)
-                ride_sharing_passengers, ride_sharing_arcs, processed_nodes = measures.ride_sharing(
-                    current_route_plan, ride_sharing_passengers, ride_sharing_arcs, processed_nodes)
 
             ride_sharing = ride_sharing_passengers / \
                 ride_sharing_arcs if ride_sharing_arcs > 0 else 0
@@ -276,26 +276,29 @@ if __name__ == "__main__":
         test_instance_d[4:6] + "-" + \
         test_instance_d[6:8] + " 10:00:00"
 
-    naive = True
+    naive = False
     adaptive = False
     repair_removed = None
     destroy_removed = None
     runs = 5
     df_runs = []
+    N_Rs = [1, 2]
 
     print("Test instance:", test_instance)
     print("Naive:", naive)
     print("Adaptive:", adaptive)
 
-    for run in range(runs):
-        df_run = main(
-            test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive)
-        df_runs.append(pd.DataFrame(df_run, columns=[
-            "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
+    for N_R in N_Rs:
+        df_runs = []
+        for run in range(runs):
+            df_run = main(
+                test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, N_R)
+            df_runs.append(pd.DataFrame(df_run, columns=[
+                "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
 
-    df_track_run = pd.concat(df_runs)
-    df_track_run.to_csv(
-        config("run_path") + "N_R" + test_instance + "analysis" + ".csv")
+        df_track_run = pd.concat(df_runs)
+        df_track_run.to_csv(
+            config("run_path") + "N_R:" + str(N_R) + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 

@@ -49,7 +49,7 @@ CHANGEABLE PARAMETERS
 
 
 # Number of tries for + 15 minutes for a rejected request:
-N_R = 0
+#N_R = 0
 
 # Number of iterations in ALNS
 initial_iterations = 100
