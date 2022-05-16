@@ -20,7 +20,8 @@ class NewRequestUpdater:
         self.current_objective = timedelta(0)
         self.T_ij = np.array(constructor.T_ij, copy=True)
         self.infeasible_set = copy(constructor.infeasible_set)
-        self.re_opt_repair_generator = ReOptRepairGenerator(self, False)
+        self.re_opt_repair_generator = ReOptRepairGenerator(
+            self, False, standby)
         self.preprocessed = copy(constructor.preprocessed)
         self.alpha = constructor.alpha
         self.beta = constructor.beta
