@@ -46,7 +46,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             alns = ALNS(weights, reaction_factor, initial_route_plan, initial_objective, initial_infeasible_set, criterion,
                         destruction_degree, constructor, rnd_state=rnd.RandomState())
 
-            operators = Operators(alns)
+            operators = Operators(alns, standby)
 
             alns.set_operators(operators, repair_removed, destroy_removed)
 
@@ -200,7 +200,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                             destruction_degree, new_request_updater, rnd_state=rnd.RandomState())
 
                 operators = ReOptOperators(
-                    alns, disruption_time, vehicle_clocks)
+                    alns, disruption_time, vehicle_clocks, standby)
 
                 alns.set_operators(operators, repair_removed, destroy_removed)
 
@@ -292,7 +292,7 @@ if __name__ == "__main__":
         df_runs = []
         for run in range(runs):
             df_run = main(
-                test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive)
+                test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby)
             df_runs.append(pd.DataFrame(df_run, columns=[
                 "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
 

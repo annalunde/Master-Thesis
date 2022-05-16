@@ -11,7 +11,7 @@ pd.options.mode.chained_assignment = None
 
 
 class ConstructionHeuristic:
-    def __init__(self, requests, vehicles, alpha, beta, standby):
+    def __init__(self, requests, vehicles, alpha, beta):
         self.vehicles = [i for i in range(vehicles)]
         self.n = len(requests.index)
         self.num_nodes_and_depots = vehicles + 2 * self.n
