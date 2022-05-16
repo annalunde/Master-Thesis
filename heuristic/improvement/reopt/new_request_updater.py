@@ -11,8 +11,8 @@ pd.options.mode.chained_assignment = None
 
 
 class NewRequestUpdater:
-    def __init__(self, constructor):
-        self.vehicles = [i for i in range(V)]
+    def __init__(self, constructor, standby):
+        self.vehicles = [i for i in range(V+standby)]
         self.introduced_vehicles = set()
         self.requests = constructor.requests.copy(deep=False)
         self.n = len(self.requests.index)

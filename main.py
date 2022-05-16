@@ -16,7 +16,7 @@ from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
 from measures import Measures
 
 
-def main(test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive):
+def main(test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby):
     constructor, simulator = None, None
 
     try:
@@ -24,7 +24,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         start_time = datetime.now()
         df_run = []
         cost_per_trip, ride_sharing_passengers, ride_sharing_arcs, processed_nodes, cpt, ride_sharing = {
-            idx: (0, None, None) for idx in range(V)}, 0, 0, set(), 0, 0
+            idx: (0, None, None) for idx in range(V+standby)}, 0, 0, set(), 0, 0
 
         # CUMULATIVE OBJECTIVE
         cumulative_rejected, cumulative_recalibration, cumulative_objective, cumulative_travel_time, \
@@ -34,7 +34,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         # CONSTRUCTION OF INITIAL SOLUTION
         df = pd.read_csv(config(test_instance))
         constructor = ConstructionHeuristic(
-            requests=df, vehicles=V, alpha=alpha, beta=beta)
+            requests=df, vehicles=V+standby, alpha=alpha, beta=beta)
         print("Constructing initial solution")
         initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
         measures = Measures()
@@ -93,7 +93,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             test_instance_date, "%Y-%m-%d %H:%M:%S")
         simulator = Simulator(sim_clock)
         new_request_updater = NewRequestUpdater(
-            constructor)
+            constructor, standby)
         disruption_updater = DisruptionUpdater(new_request_updater)
         first_iteration, rejected = True, []
         print("Length of disruption stack", len(simulator.disruptions_stack))
@@ -276,26 +276,29 @@ if __name__ == "__main__":
         test_instance_d[4:6] + "-" + \
         test_instance_d[6:8] + " 10:00:00"
 
-    naive = True
+    standby_vehicles = [-2, -1, 0, 1, 2]
+
+    naive = False
     adaptive = False
     repair_removed = None
     destroy_removed = None
     runs = 5
-    df_runs = []
 
     print("Test instance:", test_instance)
     print("Naive:", naive)
     print("Adaptive:", adaptive)
 
-    for run in range(runs):
-        df_run = main(
-            test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive)
-        df_runs.append(pd.DataFrame(df_run, columns=[
-            "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
+    for standby in standby_vehicles:
+        df_runs = []
+        for run in range(runs):
+            df_run = main(
+                test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive)
+            df_runs.append(pd.DataFrame(df_run, columns=[
+                "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
 
-    df_track_run = pd.concat(df_runs)
-    df_track_run.to_csv(
-        config("run_path") + "naive:" + str(naive) + test_instance + "analysis" + ".csv")
+        df_track_run = pd.concat(df_runs)
+        df_track_run.to_csv(
+            config("run_path") + "Extra_Vehicles" + str(standby) + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 

@@ -11,7 +11,7 @@ pd.options.mode.chained_assignment = None
 
 
 class ConstructionHeuristic:
-    def __init__(self, requests, vehicles, alpha, beta):
+    def __init__(self, requests, vehicles, alpha, beta, standby):
         self.vehicles = [i for i in range(vehicles)]
         self.n = len(requests.index)
         self.num_nodes_and_depots = vehicles + 2 * self.n
@@ -37,7 +37,7 @@ class ConstructionHeuristic:
         self.beta = beta
         self.gamma = self.alpha * 4 * \
             timedelta(seconds=np.amax(self.T_ij)) + self.beta * \
-            timedelta(minutes=15) * 2 * (self.n / V)
+            timedelta(minutes=15) * 2 * (self.n / vehicles)
 
     def compute_pickup_time(self, requests):
         requests["Requested Pickup Time"] = pd.to_datetime(
