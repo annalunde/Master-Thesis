@@ -31,9 +31,20 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             cumulative_deviation = 0, timedelta(
                 0), timedelta(0), timedelta(0), timedelta(0)
 
+        # SIMULATOR
+        sim_clock = datetime.strptime(
+            test_instance_date, "%Y-%m-%d %H:%M:%S")
+        simulator = Simulator(sim_clock)
+
         # CONSTRUCTION OF INITIAL SOLUTION
-        df = pd.read_csv(config(test_instance))
-        # droppe kolonner som ikke matcher og merge til en dataframe
+        df_initial = pd.read_csv(config(test_instance))
+        df_sim_initial = simulator.initial_requests
+        df_initial.drop(columns=['Unnamed: 0', 'Request ID', 'Request Status', 'Rider ID', 'Ride ID',
+                         'Actual Pickup Time', 'Actual Dropoff Time', 'Cancellation Time',
+                         'No Show Time', 'Origin Zone', 'Destination Zone', 'Reason For Travel',
+                         'Original Planned Pickup Time'], inplace=True)
+        df_sim_initial.drop(columns=['Rid'], inplace=True)
+        df = df_initial.append(df_sim_initial)
         constructor = ConstructionHeuristic(
             requests=df, vehicles=V, alpha=alpha, beta=beta)
         print("Constructing initial solution")
@@ -90,9 +101,6 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
 
         # SIMULATION
         print("Start simulation")
-        sim_clock = datetime.strptime(
-            test_instance_date, "%Y-%m-%d %H:%M:%S")
-        simulator = Simulator(sim_clock)
         new_request_updater = NewRequestUpdater(
             constructor)
         disruption_updater = DisruptionUpdater(new_request_updater)
@@ -237,8 +245,9 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                 ride_sharing_arcs if ride_sharing_arcs > 0 else 0
             cost_per_trip_filtered = dict(
                 filter(lambda elem: elem[1][0] > 0, cost_per_trip.items()))
-            cpt = sum(elem[1][0]/((elem[1][2] - elem[1][1]).total_seconds()/3600)
-                      for elem in cost_per_trip_filtered.items())/len(cost_per_trip_filtered)
+            if len(cost_per_trip_filtered) > 0:
+                cpt = sum(elem[1][0]/((elem[1][2] - elem[1][1]).total_seconds()/3600)
+                          for elem in cost_per_trip_filtered.items())/len(cost_per_trip_filtered)
 
             df_run.append([run, str(disruption_type), total_objective.total_seconds(), (datetime.now() - start_time).total_seconds(), cumulative_rejected, rejected_objective.total_seconds(),
                           deviation_objective.total_seconds(), ride_time_objective.total_seconds(), ride_sharing, cpt])
@@ -276,7 +285,7 @@ if __name__ == "__main__":
         test_instance_d[4:6] + "-" + \
         test_instance_d[6:8] + " 10:00:00"
 
-    naive = True
+    naive = False
     repair_removed = None
     destroy_removed = None
     runs = 5

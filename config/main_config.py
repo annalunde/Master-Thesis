@@ -85,3 +85,6 @@ destruction_degree = 0.4
 # Running data
 # "comp_instance_1_20220110", "comp_instance_2_20211007","comp_instance_3_20211215"
 test_instance = "comp_instance_1_20220110"
+
+# Request stack
+request_stack = "requests_comp_instance_1"

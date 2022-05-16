@@ -12,33 +12,42 @@ class Simulator:
     def __init__(self, sim_clock):
         self.sim_clock = sim_clock
         self.poisson = Poisson()
+        self.request_disruption_times, self.initial_requests = self.fixed_request_stack()
         self.disruptions_stack = self.create_disruption_stack()
-        self.request_disruption_times, self.new_requests, self.initial_requests = self.fixed_request_stack()
 
     def fixed_request_stack(self):
         request_disruption_times, new_requests, initial_requests = [], [], []
-        df = pd.read_csv(config("requests_comp_instance_1"))
+        df = pd.read_csv(config(request_stack))
+        df['Request Creation Time'] = pd.to_datetime(
+            df['Request Creation Time'], format="%Y-%m-%d %H:%M:%S")
+        df['Requested Pickup Time'] = pd.to_datetime(
+            df['Requested Pickup Time'], format="%Y-%m-%d %H:%M:%S")
+        df['Requested Dropoff Time'] = pd.to_datetime(
+            df['Requested Dropoff Time'], format="%Y-%m-%d %H:%M:%S")
         for index, row in df.iterrows():
             diff_time = row["Requested Pickup Time"] - row["Request Creation Time"]
             if diff_time < timedelta(hours=1):
-                if row["Requested Pickup Time"] - diff_time <= datetime(
+                if row["Requested Pickup Time"] - timedelta(hours=1) <= datetime(
                         self.sim_clock.year, self.sim_clock.month, self.sim_clock.day, 10, 0, 0):
                     # add to initial requests
                     initial_requests.append(row)
                 else:
                     # add to request stack
-                    request_disruption_times.append((0, row["Requested Pickup Time"] - diff_time))
-                    new_requests.append(row)
+                    df_new_request = pd.DataFrame([row], columns=[
+                        "Rid", "Request Creation Time", "Requested Pickup Time", "Requested Dropoff Time", "Wheelchair",
+                        "Number of Passengers", "Origin Lat", "Origin Lng", "Destination Lat", "Destination Lng"])
+                    request_disruption_times.append((0, row["Requested Pickup Time"] - timedelta(hours=1), df_new_request))
+            else:
+                df_new_request = pd.DataFrame([row], columns=[
+                    "Rid", "Request Creation Time", "Requested Pickup Time", "Requested Dropoff Time", "Wheelchair",
+                    "Number of Passengers", "Origin Lat", "Origin Lng", "Destination Lat", "Destination Lng"])
+                request_disruption_times.append((0, row["Request Creation Time"], df_new_request))
 
-        df_new_requests = pd.DataFrame(new_requests, columns=[
+        df_initial_requests = pd.DataFrame(initial_requests, columns=[
             "Rid", "Request Creation Time", "Requested Pickup Time", "Requested Dropoff Time", "Wheelchair",
             "Number of Passengers", "Origin Lat", "Origin Lng", "Destination Lat", "Destination Lng"])
 
-        df_initial_requests = pd.DataFrame(new_requests, columns=[
-            "Rid", "Request Creation Time", "Requested Pickup Time", "Requested Dropoff Time", "Wheelchair",
-            "Number of Passengers", "Origin Lat", "Origin Lng", "Destination Lat", "Destination Lng"])
-
-        return request_disruption_times, df_new_requests, df_initial_requests
+        return request_disruption_times, df_initial_requests
 
     def create_disruption_stack(self):
         """
@@ -68,11 +77,7 @@ class Simulator:
 
         # find which disruption type it is
         if disruption_type == 0:
-            add_request, disruption_info = self.new_request(
-                disruption_time, data_path, first_iteration)
-            if add_request < 0:
-                disruption_type = 4
-                disruption_info = None
+            disruption_info = disruption[2]
 
         elif disruption_type == 1:
             delay_vehicle_index, delay_rid_index, duration_delay, delay_rid = self.delay(
