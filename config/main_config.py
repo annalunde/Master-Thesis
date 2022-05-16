@@ -88,3 +88,6 @@ test_instance = "comp_instance_1_20220110"
 
 # Request stack
 request_stack = "requests_comp_instance_1"
+
+# Cancel stack
+cancel_stack = "cancels_comp_instance_1"

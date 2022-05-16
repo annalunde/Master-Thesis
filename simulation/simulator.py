@@ -12,42 +12,31 @@ class Simulator:
     def __init__(self, sim_clock):
         self.sim_clock = sim_clock
         self.poisson = Poisson()
-        self.request_disruption_times, self.initial_requests = self.fixed_request_stack()
+        self.cancel_disruption_times = self.fixed_cancel_stack()
         self.disruptions_stack = self.create_disruption_stack()
 
-    def fixed_request_stack(self):
-        request_disruption_times, new_requests, initial_requests = [], [], []
-        df = pd.read_csv(config(request_stack))
-        df['Request Creation Time'] = pd.to_datetime(
-            df['Request Creation Time'], format="%Y-%m-%d %H:%M:%S")
-        df['Requested Pickup Time'] = pd.to_datetime(
-            df['Requested Pickup Time'], format="%Y-%m-%d %H:%M:%S")
-        df['Requested Dropoff Time'] = pd.to_datetime(
-            df['Requested Dropoff Time'], format="%Y-%m-%d %H:%M:%S")
+    def fixed_cancel_stack(self):
+        cancel_disruption_times = []
+        df = pd.read_csv(config(cancel_stack))
+        df['Cancelation Time'] = pd.to_datetime(
+            df['Cancelation Time'], format="%Y-%m-%d %H:%M:%S")
+        df['removed time'] = pd.to_datetime(
+            df['removed time'], format="%Y-%m-%d %H:%M:%S")
         for index, row in df.iterrows():
-            diff_time = row["Requested Pickup Time"] - row["Request Creation Time"]
+            diff_time = row["removed time"] - row["Cancelation Time"]
             if diff_time < timedelta(hours=1):
-                if row["Requested Pickup Time"] - timedelta(hours=1) <= datetime(
+                if row["removed time"] - timedelta(hours=1) > datetime(
                         self.sim_clock.year, self.sim_clock.month, self.sim_clock.day, 10, 0, 0):
-                    # add to initial requests
-                    initial_requests.append(row)
-                else:
-                    # add to request stack
-                    df_new_request = pd.DataFrame([row], columns=[
-                        "Rid", "Request Creation Time", "Requested Pickup Time", "Requested Dropoff Time", "Wheelchair",
-                        "Number of Passengers", "Origin Lat", "Origin Lng", "Destination Lat", "Destination Lng"])
-                    request_disruption_times.append((0, row["Requested Pickup Time"] - timedelta(hours=1), df_new_request))
+                    # add to cancel stack and push cancellation time to 1 hour before service time
+                    cancel_disruption_times.append((2, row["removed time"] - timedelta(hours=1),
+                                                    row['pickup rid'], row['dropoff rid']))
             else:
-                df_new_request = pd.DataFrame([row], columns=[
-                    "Rid", "Request Creation Time", "Requested Pickup Time", "Requested Dropoff Time", "Wheelchair",
-                    "Number of Passengers", "Origin Lat", "Origin Lng", "Destination Lat", "Destination Lng"])
-                request_disruption_times.append((0, row["Request Creation Time"], df_new_request))
+                # add to cancel stack
+                cancel_disruption_times.append((2, row["Cancelation Time"],
+                                                row['pickup rid'], row['dropoff rid']))
 
-        df_initial_requests = pd.DataFrame(initial_requests, columns=[
-            "Rid", "Request Creation Time", "Requested Pickup Time", "Requested Dropoff Time", "Wheelchair",
-            "Number of Passengers", "Origin Lat", "Origin Lng", "Destination Lat", "Destination Lng"])
-
-        return request_disruption_times, df_initial_requests
+        # stack with format (type, time, p_rid, d_rid)
+        return cancel_disruption_times
 
     def create_disruption_stack(self):
         """
@@ -58,11 +47,11 @@ class Simulator:
             no show: 3
             no disruption: 4
         """
-        request = self.request_disruption_times
+        request = self.poisson.disruption_times(
+            arrival_rate_request, self.sim_clock, 0)
         delay = self.poisson.disruption_times(
             arrival_rate_delay, self.sim_clock, 1)
-        cancel = self.poisson.disruption_times(
-            arrival_rate_cancel, self.sim_clock, 2)
+        cancel = self.cancel_disruption_times
         initial_no_show = self.poisson.disruption_times(
             arrival_rate_no_show, self.sim_clock, 3)
         disruption_stack = request + delay + cancel + initial_no_show
@@ -77,7 +66,11 @@ class Simulator:
 
         # find which disruption type it is
         if disruption_type == 0:
-            disruption_info = disruption[2]
+            add_request, disruption_info = self.new_request(
+                disruption_time, data_path, first_iteration)
+            if add_request < 0:
+                disruption_type = 4
+                disruption_info = None
 
         elif disruption_type == 1:
             delay_vehicle_index, delay_rid_index, duration_delay, delay_rid = self.delay(
@@ -89,11 +82,17 @@ class Simulator:
                 disruption_info = None
 
         elif disruption_type == 2:
-            cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index, node_p, node_d = self.cancel(
-                disruption_time, current_route_plan)
-            disruption_info = (
-                cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index, node_p, node_d)
-            if cancel_pickup_rid_index < 0:
+            cancel_info = [(vehicle, p_idx, d_idx)
+                           for vehicle in range(0, len(current_route_plan))
+                           for p_idx, p_node in enumerate(current_route_plan[vehicle])
+                           if p_node[0] == disruption[2]
+                           for d_idx, d_node in enumerate(current_route_plan[vehicle])
+                           if d_node[0] == p_node[0] + 0.5]
+
+            if len(cancel_info) > 0:
+                disruption_info = (cancel_info[0][0], cancel_info[0][1], cancel_info[0][2],
+                                   disruption[2], disruption[3])
+            else:
                 disruption_type = 4
                 disruption_info = None
 
