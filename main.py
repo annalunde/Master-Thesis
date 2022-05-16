@@ -16,7 +16,7 @@ from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
 from measures import Measures
 
 
-def main(test_instance, test_instance_date, run, repair_removed, destroy_removed, naive):
+def main(test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive):
     constructor, simulator = None, None
 
     try:
@@ -54,7 +54,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             delayed = (False, None, None)
 
             current_route_plan, current_objective, current_infeasible_set, _ = alns.iterate(
-                initial_iterations, initial_Z, None, None, None, delayed, False, run)
+                initial_iterations, initial_Z, None, None, None, delayed, False, run, adaptive)
         else:
             current_route_plan = copy(initial_route_plan)
             current_objective = initial_objective
@@ -206,7 +206,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
 
                 # Run ALNS
                 current_route_plan, current_objective, current_infeasible_set, still_delayed_nodes = alns.iterate(
-                    reopt_iterations, reopt_Z, disrupt[0], disrupt[1], disruption_time, delayed, True, run)
+                    reopt_iterations, reopt_Z, disrupt[0], disrupt[1], disruption_time, delayed, True, run, adaptive)
 
                 if delayed[0]:
                     delay_deltas[-1] = delay_deltas[-1] - current_objective
@@ -236,8 +236,9 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                 ride_sharing_arcs if ride_sharing_arcs > 0 else 0
             cost_per_trip_filtered = dict(
                 filter(lambda elem: elem[1][0] > 0, cost_per_trip.items()))
-            cpt = sum(elem[1][0]/((elem[1][2] - elem[1][1]).total_seconds()/3600)
-                      for elem in cost_per_trip_filtered.items())/len(cost_per_trip_filtered)
+            if len(cost_per_trip_filtered) > 0:
+                cpt = sum(elem[1][0]/((elem[1][2] - elem[1][1]).total_seconds()/3600)
+                          for elem in cost_per_trip_filtered.items())/len(cost_per_trip_filtered)
 
             df_run.append([run, str(disruption_type), total_objective.total_seconds(), (datetime.now() - start_time).total_seconds(), cumulative_rejected, rejected_objective.total_seconds(),
                           deviation_objective.total_seconds(), ride_time_objective.total_seconds(), ride_sharing, cpt])
@@ -276,6 +277,7 @@ if __name__ == "__main__":
         test_instance_d[6:8] + " 10:00:00"
 
     naive = True
+    adaptive = False
     repair_removed = None
     destroy_removed = None
     runs = 5
@@ -283,10 +285,11 @@ if __name__ == "__main__":
 
     print("Test instance:", test_instance)
     print("Naive:", naive)
+    print("Adaptive:", adaptive)
 
     for run in range(runs):
         df_run = main(
-            test_instance, test_instance_date, run, repair_removed, destroy_removed, naive)
+            test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive)
         df_runs.append(pd.DataFrame(df_run, columns=[
             "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
 
