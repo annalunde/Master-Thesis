@@ -183,13 +183,13 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                     delay_deltas.append(current_objective)
 
             cost_per_trip = measures.cpt_calc(
-                filtered_away, cost_per_trip)
+                filtered_away, cost_per_trip, processed_nodes)
             ride_sharing_passengers, ride_sharing_arcs, processed_nodes = measures.ride_sharing(
                 filtered_away, ride_sharing_passengers, ride_sharing_arcs, processed_nodes)
 
             if len(simulator.disruptions_stack) == 0:
                 cost_per_trip = measures.cpt_calc(
-                    current_route_plan, cost_per_trip)
+                    current_route_plan, cost_per_trip, processed_nodes)
                 ride_sharing_passengers, ride_sharing_arcs, processed_nodes = measures.ride_sharing(
                     current_route_plan, ride_sharing_passengers, ride_sharing_arcs, processed_nodes)
 
@@ -288,17 +288,16 @@ if __name__ == "__main__":
     print("Naive:", naive)
     print("Adaptive:", adaptive)
 
-    for standby in standby_vehicles:
-        df_runs = []
-        for run in range(runs):
-            df_run = main(
-                test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby)
-            df_runs.append(pd.DataFrame(df_run, columns=[
-                "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
+    df_runs = []
+    for run in range(runs):
+        df_run = main(
+            test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby)
+        df_runs.append(pd.DataFrame(df_run, columns=[
+            "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
 
-        df_track_run = pd.concat(df_runs)
-        df_track_run.to_csv(
-            config("run_path") + "Extra_Vehicles" + str(standby) + test_instance + "analysis" + ".csv")
+    df_track_run = pd.concat(df_runs)
+    df_track_run.to_csv(
+        config("run_path") + "Extra_Vehicles" + str(standby) + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 

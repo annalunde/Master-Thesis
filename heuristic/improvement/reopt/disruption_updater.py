@@ -72,9 +72,37 @@ class DisruptionUpdater:
     def update_with_delay(self, current_route_plan, disruption_info):
         delay_duration = disruption_info[2]
         route_plan = list(map(list, current_route_plan))
-        route_plan[disruption_info[0]] = route_plan[disruption_info[0]][:disruption_info[1]] + \
-            [(i[0], i[1]+delay_duration, i[2]+delay_duration, i[3], i[4], i[5])
-             for i in route_plan[disruption_info[0]][disruption_info[1]:]]
+
+        updated_vehicle_route = []
+        for idx, i in enumerate(route_plan[disruption_info[0]][disruption_info[1]:]):
+            if idx == 0:
+                node = (i[0], i[1]+delay_duration, i[2] +
+                        delay_duration, i[3], i[4], i[5])
+            else:
+                prev_idx = idx - 1
+                sn = route_plan[disruption_info[0]
+                                ][disruption_info[1]:][prev_idx][0]
+                en = i[0]
+                sn_mod = sn % int(sn)
+                en_mod = en % int(en)
+                start_id = int(
+                    sn - 0.5 - 1 + new_request_updater.n if sn_mod else sn - 1)
+                end_id = int(en - 0.5 - 1 +
+                             new_request_updater.n if en_mod else en - 1)
+                travel_time = new_request_updater.travel_time(
+                    start_id, end_id, False)
+                diff_time = i[1] - route_plan[disruption_info[0]
+                                              ][disruption_info[1]:][prev_idx][1]
+                catch_up = diff_time - travel_time if diff_time - \
+                    travel_time > timedelta(0) else timedelta(0)
+                duration = delay_duration - catch_up if delay_duration - \
+                    catch_up > timedelta(0) else timedelta(0)
+                node = (i[0], i[1]+duration, i[2] + duration, i[3], i[4], i[5])
+
+            updated_vehicle_route.append(node)
+
+        route_plan[disruption_info[0]] = route_plan[disruption_info[0]
+                                                    ][: disruption_info[1]] + updated_vehicle_route
         return route_plan
 
     @ staticmethod
@@ -126,7 +154,7 @@ class DisruptionUpdater:
 
     def update_capacities(self, vehicle_route, start_id, dropoff_id, request):
         vehicle_route_temp = [(i[0], i[1], i[2], i[3]-request["Number of Passengers"],
-                              i[4]-request["Wheelchair"], i[5]) for i in vehicle_route[start_id:dropoff_id]]
+                               i[4]-request["Wheelchair"], i[5]) for i in vehicle_route[start_id:dropoff_id]]
         vehicle_route_result = vehicle_route[:start_id] + \
             vehicle_route_temp + vehicle_route[dropoff_id:]
         return vehicle_route_result
