@@ -154,7 +154,9 @@ class Simulator:
         # potential delays - nodes with planned pickup time after initial_delay
         vehicle_index = 0
         for row in current_route_plan:
-            for col in range(1, len(row)):
+            for col in range(0, len(row)):
+                if row[col][0] == 0:
+                    continue
                 s = S_W if row[col][5]["Wheelchair"] else S_P
                 temp_planned_time = row[col][1] - timedelta(minutes=s)
                 if temp_planned_time >= initial_delay:
@@ -189,7 +191,9 @@ class Simulator:
         # potential cancellations - pickup nodes with planned pickup after disruption time of cancellation + cancel_time
         vehicle_index = 0
         for row in current_route_plan:
-            for col in range(1, len(row)):
+            for col in range(0, len(row)):
+                if row[col][0] == 0:
+                    continue
                 temp_rid = row[col][0]
                 s = S_W if row[col][5]["Wheelchair"] else S_P
                 temp_planned_time = row[col][1] - timedelta(minutes=s)
@@ -215,7 +219,9 @@ class Simulator:
         # potential no shows - pickup nodes with planned pickup after initial_no_show
         vehicle_index = 0
         for row in current_route_plan:
-            for col in range(1, len(row)):
+            for col in range(0, len(row)):
+                if row[col][0] == 0:
+                    continue
                 temp_rid = row[col][0]
                 s = S_W if row[col][5]["Wheelchair"] else S_P
                 temp_planned_time = row[col][1] - timedelta(minutes=s)

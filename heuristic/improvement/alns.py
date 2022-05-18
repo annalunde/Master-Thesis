@@ -122,14 +122,14 @@ class ALNS:
                     d_weights[destroy] = d_weights[destroy] * \
                         (1 - self.reaction_factor) + \
                         (self.reaction_factor *
-                         d_scores[destroy] / d_count[destroy])
+                            d_scores[destroy] / d_count[destroy])
                 for repair in range(len(r_weights)):
                     if r_count[repair] == 0:
                         continue
                     r_weights[repair] = r_weights[repair] * \
                         (1 - self.reaction_factor) + \
                         (self.reaction_factor *
-                         r_scores[repair] / r_count[repair])
+                            r_scores[repair] / r_count[repair])
 
                 # Reset scores
                 d_scores, r_scores = np.ones(
@@ -139,8 +139,8 @@ class ALNS:
                     len(self.destroy_operators), dtype=np.float16), np.zeros(
                     len(self.repair_operators), dtype=np.float16)
 
-            df_operators.append([run, not reopt, i, d_operator, r_operator, d_weights[destroy], r_weights[repair], d_scores[destroy],
-                                 r_scores[repair], d_count[destroy], r_count[repair], (datetime.now() - start_time).total_seconds(), updated_now, best_objective])
+        df_operators.append([run, not reopt, i, d_operator, r_operator, d_weights[destroy], r_weights[repair], d_scores[destroy],
+                             r_scores[repair], d_count[destroy], r_count[repair], (datetime.now() - start_time).total_seconds(), updated_now, best_objective])
 
         if delayed[0]:
             still_delayed_nodes = self.filter_still_delayed(
@@ -168,7 +168,6 @@ class ALNS:
             repair_removed.sort(key=lambda x: x, reverse=True)
             for idx in repair_removed:
                 self.repair_operators.pop(idx)
-
     # Add operator to the heuristic instance
 
     def add_destroy_operator(self, operator):

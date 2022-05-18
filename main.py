@@ -24,8 +24,9 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         df_operators, df_runtime, df_reqs = [], [], []
 
         # CUMULATIVE OBJECTIVE
-        cumulative_rejected, cumulative_recalibration, cumulative_objective = 0, timedelta(
-            0), timedelta(0)
+        cumulative_rejected, cumulative_recalibration, cumulative_objective, cumulative_travel_time, \
+            cumulative_deviation = 0, timedelta(
+                0), timedelta(0), timedelta(0), timedelta(0)
 
         # CONSTRUCTION OF INITIAL SOLUTION
         df = pd.read_csv(config(test_instance))
@@ -66,8 +67,14 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         cumulative_recalibration += delta_dev_objective
         current_objective -= delta_dev_objective
 
-        df_runtime.append(
-            [run, "Initial", (datetime.now() - start_time).total_seconds(), current_objective.total_seconds()])
+        ride_time_objective, deviation_objective, rejected_objective = constructor.print_objective(
+            current_route_plan, [i for i in range(cumulative_rejected)])
+
+        total_objective = constructor.total_objective(current_objective, cumulative_objective,
+                                                      cumulative_recalibration)
+
+        df_runtime.append([run, "Initial", total_objective.total_seconds(), (datetime.now() - start_time).total_seconds(), cumulative_rejected, rejected_objective.total_seconds(),
+                           cumulative_recalibration.total_seconds(), ride_time_objective.total_seconds()])
 
         print("Initial objective", current_objective.total_seconds())
         print("Initial rejected", cumulative_rejected)
@@ -105,14 +112,23 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             elif disruption_type == 0:  # Disruption: new request
                 current_route_plan, vehicle_clocks, artificial_depot = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
-                updated_objective = new_request_updater.new_objective(
-                    current_route_plan, [], False)
-                current_route_plan, removed_filtering = disruption_updater.filter_route_plan(
-                    current_route_plan, vehicle_clocks, None)  # Filter route plan
+                current_route_plan, removed_filtering, filtered_away, middle, filtered_size = disruption_updater.\
+                    filter_route_plan(current_route_plan,
+                                      vehicle_clocks, None)  # Filter route plan
+                new_request_updater.middle = middle
                 filter_objective = new_request_updater.new_objective(
                     current_route_plan, [], False)
+                filter_away_objective, filter_away_travel_time, filter_away_deviation = \
+                    new_request_updater.norm_objective(
+                        filtered_away, [], True, filtered_size)
+
                 cumulative_objective = copy(
-                    cumulative_objective) + copy(updated_objective) - copy(filter_objective)
+                    cumulative_objective) + copy(filter_away_objective)
+                cumulative_travel_time = copy(
+                    cumulative_travel_time) + copy(filter_away_travel_time)
+                cumulative_deviation = copy(
+                    cumulative_deviation) + copy(filter_away_deviation)
+
                 current_route_plan, current_objective, current_infeasible_set, vehicle_clocks, rejection, rid = new_request_updater.\
                     greedy_insertion_new_request(
                         current_route_plan, current_infeasible_set, disruption_info, disruption_time, vehicle_clocks, i, filter_objective)
@@ -136,15 +152,21 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             else:
                 current_route_plan, vehicle_clocks, artificial_depot = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
-                before_route_plan = list(map(list, current_route_plan))
-                updated_objective = new_request_updater.new_objective(
-                    current_route_plan, [], False)
-                current_route_plan, removed_filtering = disruption_updater.filter_route_plan(
-                    current_route_plan, vehicle_clocks, disruption_info)  # Filter route plan
-                filter_objective = new_request_updater.new_objective(
-                    current_route_plan, [], False)
+                current_route_plan, removed_filtering, filtered_away, middle, filtered_size = disruption_updater.\
+                    filter_route_plan(current_route_plan,
+                                      vehicle_clocks, None)  # Filter route plan
+                new_request_updater.middle = middle
+                filter_away_objective, filter_away_travel_time, filter_away_deviation = \
+                    new_request_updater.norm_objective(
+                        filtered_away, [], True, filtered_size)
+
                 cumulative_objective = copy(
-                    cumulative_objective) + copy(updated_objective) - copy(filter_objective)
+                    cumulative_objective) + copy(filter_away_objective)
+                cumulative_travel_time = copy(
+                    cumulative_travel_time) + copy(filter_away_travel_time)
+                cumulative_deviation = copy(
+                    cumulative_deviation) + copy(filter_away_deviation)
+
                 current_objective = new_request_updater.new_objective(
                     current_route_plan, current_infeasible_set, False)
                 if disruption_type == 2 or disruption_type == 3:  # Disruption: cancel or no show
@@ -158,6 +180,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                                     node == disruption_info[3])
                     delayed = (True, disruption_info[0], node_idx)
                     delay_deltas.append(current_objective)
+
             if not rejection:
                 # Heuristic
                 criterion = SimulatedAnnealing(cooling_rate)
@@ -185,12 +208,22 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                     cumulative_recalibration += delta_dev_objective
                     current_objective -= delta_dev_objective
 
-            total_objective = new_request_updater.total_objective(current_objective,
-                                                                  cumulative_objective,
-                                                                  cumulative_recalibration, cumulative_rejected, rejection)
+            total_objective, rejected_objective = new_request_updater.total_objective(current_objective, cumulative_objective,
+                                                                                      cumulative_recalibration, cumulative_rejected, rejection)
 
-            df_runtime.append(
-                [run, str(disruption_type), (datetime.now() - start_time).total_seconds(), total_objective.total_seconds()])
+            _, current_travel_time, current_deviation = new_request_updater.norm_objective(
+                current_route_plan, [], False, filtered_size)
+
+            cumulative_deviation = copy(
+                cumulative_deviation) + copy(cumulative_recalibration)/new_request_updater.beta
+
+            ride_time_objective = copy(
+                cumulative_travel_time) + copy(current_travel_time)
+            deviation_objective = copy(
+                cumulative_deviation) + copy(current_deviation)
+
+            df_runtime.append([run, str(disruption_type), total_objective.total_seconds(), (datetime.now() - start_time).total_seconds(), cumulative_rejected, rejected_objective.total_seconds(),
+                               deviation_objective.total_seconds(), ride_time_objective.total_seconds()])
 
         print("End simulation")
         print("Rejected rids", rejected)
@@ -224,11 +257,13 @@ if __name__ == "__main__":
     test_instance_date = test_instance_d[0:4] + "-" + \
         test_instance_d[4:6] + "-" + \
         test_instance_d[6:8] + " 10:00:00"
+
+    repair_removed = None
+    destroy_removed = None
+    runs = 5
+
     print("Test instance:", test_instance)
 
-    repair_removed = [0]
-    destroy_removed = [0, 2]
-    runs = 5
     df_requests_runs, df_runtime_runs, df_operators_runs = [], [], []
     for run in range(runs):
         df_operators, df_runtime, df_req_runtime = main(
@@ -236,7 +271,7 @@ if __name__ == "__main__":
         df_requests_runs.append(pd.DataFrame(df_req_runtime, columns=[
             "Run", "Request", "Response Time"]))
         df_runtime_runs.append(pd.DataFrame(df_runtime, columns=[
-            "Run", "Disruption Type", "Solution Time", "Objective"]))
+            "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective"]))
         df_operators_runs.append(pd.DataFrame(df_operators, columns=[
             "Run", "Initial", "Iteration", "Destroy Operator", "Repair Operator", "Destroy Weight", "Repair Weight", "Update destroy weight score", "Update repair weight score", "Destroy Used", "Repair Used", "Runtime", "Updated this round", "Best Objective"]))
 

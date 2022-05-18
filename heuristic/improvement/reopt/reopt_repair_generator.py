@@ -13,11 +13,12 @@ class ReOptRepairGenerator:
             self.heuristic.introduced_vehicles)
         self.vehicles = copy(self.heuristic.vehicles)
         self.greedy = greedy
+        self.V = V
 
     def generate_insertions(self, route_plan, request, rid, infeasible_set, initial_route_plan, index_removed, sim_clock, objectives, delayed, still_delayed_nodes, vehicle_clocks, prev_objective):
         possible_insertions = {}  # dict: delta objective --> route plan
         self.introduced_vehicles = set([i for i in range(len(route_plan))])
-        self.vehicles = [i for i in range(len(route_plan), V)]
+        self.vehicles = [i for i in range(len(route_plan), self.V)]
 
         for introduced_vehicle in self.introduced_vehicles:
             # generate all possible insertions
