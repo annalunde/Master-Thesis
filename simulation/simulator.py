@@ -12,7 +12,31 @@ class Simulator:
     def __init__(self, sim_clock):
         self.sim_clock = sim_clock
         self.poisson = Poisson()
+        self.cancel_disruption_times = self.fixed_cancel_stack()
         self.disruptions_stack = self.create_disruption_stack()
+
+    def fixed_cancel_stack(self):
+        cancel_disruption_times = []
+        df = pd.read_csv(config(cancel_stack))
+        df['Cancelation Time'] = pd.to_datetime(
+            df['Cancelation Time'], format="%Y-%m-%d %H:%M:%S")
+        df['removed time'] = pd.to_datetime(
+            df['removed time'], format="%Y-%m-%d %H:%M:%S")
+        for index, row in df.iterrows():
+            diff_time = row["removed time"] - row["Cancelation Time"]
+            if diff_time < timedelta(hours=1):
+                if row["removed time"] - timedelta(hours=1) > datetime(
+                        self.sim_clock.year, self.sim_clock.month, self.sim_clock.day, 10, 0, 0):
+                    # add to cancel stack and push cancellation time to 1 hour before service time
+                    cancel_disruption_times.append((2, row["removed time"] - timedelta(hours=1),
+                                                    row['pickup rid'], row['dropoff rid']))
+            else:
+                # add to cancel stack
+                cancel_disruption_times.append((2, row["Cancelation Time"],
+                                                row['pickup rid'], row['dropoff rid']))
+
+        # stack with format (type, time, p_rid, d_rid)
+        return cancel_disruption_times
 
     def create_disruption_stack(self):
         """
@@ -27,8 +51,7 @@ class Simulator:
             arrival_rate_request, self.sim_clock, 0)
         delay = self.poisson.disruption_times(
             arrival_rate_delay, self.sim_clock, 1)
-        cancel = self.poisson.disruption_times(
-            arrival_rate_cancel, self.sim_clock, 2)
+        cancel = self.cancel_disruption_times
         initial_no_show = self.poisson.disruption_times(
             arrival_rate_no_show, self.sim_clock, 3)
         disruption_stack = request + delay + cancel + initial_no_show
@@ -59,11 +82,17 @@ class Simulator:
                 disruption_info = None
 
         elif disruption_type == 2:
-            cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index, node_p, node_d = self.cancel(
-                disruption_time, current_route_plan)
-            disruption_info = (
-                cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index, node_p, node_d)
-            if cancel_pickup_rid_index < 0:
+            cancel_info = [(vehicle, p_idx, d_idx)
+                           for vehicle in range(0, len(current_route_plan))
+                           for p_idx, p_node in enumerate(current_route_plan[vehicle])
+                           if p_node[0] == disruption[2]
+                           for d_idx, d_node in enumerate(current_route_plan[vehicle])
+                           if d_node[0] == p_node[0] + 0.5]
+
+            if len(cancel_info) > 0:
+                disruption_info = (cancel_info[0][0], cancel_info[0][1], cancel_info[0][2],
+                                   disruption[2], disruption[3])
+            else:
                 disruption_type = 4
                 disruption_info = None
 

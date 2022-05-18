@@ -125,6 +125,9 @@ class AnalyserDisruptions:
         plt.xlabel('Number of minutes between creation and requested pickup time')
         plt.show()
 
+        under_60 = [i for i in waiting_times if i < 60]
+        print("Mean waiting time pick-up", len(under_60)/len(waiting_times))
+
         f = Fitter(waiting_times, distributions=[
                    'gamma', 'lognorm', "norm"])
         f.fit()
@@ -311,7 +314,7 @@ class AnalyserDisruptions:
     # CANCEL
     # kanselleringen må skje samme dag for at det skal ha en betydelse for oss?
     # må vi ikke egt også ha de dagene hvor det ikke skjer noe?
-    def cancel(self):
+    def cancel(self, minutes):
         df = pd.read_csv(self.data_path)
         df_cancel = df[df['Request Status'].isin(["Cancel", "Late Cancel"])]
         df_cancel = df_cancel.dropna(
@@ -413,6 +416,9 @@ class AnalyserDisruptions:
             if row['Diff Original and Cancel'].total_seconds() / 60 <= 480:
                 waiting_times.append(
                     row['Diff Original and Cancel'].total_seconds()/60)
+
+        under = [i for i in waiting_times if i < minutes]
+        print("Percentage under", minutes, len(under)/len(waiting_times))
 
         sns.displot(data=waiting_times, kind="kde")
         sns.displot(data=waiting_times, kind="hist")
@@ -559,7 +565,7 @@ def main():
             data_path=config("data_processed_path"))
         # analyser.event_per_total()
         # analyser.no_show()
-        analyser.cancel()
+        analyser.cancel(60)
         # analyser.new_request()
         # analyser.delay(5)
 
