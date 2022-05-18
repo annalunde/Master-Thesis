@@ -31,7 +31,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         # CONSTRUCTION OF INITIAL SOLUTION
         df = pd.read_csv(config(test_instance))
         constructor = ConstructionHeuristic(
-            requests=df.head(20), vehicles=V, alpha=alpha, beta=beta)
+            requests=df, vehicles=V, alpha=alpha, beta=beta)
         print("Constructing initial solution")
         initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
 
@@ -152,6 +152,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             else:
                 current_route_plan, vehicle_clocks, artificial_depot = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
+
                 current_route_plan, removed_filtering, filtered_away, middle, filtered_size = disruption_updater.\
                     filter_route_plan(current_route_plan,
                                       vehicle_clocks, None)  # Filter route plan

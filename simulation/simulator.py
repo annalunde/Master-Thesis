@@ -31,8 +31,7 @@ class Simulator:
             arrival_rate_cancel, self.sim_clock, 2)
         initial_no_show = self.poisson.disruption_times(
             arrival_rate_no_show, self.sim_clock, 3)
-        # request + delay + cancel + initial_no_show
-        disruption_stack = delay + initial_no_show
+        disruption_stack = request + delay + cancel + initial_no_show
         disruption_stack.sort(reverse=True, key=lambda x: x[1])
         return disruption_stack
 
@@ -150,8 +149,6 @@ class Simulator:
         delay = timedelta(minutes=beta.rvs(
             delay_fit_a, delay_fit_b, delay_fit_loc, delay_fit_scale))
 
-        rids_indices, planned_times, vehicle_indices, rids = [], [], [], []
-
         # potential delays - nodes with planned pickup time after initial_delay
         vehicle_index = 0
         possible_nodes = []
@@ -164,27 +161,13 @@ class Simulator:
                 if temp_planned_time >= initial_delay:
                     possible_nodes.append(
                         (idx, temp_planned_time, vehicle_index, node[0]))
-                    rids_indices.append(idx)
-                    planned_times.append(temp_planned_time)
-                    vehicle_indices.append(vehicle_index)
-                    rids.append(node[0])
             vehicle_index += 1
 
         # check whether there are any delays, if not, another disruption type will be chosen
         # if yes, pick the delay with earliest planned time
         if len(possible_nodes) > 0:
             possible_nodes.sort(key=lambda x: x[1])
-            temp_actual_disruption_time_2 = possible_nodes[0][1]
-            temp_actual_disruption_time = min(planned_times)
-            rid_index2 = possible_nodes[0][0]
-            rid_index = rids_indices[planned_times.index(
-                temp_actual_disruption_time)]
-            vehicle_index2 = possible_nodes[0][2]
-            vehicle_index = vehicle_indices[planned_times.index(
-                temp_actual_disruption_time)]
-            rid2 = possible_nodes[0][3]
-            rid = rids[planned_times.index(temp_actual_disruption_time)]
-            return vehicle_index, rid_index, delay, rid
+            return possible_nodes[0][2], possible_nodes[0][0], delay, possible_nodes[0][3]
         else:
             return -1, -1, -1, -1
 
@@ -238,21 +221,16 @@ class Simulator:
                 if not temp_rid % int(temp_rid) and temp_planned_time >= initial_no_show:
                     for i in vehicle_route[idx:]:
                         if node[0] == temp_rid + 0.5:
-                            indices.append(
-                                (vehicle_index, idx, i, temp_rid, vehicle_route[i][0]))
-                            planned_pickup_times.append(temp_planned_time)
                             possible_noshows.append(
                                 (temp_planned_time, vehicle_index, idx, i, temp_rid, vehicle_route[i][0]))
             vehicle_index += 1
 
         # check whether there are any no shows, if not, another disruption type will be chosen
         # if yes, pick the no show with earliest planned pickup time
-        if len(indices) > 0:
+        if len(possible_noshows) > 0:
             possible_noshows.sort(key=lambda x: x[0])
-            actual_disruption_time = min(planned_pickup_times)
-            actual_disruption_time2 = possible_noshows[0][0]
-            index2 = possible_noshows[0][1:]
-            index = indices[planned_pickup_times.index(actual_disruption_time)]
+            actual_disruption_time = possible_noshows[0][0]
+            index = possible_noshows[0][1:]
             return index[0], index[1], index[2], index[3], index[4], actual_disruption_time
         else:
             return -1, -1, -1, -1, -1, -1
