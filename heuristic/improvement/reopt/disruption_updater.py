@@ -162,8 +162,10 @@ class DisruptionUpdater:
     def filter_route_plan(self, current_route_plan, vehicle_clocks, disruption_info):
         route_plan = list(map(list, current_route_plan))
         filtered_away = [[] for i in range(len(route_plan))]
+        filtered_size = [[] for i in range(len(route_plan))]
         before_filtering = len(
             route_plan[disruption_info[0]]) if disruption_info is not None else 0
+        middle = []
         for idx in range(len(route_plan)):
             vehicle_route = route_plan[idx]
             vehicle_clock = vehicle_clocks[idx]
@@ -171,6 +173,7 @@ class DisruptionUpdater:
                 i for i in vehicle_route if i[1] >= vehicle_clock]
             filtered_away_vehicle_route = [
                 i for i in vehicle_route if i[1] < vehicle_clock]
+            filtered_away_vehicle_route.append(filtered_vehicle_route[0])
             filtered_away[idx] = filtered_away_vehicle_route
             nodes = [int(n) for n, t, d, p, w,
                      _ in filtered_vehicle_route if n > 0]
@@ -180,20 +183,23 @@ class DisruptionUpdater:
                     el_idx = next(i for i, (node_test, *_)
                                   in enumerate(route_plan[idx]) if node_test == single_nodes[0])
                     filtered_vehicle_route.insert(0, route_plan[idx][el_idx])
+                    middle.append(single_nodes[0])
                 else:
                     ordered_insertion_singles = []
                     for single in single_nodes:
                         el_idx = next(i for i, (node_test, *_)
                                       in enumerate(route_plan[idx]) if node_test == single)
+                        middle.append(single)
                         ordered_insertion_singles.append(
                             (el_idx, route_plan[idx][el_idx]))
                     ordered_insertion_singles.sort(
                         key=lambda x: x[0], reverse=True)
                     for i in ordered_insertion_singles:
                         filtered_vehicle_route.insert(0, i[1])
+            filtered_size[idx] = len(filtered_vehicle_route) == 0
             route_plan[idx] = filtered_vehicle_route if len(
                 filtered_vehicle_route) else [(0, vehicle_clock, None, 0, 0, None)]
             if disruption_info is not None and idx == disruption_info[0]:
                 after_filtering = len(route_plan[disruption_info[0]])
         after_filtering = 0 if disruption_info is None else after_filtering
-        return route_plan, before_filtering - after_filtering, filtered_away
+        return route_plan, before_filtering - after_filtering, filtered_away, middle, filtered_size

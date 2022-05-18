@@ -263,7 +263,9 @@ class ConstructionHeuristic:
 
     @staticmethod
     def recalibrate_solution(route_plan):
-        return [[(node[0], node[1], timedelta(0), node[3], node[4], node[5]) for node in vehicle_route] for vehicle_route in route_plan]
+        return [[(node[0], node[1], timedelta(0), node[3], node[4], node[5]) if node[0] > 0
+                 else (node[0], node[1], None, node[3], node[4], node[5])
+                 for node in vehicle_route] for vehicle_route in route_plan]
 
     def get_delta_objective(self, new_routeplan, infeasible_set, current_objective):
         return current_objective - self.new_objective(new_routeplan, infeasible_set)

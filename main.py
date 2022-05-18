@@ -122,19 +122,17 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             elif disruption_type == 0:  # Disruption: new request
                 current_route_plan, vehicle_clocks, artificial_depot = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
-                before_route_plan = list(map(list, current_route_plan))
-                updated_objective, updated_travel_time, updated_deviation, _ = new_request_updater.norm_objective(
-                    current_route_plan, [], False)
-                current_route_plan, removed_filtering, filtered_away = disruption_updater.filter_route_plan(
-                    current_route_plan, vehicle_clocks, None)  # Filter route plan
-                filter_objective, filter_travel_time, filter_deviation, _ = new_request_updater.norm_objective(
-                    current_route_plan, [], False)
-                cumulative_objective = copy(
-                    cumulative_objective) + copy(updated_objective) - copy(filter_objective)
-                cumulative_travel_time = copy(
-                    cumulative_travel_time) + copy(updated_travel_time) - copy(filter_travel_time)
-                cumulative_deviation = copy(
-                    cumulative_deviation) + copy(updated_deviation) - copy(filter_deviation)
+                current_route_plan, removed_filtering, filtered_away, middle, filtered_size = disruption_updater.\
+                    filter_route_plan(current_route_plan, vehicle_clocks, None)  # Filter route plan
+                new_request_updater.middle = middle
+                filter_objective = new_request_updater.new_objective(current_route_plan, [], False)
+                filter_away_objective, filter_away_travel_time, filter_away_deviation = \
+                    new_request_updater.norm_objective(filtered_away, [], True, filtered_size)
+
+                cumulative_objective = copy(cumulative_objective) + copy(filter_away_objective)
+                cumulative_travel_time = copy(cumulative_travel_time) + copy(filter_away_travel_time)
+                cumulative_deviation = copy(cumulative_deviation) + copy(filter_away_deviation)
+
                 current_route_plan, current_objective, current_infeasible_set, vehicle_clocks, rejection, rid = new_request_updater.\
                     greedy_insertion_new_request(
                         current_route_plan, current_infeasible_set, disruption_info, disruption_time, vehicle_clocks, i, filter_objective)
@@ -156,18 +154,16 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             else:
                 current_route_plan, vehicle_clocks, artificial_depot = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
-                updated_objective, updated_travel_time, updated_deviation, _ = new_request_updater.norm_objective(
-                    current_route_plan, [], False)
-                current_route_plan, removed_filtering, filtered_away = disruption_updater.filter_route_plan(
-                    current_route_plan, vehicle_clocks, disruption_info)  # Filter route plan
-                filter_objective, filter_travel_time, filter_deviation, _ = new_request_updater.norm_objective(
-                    current_route_plan, [], False)
-                cumulative_objective = copy(
-                    cumulative_objective) + copy(updated_objective) - copy(filter_objective)
-                cumulative_travel_time = copy(
-                    cumulative_travel_time) + copy(updated_travel_time) - copy(filter_travel_time)
-                cumulative_deviation = copy(
-                    cumulative_deviation) + copy(updated_deviation) - copy(filter_deviation)
+                current_route_plan, removed_filtering, filtered_away, middle, filtered_size = disruption_updater.\
+                    filter_route_plan(current_route_plan, vehicle_clocks, None)  # Filter route plan
+                new_request_updater.middle = middle
+                filter_away_objective, filter_away_travel_time, filter_away_deviation = \
+                    new_request_updater.norm_objective(filtered_away, [], True, filtered_size)
+
+                cumulative_objective = copy(cumulative_objective) + copy(filter_away_objective)
+                cumulative_travel_time = copy(cumulative_travel_time) + copy(filter_away_travel_time)
+                cumulative_deviation = copy(cumulative_deviation) + copy(filter_away_deviation)
+
                 current_objective = new_request_updater.new_objective(
                     current_route_plan, current_infeasible_set, False)
                 if disruption_type == 2 or disruption_type == 3:  # Disruption: cancel or no show
@@ -223,8 +219,8 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             total_objective, rejected_objective = new_request_updater.total_objective(current_objective, cumulative_objective,
                                                                                       cumulative_recalibration, cumulative_rejected, rejection)
 
-            _, current_travel_time, current_deviation, _ = new_request_updater.norm_objective(
-                current_route_plan, [], False)
+            _, current_travel_time, current_deviation = new_request_updater.norm_objective(
+                current_route_plan, [], False, filtered_size)
 
             cumulative_deviation = copy(
                 cumulative_deviation) + copy(cumulative_recalibration)/new_request_updater.beta
