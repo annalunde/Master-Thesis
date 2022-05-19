@@ -173,7 +173,7 @@ class DisruptionUpdater:
                 i for i in vehicle_route if i[1] >= vehicle_clock]
             filtered_away_vehicle_route = [
                 i for i in vehicle_route if i[1] < vehicle_clock]
-            if len(filtered_vehicle_route) > 0:
+            if len(filtered_vehicle_route):
                 filtered_away_vehicle_route.append(filtered_vehicle_route[0])
             filtered_away[idx] = filtered_away_vehicle_route
             nodes = [int(n) for n, t, d, p, w,
