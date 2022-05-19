@@ -308,7 +308,7 @@ if __name__ == "__main__":
     print("DONE WITH ALL RUNS")
 
 """
-TODO:
+NOTE:
     - Add index to removed repair operator:
         - None = none removed 
         - 0 = greedy_repair
