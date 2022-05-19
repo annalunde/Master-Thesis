@@ -31,11 +31,6 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             cumulative_deviation = 0, timedelta(
                 0), timedelta(0), timedelta(0), timedelta(0)
 
-        # SIMULATOR
-        sim_clock = datetime.strptime(
-            test_instance_date, "%Y-%m-%d %H:%M:%S")
-        simulator = Simulator(sim_clock)
-
         # CONSTRUCTION OF INITIAL SOLUTION
         df = pd.read_csv(config(test_instance))
         constructor = ConstructionHeuristic(
@@ -94,6 +89,9 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
 
         # SIMULATION
         print("Start simulation")
+        sim_clock = datetime.strptime(
+            test_instance_date, "%Y-%m-%d %H:%M:%S")
+        simulator = Simulator(sim_clock)
         new_request_updater = NewRequestUpdater(
             constructor, standby)
         disruption_updater = DisruptionUpdater(new_request_updater)
@@ -285,7 +283,7 @@ if __name__ == "__main__":
         test_instance_d[4:6] + "-" + \
         test_instance_d[6:8] + " 10:00:00"
 
-    naive = False
+    naive = True
     adaptive = False
     repair_removed = None
     destroy_removed = None
