@@ -31,8 +31,20 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             cumulative_deviation = 0, timedelta(
                 0), timedelta(0), timedelta(0), timedelta(0)
 
+        # SIMULATOR
+        sim_clock = datetime.strptime(
+            test_instance_date, "%Y-%m-%d %H:%M:%S")
+        simulator = Simulator(sim_clock)
+
         # CONSTRUCTION OF INITIAL SOLUTION
-        df = pd.read_csv(config(test_instance))
+        df_initial = pd.read_csv(config(test_instance))
+        df_sim_initial = simulator.initial_requests
+        df_initial.drop(columns=['Unnamed: 0', 'Request ID', 'Request Status', 'Rider ID', 'Ride ID',
+                                 'Actual Pickup Time', 'Actual Dropoff Time', 'Cancellation Time',
+                                 'No Show Time', 'Origin Zone', 'Destination Zone', 'Reason For Travel',
+                                 'Original Planned Pickup Time'], inplace=True)
+        df_sim_initial.drop(columns=['Rid'], inplace=True)
+        df = df_initial.append(df_sim_initial)
         constructor = ConstructionHeuristic(
             requests=df, vehicles=V+standby, alpha=alpha, beta=beta)
         print("Constructing initial solution")
@@ -89,9 +101,6 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
 
         # SIMULATION
         print("Start simulation")
-        sim_clock = datetime.strptime(
-            test_instance_date, "%Y-%m-%d %H:%M:%S")
-        simulator = Simulator(sim_clock)
         new_request_updater = NewRequestUpdater(
             constructor, standby)
         disruption_updater = DisruptionUpdater(new_request_updater)
@@ -283,7 +292,7 @@ if __name__ == "__main__":
         test_instance_d[4:6] + "-" + \
         test_instance_d[6:8] + " 10:00:00"
 
-    naive = True
+    naive = False
     adaptive = False
     repair_removed = None
     destroy_removed = None
