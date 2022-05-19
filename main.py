@@ -260,7 +260,7 @@ if __name__ == "__main__":
         test_instance_d[6:8] + " 10:00:00"
 
     repair_removed = None
-    destroy_removed = None
+    destroy_removed = [0, 2]
     runs = 5
 
     print("Test instance:", test_instance)
