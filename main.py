@@ -123,15 +123,21 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                 current_route_plan, vehicle_clocks, artificial_depot = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
                 current_route_plan, removed_filtering, filtered_away, middle, filtered_size = disruption_updater.\
-                    filter_route_plan(current_route_plan, vehicle_clocks, None)  # Filter route plan
+                    filter_route_plan(current_route_plan,
+                                      vehicle_clocks, None)  # Filter route plan
                 new_request_updater.middle = middle
-                filter_objective = new_request_updater.new_objective(current_route_plan, [], False)
+                filter_objective = new_request_updater.new_objective(
+                    current_route_plan, [], False)
                 filter_away_objective, filter_away_travel_time, filter_away_deviation = \
-                    new_request_updater.norm_objective(filtered_away, [], True, filtered_size)
+                    new_request_updater.norm_objective(
+                        filtered_away, [], True, filtered_size)
 
-                cumulative_objective = copy(cumulative_objective) + copy(filter_away_objective)
-                cumulative_travel_time = copy(cumulative_travel_time) + copy(filter_away_travel_time)
-                cumulative_deviation = copy(cumulative_deviation) + copy(filter_away_deviation)
+                cumulative_objective = copy(
+                    cumulative_objective) + copy(filter_away_objective)
+                cumulative_travel_time = copy(
+                    cumulative_travel_time) + copy(filter_away_travel_time)
+                cumulative_deviation = copy(
+                    cumulative_deviation) + copy(filter_away_deviation)
 
                 current_route_plan, current_objective, current_infeasible_set, vehicle_clocks, rejection, rid = new_request_updater.\
                     greedy_insertion_new_request(
@@ -155,14 +161,19 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                 current_route_plan, vehicle_clocks, artificial_depot = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
                 current_route_plan, removed_filtering, filtered_away, middle, filtered_size = disruption_updater.\
-                    filter_route_plan(current_route_plan, vehicle_clocks, None)  # Filter route plan
+                    filter_route_plan(current_route_plan,
+                                      vehicle_clocks, None)  # Filter route plan
                 new_request_updater.middle = middle
                 filter_away_objective, filter_away_travel_time, filter_away_deviation = \
-                    new_request_updater.norm_objective(filtered_away, [], True, filtered_size)
+                    new_request_updater.norm_objective(
+                        filtered_away, [], True, filtered_size)
 
-                cumulative_objective = copy(cumulative_objective) + copy(filter_away_objective)
-                cumulative_travel_time = copy(cumulative_travel_time) + copy(filter_away_travel_time)
-                cumulative_deviation = copy(cumulative_deviation) + copy(filter_away_deviation)
+                cumulative_objective = copy(
+                    cumulative_objective) + copy(filter_away_objective)
+                cumulative_travel_time = copy(
+                    cumulative_travel_time) + copy(filter_away_travel_time)
+                cumulative_deviation = copy(
+                    cumulative_deviation) + copy(filter_away_deviation)
 
                 current_objective = new_request_updater.new_objective(
                     current_route_plan, current_infeasible_set, False)
@@ -293,7 +304,7 @@ if __name__ == "__main__":
 
     df_track_run = pd.concat(df_runs)
     df_track_run.to_csv(
-        config("run_path") + "Extra_Vehicles" + str(standby) + test_instance + "analysis" + ".csv")
+        config("run_path") + "Naive:" + naive + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
