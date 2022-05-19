@@ -86,10 +86,10 @@ class DisruptionUpdater:
                 sn_mod = sn % int(sn)
                 en_mod = en % int(en)
                 start_id = int(
-                    sn - 0.5 - 1 + new_request_updater.n if sn_mod else sn - 1)
+                    sn - 0.5 - 1 + self.new_request_updater.n if sn_mod else sn - 1)
                 end_id = int(en - 0.5 - 1 +
-                             new_request_updater.n if en_mod else en - 1)
-                travel_time = new_request_updater.travel_time(
+                             self.new_request_updater.n if en_mod else en - 1)
+                travel_time = self.new_request_updater.travel_time(
                     start_id, end_id, False)
                 diff_time = i[1] - route_plan[disruption_info[0]
                                               ][disruption_info[1]:][prev_idx][1]
