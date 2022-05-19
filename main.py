@@ -288,6 +288,7 @@ if __name__ == "__main__":
     repair_removed = None
     destroy_removed = None
     runs = 5
+    standby = 0
 
     print("Test instance:", test_instance)
     print("Naive:", naive)
