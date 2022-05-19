@@ -31,7 +31,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         # CONSTRUCTION OF INITIAL SOLUTION
         df = pd.read_csv(config(test_instance))
         constructor = ConstructionHeuristic(
-            requests=df, vehicles=V, alpha=alpha, beta=beta)
+            requests=df.head(10), vehicles=V, alpha=alpha, beta=beta)
         print("Constructing initial solution")
         initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
 
@@ -84,6 +84,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         sim_clock = datetime.strptime(
             test_instance_date, "%Y-%m-%d %H:%M:%S")
         simulator = Simulator(sim_clock)
+        
         new_request_updater = NewRequestUpdater(
             constructor)
         disruption_updater = DisruptionUpdater(new_request_updater)
@@ -261,7 +262,7 @@ if __name__ == "__main__":
 
     repair_removed = None
     destroy_removed = None
-    runs = 5
+    runs = 1
 
     print("Test instance:", test_instance)
 
@@ -277,18 +278,18 @@ if __name__ == "__main__":
             "Run", "Initial", "Iteration", "Destroy Operator", "Repair Operator", "Destroy Weight", "Repair Weight", "Update destroy weight score", "Update repair weight score", "Destroy Used", "Repair Used", "Runtime", "Updated this round", "Best Objective"]))
 
     df_track_req_runtime = pd.concat(df_requests_runs)
-    df_track_req_runtime.to_csv(
-        config("run_path") + "impact_of_operators" + "repair_removed:_" + str(repair_removed) + "destroy_removed:_" + str(destroy_removed) + test_instance + "runtime_reqs" + ".csv")
+    #df_track_req_runtime.to_csv(
+    #    config("run_path") + "impact_of_operators" + "repair_removed:_" + str(repair_removed) + "destroy_removed:_" + str(destroy_removed) + test_instance + "runtime_reqs" + ".csv")
 
     df_track_runtime = pd.concat(df_runtime_runs)
     df_track_runtime.to_csv(config("run_path") + "impact_of_operators:" + "repair_removed:_" + str(repair_removed) + "destroy_removed:_" + str(destroy_removed) +
                             test_instance + "computational_time" + ".csv")
 
-    df_operators_total = pd.concat(df_operators_runs)
-    df_operators_total.to_csv(
-        config("run_path") + "impact_of_operators:" + "repair_removed:_" + str(repair_removed) + "destroy_removed:_" + str(destroy_removed) + test_instance + "impact_operators" + ".csv")
+    #df_operators_total = pd.concat(df_operators_runs)
+    #df_operators_total.to_csv(
+    #    config("run_path") + "impact_of_operators:" + "repair_removed:_" + str(repair_removed) + "destroy_removed:_" + str(destroy_removed) + test_instance + "impact_operators" + ".csv")
 
-    print("DONE WITH ALL RUNS")
+    print("DONE WITH ALL RUNS ")
 
 """
 TODO:
