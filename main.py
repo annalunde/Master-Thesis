@@ -283,27 +283,28 @@ if __name__ == "__main__":
         test_instance_d[4:6] + "-" + \
         test_instance_d[6:8] + " 10:00:00"
 
-    naive = True
+    naive = False
     adaptive = False
     repair_removed = None
     destroy_removed = None
     runs = 5
-    standby = 0
+    standby_vehicles = [-2, -1, 0, 1, 2]
 
     print("Test instance:", test_instance)
     print("Naive:", naive)
     print("Adaptive:", adaptive)
 
-    df_runs = []
-    for run in range(runs):
-        df_run = main(
-            test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby)
-        df_runs.append(pd.DataFrame(df_run, columns=[
-            "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
+    for standby in standby_vehicles:
+        df_runs = []
+        for run in range(runs):
+            df_run = main(
+                test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby)
+            df_runs.append(pd.DataFrame(df_run, columns=[
+                "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
 
-    df_track_run = pd.concat(df_runs)
-    df_track_run.to_csv(
-        config("run_path") + "Naive:" + str(naive) + test_instance + "analysis" + ".csv")
+        df_track_run = pd.concat(df_runs)
+        df_track_run.to_csv(
+            config("run_path") + "Extra_Vehicles" + str(standby) + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
