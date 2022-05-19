@@ -11,8 +11,8 @@ pd.options.mode.chained_assignment = None
 
 
 class NewRequestUpdater:
-    def __init__(self, constructor):
-        self.vehicles = [i for i in range(V)]
+    def __init__(self, constructor, standby):
+        self.vehicles = [i for i in range(V+standby)]
         self.introduced_vehicles = set()
         self.requests = constructor.requests.copy(deep=False)
         self.n = len(self.requests.index)
@@ -20,11 +20,14 @@ class NewRequestUpdater:
         self.current_objective = timedelta(0)
         self.T_ij = np.array(constructor.T_ij, copy=True)
         self.infeasible_set = copy(constructor.infeasible_set)
-        self.re_opt_repair_generator = ReOptRepairGenerator(self, False)
+        self.re_opt_repair_generator = ReOptRepairGenerator(
+            self, False, standby)
         self.preprocessed = copy(constructor.preprocessed)
         self.alpha = constructor.alpha
         self.beta = constructor.beta
         self.gamma = constructor.gamma
+        self.middle = []
+        self.obj_processed_nodes = []
 
     def set_parameters(self, new_request):
         updated_new_request = self.compute_pickup_time(new_request)
@@ -106,6 +109,8 @@ class NewRequestUpdater:
                 for i in range(len(vehicle_route) - 1):
                     sn = vehicle_route[i][0]
                     en = vehicle_route[i+1][0]
+                    if sn in self.middle:
+                        continue
                     sn_mod = sn % int(sn) if sn else 0
                     en_mod = en % int(en)
                     start_id = int(
@@ -115,37 +120,79 @@ class NewRequestUpdater:
                         start_id, end_id, False)
 
             pen_dev = [j if j > timedelta(
-                0) else -j for j in [i[2] for i in vehicle_route if i[2] is not None]]
+                0) else -j for j in [i[2] for i in vehicle_route if i[2] is not None and i[0] not in self.middle]]
             total_deviation += reduce(
                 lambda a, b: a+b, [i-P_S_R if i > P_S_R else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(0)
         updated = self.alpha*total_travel_time + self.beta * \
             total_deviation + self.gamma*total_infeasible
         return updated
 
-    def norm_objective(self, new_routeplan, new_infeasible_set, greedy):
-        total_deviation, total_travel_time = timedelta(
-            minutes=0), timedelta(minutes=0)
-        total_infeasible = len(new_infeasible_set)
-        for vehicle, vehicle_route in enumerate(new_routeplan):
-            if len(vehicle_route) >= 2:
-                for i in range(len(vehicle_route) - 1):
-                    sn = vehicle_route[i][0]
-                    en = vehicle_route[i+1][0]
-                    sn_mod = sn % int(sn) if sn else 0
-                    en_mod = en % int(en)
-                    start_id = int(
-                        sn - 0.5 - 1 + self.n if sn_mod else sn - 1) if sn else 2 * self.n + vehicle
-                    end_id = int(en - 0.5 - 1 + self.n if en_mod else en - 1)
-                    total_travel_time += self.travel_time(
-                        start_id, end_id, False)
+    def norm_objective(self, new_routeplan, new_infeasible_set, cumulative, filtered_size):
+        if cumulative:
+            total_deviation, total_travel_time = timedelta(
+                minutes=0), timedelta(minutes=0)
+            total_infeasible = len(new_infeasible_set)
+            for vehicle, vehicle_route in enumerate(new_routeplan):
+                processed = []
+                if len(vehicle_route) >= 2:
+                    for i in range(len(vehicle_route) - 1):
+                        sn = vehicle_route[i][0]
+                        en = vehicle_route[i + 1][0]
+                        if sn in self.obj_processed_nodes:
+                            continue
+                        sn_mod = sn % int(sn) if sn else 0
+                        en_mod = en % int(en)
+                        start_id = int(
+                            sn - 0.5 - 1 + self.n if sn_mod else sn - 1) if sn else 2 * self.n + vehicle
+                        end_id = int(en - 0.5 - 1 +
+                                     self.n if en_mod else en - 1)
+                        total_travel_time += self.travel_time(
+                            start_id, end_id, False)
 
-            pen_dev = [j if j > timedelta(
-                0) else -j for j in [i[2] for i in vehicle_route if i[2] is not None]]
-            total_deviation += reduce(
-                lambda a, b: a+b, [i-P_S_R if i > P_S_R else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(0)
+                        if sn != 0:
+                            processed.append(sn)
+
+                pen_dev = [j if j > timedelta(0)
+                           else -j for j in [i[2] for i in vehicle_route
+                                             if i[2] is not None and i[0] not in self.obj_processed_nodes]] \
+                    if filtered_size[vehicle] \
+                    else [j if j > timedelta(0) else -j for j in
+                          [i[2] for i in vehicle_route[:-1] if i[2] is not None
+                           and i[0] not in self.obj_processed_nodes]]
+                total_deviation += reduce(
+                    lambda a, b: a + b,
+                    [i - P_S_R if i > P_S_R else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(0)
+                self.obj_processed_nodes = self.obj_processed_nodes + processed
+        else:
+            total_deviation, total_travel_time = timedelta(
+                minutes=0), timedelta(minutes=0)
+            total_infeasible = len(new_infeasible_set)
+            for vehicle, vehicle_route in enumerate(new_routeplan):
+                if len(vehicle_route) >= 2:
+                    for i in range(len(vehicle_route) - 1):
+                        sn = vehicle_route[i][0]
+                        en = vehicle_route[i + 1][0]
+                        if sn in self.middle:
+                            continue
+                        sn_mod = sn % int(sn) if sn else 0
+                        en_mod = en % int(en)
+                        start_id = int(
+                            sn - 0.5 - 1 + self.n if sn_mod else sn - 1) if sn else 2 * self.n + vehicle
+                        end_id = int(en - 0.5 - 1 +
+                                     self.n if en_mod else en - 1)
+                        total_travel_time += self.travel_time(
+                            start_id, end_id, False)
+
+                pen_dev = [j if j > timedelta(
+                    0) else -j for j in [i[2] for i in vehicle_route
+                                         if i[2] is not None and i[0] not in self.middle]]
+                total_deviation += reduce(
+                    lambda a, b: a + b,
+                    [i - P_S_R if i > P_S_R else timedelta(0) for i in pen_dev]) if pen_dev else timedelta(0)
+
         updated = self.alpha*total_travel_time + self.beta * \
             total_deviation + self.gamma*total_infeasible
-        return updated, total_travel_time, total_deviation, self.gamma*total_infeasible
+        return updated, total_travel_time, total_deviation
 
     def total_objective(self, current_objective, cumulative_objective, cumulative_recalibration, cumulative_rejected, rejection):
         cum_rej = cumulative_rejected if not rejection else cumulative_rejected - 1
