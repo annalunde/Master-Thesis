@@ -22,7 +22,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
     try:
         # TRACKING
         start_time = datetime.now()
-        df_run, df_cancel, df_req_runtime = [], [], []
+        df_run = []
         cost_per_trip, ride_sharing_passengers, ride_sharing_arcs, processed_nodes, cpt, ride_sharing = {
             idx: (0, None, None) for idx in range(V+standby)}, 0, 0, set(), 0, 0
 
@@ -154,15 +154,6 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                             cumulative_rejected -= 1
                             break
                 current_infeasible_set = []
-                df_req_runtime.append([rid, disruption_time,
-                                       disruption_info.iloc[0]['Requested Pickup Time'],
-                                       disruption_info.iloc[0]['Requested Dropoff Time'],
-                                       disruption_info.iloc[0]['Wheelchair'],
-                                       disruption_info.iloc[0]['Number of Passengers'],
-                                       disruption_info.iloc[0]['Origin Lat'],
-                                       disruption_info.iloc[0]['Origin Lng'],
-                                       disruption_info.iloc[0]['Destination Lat'],
-                                       disruption_info.iloc[0]['Destination Lng']])
 
             else:
                 removed_time = None
@@ -194,9 +185,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                     index_removed[0] = (
                         None, None, None) if artificial_depot or disruption_type == 3 else index_removed[0]
                     disrupt = (True, index_removed)
-                    if disruption_type == 2:
-                        df_cancel.append(
-                            [disruption_time, disruption_info[3], disruption_info[4], str(removed_time)])
+
                 elif disruption_type == 1:  # Disruption: delay
                     node_idx = next(i for i, (node, *_) in enumerate(current_route_plan[disruption_info[0]]) if
                                     node == disruption_info[3])
@@ -281,7 +270,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         print("File name: ", filename)
         print("Line number: ", line_number)
 
-    return df_run, df_cancel, df_req_runtime
+    return df_run
 
 
 if __name__ == "__main__":
