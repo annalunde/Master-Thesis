@@ -143,7 +143,8 @@ class NewRequestUpdater:
                         en_mod = en % int(en)
                         start_id = int(
                             sn - 0.5 - 1 + self.n if sn_mod else sn - 1) if sn else 2 * self.n + vehicle
-                        end_id = int(en - 0.5 - 1 + self.n if en_mod else en - 1)
+                        end_id = int(en - 0.5 - 1 +
+                                     self.n if en_mod else en - 1)
                         total_travel_time += self.travel_time(
                             start_id, end_id, False)
 
@@ -176,7 +177,8 @@ class NewRequestUpdater:
                         en_mod = en % int(en)
                         start_id = int(
                             sn - 0.5 - 1 + self.n if sn_mod else sn - 1) if sn else 2 * self.n + vehicle
-                        end_id = int(en - 0.5 - 1 + self.n if en_mod else en - 1)
+                        end_id = int(en - 0.5 - 1 +
+                                     self.n if en_mod else en - 1)
                         total_travel_time += self.travel_time(
                             start_id, end_id, False)
 

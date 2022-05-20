@@ -4,6 +4,7 @@ from datetime import timedelta, datetime
 class DisruptionUpdater:
     def __init__(self, new_request_updater):
         self.new_request_updater = new_request_updater
+        self.alone_rids = []
 
     def update_route_plan(self, current_route_plan, disruption_type, disruption_info, sim_clock):
 
@@ -86,10 +87,10 @@ class DisruptionUpdater:
                 sn_mod = sn % int(sn)
                 en_mod = en % int(en)
                 start_id = int(
-                    sn - 0.5 - 1 + new_request_updater.n if sn_mod else sn - 1)
+                    sn - 0.5 - 1 + self.new_request_updater.n if sn_mod else sn - 1)
                 end_id = int(en - 0.5 - 1 +
-                             new_request_updater.n if en_mod else en - 1)
-                travel_time = new_request_updater.travel_time(
+                             self.new_request_updater.n if en_mod else en - 1)
+                travel_time = self.new_request_updater.travel_time(
                     start_id, end_id, False)
                 diff_time = i[1] - route_plan[disruption_info[0]
                                               ][disruption_info[1]:][prev_idx][1]
@@ -159,7 +160,9 @@ class DisruptionUpdater:
             vehicle_route_temp + vehicle_route[dropoff_id:]
         return vehicle_route_result
 
-    def filter_route_plan(self, current_route_plan, vehicle_clocks, disruption_info):
+    def filter_route_plan(self, current_route_plan, vehicle_clocks, disruption_info, disruption_type, artificial_depot):
+        if disruption_type == 3 or artificial_depot:
+            self.alone_rids.append(disruption_info[3])
         route_plan = list(map(list, current_route_plan))
         filtered_away = [[] for i in range(len(route_plan))]
         filtered_size = [[] for i in range(len(route_plan))]
@@ -178,7 +181,8 @@ class DisruptionUpdater:
             filtered_away[idx] = filtered_away_vehicle_route
             nodes = [int(n) for n, t, d, p, w,
                      _ in filtered_vehicle_route if n > 0]
-            single_nodes = [i for i in nodes if nodes.count(i) == 1]
+            single_nodes = [i for i in nodes if nodes.count(
+                i) == 1 and i not in self.alone_rids]
             if single_nodes:
                 if len(single_nodes) == 1:
                     el_idx = next(i for i, (node_test, *_)
