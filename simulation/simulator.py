@@ -106,7 +106,7 @@ class Simulator:
             disruption_info = (
                 no_show_vehicle_index, no_show_pickup_rid_index, no_show_dropoff_rid_index, node_p, node_d)
             next_disruption_time = self.disruptions_stack[-1][1] if len(
-                self.disruptions_stack) > 0 else datetime.strptime("2021-05-10 19:00:00", "%Y-%m-%d %H:%M:%S")
+                self.disruptions_stack) > 0 else datetime(actual_no_show.year, actual_no_show.month, actual_no_show.day, 19, 0, 0)
             if no_show_pickup_rid_index < 0 or actual_no_show >= next_disruption_time:
                 disruption_type = 4
                 disruption_info = None
@@ -252,10 +252,10 @@ class Simulator:
                 s = S_W if node[5]["Wheelchair"] else S_P
                 temp_planned_time = node[1] - timedelta(minutes=s)
                 if not temp_rid % int(temp_rid) and temp_planned_time >= initial_no_show:
-                    for i in vehicle_route[idx:]:
-                        if node[0] == temp_rid + 0.5:
+                    for d_idx, d_node in enumerate(vehicle_route):
+                        if d_node[0] == temp_rid + 0.5:
                             possible_noshows.append(
-                                (temp_planned_time, vehicle_index, idx, i, temp_rid, vehicle_route[i][0]))
+                                (temp_planned_time, vehicle_index, idx, d_idx, temp_rid, d_node[0]))
             vehicle_index += 1
 
         # check whether there are any no shows, if not, another disruption type will be chosen
