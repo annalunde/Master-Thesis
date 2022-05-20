@@ -22,7 +22,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
     try:
         # TRACKING
         start_time = datetime.now()
-        df_run = []
+        df_run, df_cancel, df_req_runtime = [], [], []
         cost_per_trip, ride_sharing_passengers, ride_sharing_arcs, processed_nodes, cpt, ride_sharing = {
             idx: (0, None, None) for idx in range(V+standby)}, 0, 0, set(), 0, 0
 
@@ -122,7 +122,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                     current_route_plan, disruption_type, disruption_info, disruption_time)
                 current_route_plan, removed_filtering, filtered_away, middle, filtered_size = disruption_updater.\
                     filter_route_plan(current_route_plan,
-                                      vehicle_clocks, None)  # Filter route plan
+                                      vehicle_clocks, None, disruption_type, False)  # Filter route plan
                 new_request_updater.middle = middle
                 filter_objective = new_request_updater.new_objective(
                     current_route_plan, [], False)
@@ -154,13 +154,26 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                             cumulative_rejected -= 1
                             break
                 current_infeasible_set = []
+                df_req_runtime.append([rid, disruption_time,
+                                       disruption_info.iloc[0]['Requested Pickup Time'],
+                                       disruption_info.iloc[0]['Requested Dropoff Time'],
+                                       disruption_info.iloc[0]['Wheelchair'],
+                                       disruption_info.iloc[0]['Number of Passengers'],
+                                       disruption_info.iloc[0]['Origin Lat'],
+                                       disruption_info.iloc[0]['Origin Lng'],
+                                       disruption_info.iloc[0]['Destination Lat'],
+                                       disruption_info.iloc[0]['Destination Lng']])
 
             else:
+                removed_time = None
+                if disruption_type == 2:
+                    removed_time = current_route_plan[disruption_info[0]
+                                                      ][disruption_info[1]][1]
                 current_route_plan, vehicle_clocks, artificial_depot = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
                 current_route_plan, removed_filtering, filtered_away, middle, filtered_size = disruption_updater.\
                     filter_route_plan(current_route_plan,
-                                      vehicle_clocks, None)  # Filter route plan
+                                      vehicle_clocks, disruption_info, disruption_type, artificial_depot)  # Filter route plan
                 new_request_updater.middle = middle
                 filter_away_objective, filter_away_travel_time, filter_away_deviation = \
                     new_request_updater.norm_objective(
@@ -181,6 +194,9 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                     index_removed[0] = (
                         None, None, None) if artificial_depot or disruption_type == 3 else index_removed[0]
                     disrupt = (True, index_removed)
+                    if disruption_type == 2:
+                        df_cancel.append(
+                            [disruption_time, disruption_info[3], disruption_info[4], str(removed_time)])
                 elif disruption_type == 1:  # Disruption: delay
                     node_idx = next(i for i, (node, *_) in enumerate(current_route_plan[disruption_info[0]]) if
                                     node == disruption_info[3])
@@ -265,7 +281,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         print("File name: ", filename)
         print("Line number: ", line_number)
 
-    return df_run
+    return df_run, df_cancel, df_req_runtime
 
 
 if __name__ == "__main__":
