@@ -155,7 +155,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
 
                 current_route_plan, removed_filtering, filtered_away, middle, filtered_size = disruption_updater.\
                     filter_route_plan(current_route_plan,
-                                      vehicle_clocks, None)  # Filter route plan
+                                      vehicle_clocks, disruption_info)  # Filter route plan
                 new_request_updater.middle = middle
                 filter_away_objective, filter_away_travel_time, filter_away_deviation = \
                     new_request_updater.norm_objective(
