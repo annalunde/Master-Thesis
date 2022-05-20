@@ -114,7 +114,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                     current_route_plan, disruption_type, disruption_info, disruption_time)
                 current_route_plan, removed_filtering, filtered_away, middle, filtered_size = disruption_updater.\
                     filter_route_plan(current_route_plan,
-                                      vehicle_clocks, None)  # Filter route plan
+                                      vehicle_clocks, None, disruption_type, False)  # Filter route plan
                 new_request_updater.middle = middle
                 filter_objective = new_request_updater.new_objective(
                     current_route_plan, [], False)
@@ -155,7 +155,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
 
                 current_route_plan, removed_filtering, filtered_away, middle, filtered_size = disruption_updater.\
                     filter_route_plan(current_route_plan,
-                                      vehicle_clocks, disruption_info)  # Filter route plan
+                                      vehicle_clocks, disruption_info, disruption_type, artificial_depot)  # Filter route plan
                 new_request_updater.middle = middle
                 filter_away_objective, filter_away_travel_time, filter_away_deviation = \
                     new_request_updater.norm_objective(
@@ -260,7 +260,7 @@ if __name__ == "__main__":
         test_instance_d[6:8] + " 10:00:00"
 
     repair_removed = None
-    destroy_removed = [0, 2]
+    destroy_removed = None
     runs = 5
 
     print("Test instance:", test_instance)
