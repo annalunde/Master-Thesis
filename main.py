@@ -131,7 +131,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                     current_route_plan, disruption_type, disruption_info, disruption_time)
                 current_route_plan, removed_filtering, filtered_away, middle, filtered_size = disruption_updater.\
                     filter_route_plan(current_route_plan,
-                                      vehicle_clocks, None)  # Filter route plan
+                                      vehicle_clocks, None, disruption_type, False)  # Filter route plan
                 new_request_updater.middle = middle
                 filter_objective = new_request_updater.new_objective(
                     current_route_plan, [], False)
@@ -165,11 +165,15 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                 current_infeasible_set = []
 
             else:
+                removed_time = None
+                if disruption_type == 2:
+                    removed_time = current_route_plan[disruption_info[0]
+                                                      ][disruption_info[1]][1]
                 current_route_plan, vehicle_clocks, artificial_depot = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
                 current_route_plan, removed_filtering, filtered_away, middle, filtered_size = disruption_updater.\
                     filter_route_plan(current_route_plan,
-                                      vehicle_clocks, None)  # Filter route plan
+                                      vehicle_clocks, disruption_info, disruption_type, artificial_depot)  # Filter route plan
                 new_request_updater.middle = middle
                 filter_away_objective, filter_away_travel_time, filter_away_deviation = \
                     new_request_updater.norm_objective(
@@ -312,7 +316,7 @@ if __name__ == "__main__":
 
     df_track_run = pd.concat(df_runs)
     df_track_run.to_csv(
-        config("run_path") + "Naive:" + str(naive) + test_instance + "analysis" + ".csv")
+        config("run_path") + "Request_Disruptions" + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
