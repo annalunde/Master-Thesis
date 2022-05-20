@@ -87,7 +87,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         new_request_updater = NewRequestUpdater(
             constructor)
         disruption_updater = DisruptionUpdater(new_request_updater)
-        first_iteration, rejected = True, []
+        first_iteration, rejected = False, []
         print("Length of disruption stack", len(simulator.disruptions_stack))
         while len(simulator.disruptions_stack) > 0:
             start_time = datetime.now()
@@ -103,7 +103,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                     current_route_plan, config("data_simulator_path"), first_iteration)
             else:
                 disruption_type, disruption_time, disruption_info = simulator.get_disruption(
-                    current_route_plan, config("data_processed_path"), first_iteration)
+                    current_route_plan, config("data_simulator_path"), first_iteration)
                 first_iteration = False
             # updates before heuristic
             disrupt = (False, None)
