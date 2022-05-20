@@ -61,8 +61,7 @@ class Simulator:
             no show: 3
             no disruption: 4
         """
-        request = self.poisson.disruption_times(
-            arrival_rate_request, self.sim_clock, 0)
+        request = self.request_disruption_times
         delay = self.poisson.disruption_times(
             arrival_rate_delay, self.sim_clock, 1)
         cancel = self.poisson.disruption_times(
@@ -73,7 +72,7 @@ class Simulator:
         disruption_stack.sort(reverse=True, key=lambda x: x[1])
         return disruption_stack
 
-    def get_disruption(self, current_route_plan, data_path, first_iteration):
+    def get_disruption(self, current_route_plan, data_path):
         # get disruption from stack
         disruption = self.disruptions_stack.pop()
         disruption_type = disruption[0]
@@ -119,7 +118,7 @@ class Simulator:
 
         return disruption_type, disruption_time, disruption_info
 
-    def new_request(self, request_arrival, data_path, first_iteration):
+    def new_request(self, request_arrival, data_path):
         seed(int(request_arrival.timestamp()))
         random.seed(int(request_arrival.timestamp()))
 
@@ -139,7 +138,7 @@ class Simulator:
             else:
                 # get random request
                 random_request = self.get_and_drop_random_request(
-                    data_path, first_iteration, request_arrival)
+                    data_path, request_arrival)
 
                 # update creation time to request disruption time
                 random_request['Request Creation Time'] = request_arrival
@@ -164,7 +163,7 @@ class Simulator:
             else:
                 # get random request
                 random_request = self.get_and_drop_random_request(
-                    data_path, first_iteration, request_arrival)
+                    data_path, request_arrival)
 
                 # update creation time to request disruption time
                 random_request['Request Creation Time'] = request_arrival
@@ -269,34 +268,10 @@ class Simulator:
         else:
             return -1, -1, -1, -1, -1, -1
 
-    def get_and_drop_random_request(self, data_path, first_iteration, request_arrival):
+    def get_and_drop_random_request(self, data_path, request_arrival):
 
-        if first_iteration:
-            df = pd.read_csv(data_path, index_col=0)
-            df['Request Creation Time'] = pd.to_datetime(df['Request Creation Time'],
-                                                         format="%Y-%m-%d %H:%M:%S")
-            df['Requested Pickup Time'] = pd.to_datetime(df['Requested Pickup Time'],
-                                                         format="%Y-%m-%d %H:%M:%S")
-            df['Requested Dropoff Time'] = pd.to_datetime(df['Requested Dropoff Time'],
-                                                          format="%Y-%m-%d %H:%M:%S")
 
-            # request arrives at same day as it is requested to be served
-            df["Requested Pickup/Dropoff Time"] = (df["Requested Pickup Time"]).fillna(
-                df["Requested Dropoff Time"])
-            df['Date Creation'] = df['Request Creation Time'].dt.date
-            df['Time Creation'] = df['Request Creation Time'].dt.hour
-            df['Date Pickup/Dropoff'] = df['Requested Pickup/Dropoff Time'].dt.date
-            df_same_day = df[df['Date Creation'] == df['Date Pickup/Dropoff']]
-
-            # requests arrives after 10am
-            df_same_day_after_10 = df_same_day[
-                (df_same_day['Time Creation'] >= 10)
-            ]
-
-            # write updated dataframe to csv
-            df_same_day_after_10.to_csv(config("data_simulator_path"))
-        else:
-            df_same_day_after_10 = pd.read_csv(data_path, index_col=0)
+        df_same_day_after_10 = pd.read_csv(data_path, index_col=0)
 
         # get random request
         random_request = df_same_day_after_10.sample(
