@@ -93,7 +93,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             # use correct data path
             disruption_type, disruption_time, disruption_info = simulator.get_disruption(
                 current_route_plan, config("data_simulator_path"))
-            print(disruption_type)
+
             # updates before heuristic
             disrupt = (False, None)
             if disruption_type == 4:  # No disruption
