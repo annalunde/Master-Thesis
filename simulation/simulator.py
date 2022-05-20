@@ -12,7 +12,31 @@ class Simulator:
     def __init__(self, sim_clock):
         self.sim_clock = sim_clock
         self.poisson = Poisson()
+        self.cancel_disruption_times = self.fixed_cancel_stack()
         self.disruptions_stack = self.create_disruption_stack()
+
+    def fixed_cancel_stack(self):
+        cancel_disruption_times = []
+        df = pd.read_csv(config(cancel_stack))
+        df['Cancelation Time'] = pd.to_datetime(
+            df['Cancelation Time'], format="%Y-%m-%d %H:%M:%S")
+        df['removed time'] = pd.to_datetime(
+            df['removed time'], format="%Y-%m-%d %H:%M:%S")
+        for index, row in df.iterrows():
+            diff_time = row["removed time"] - row["Cancelation Time"]
+            if diff_time < timedelta(hours=1):
+                if row["removed time"] - timedelta(hours=1) > datetime(
+                        self.sim_clock.year, self.sim_clock.month, self.sim_clock.day, 10, 0, 0):
+                    # add to cancel stack and push cancellation time to 1 hour before service time
+                    cancel_disruption_times.append((2, row["removed time"] - timedelta(hours=1),
+                                                    row['pickup rid'], row['dropoff rid']))
+            else:
+                # add to cancel stack
+                cancel_disruption_times.append((2, row["Cancelation Time"],
+                                                row['pickup rid'], row['dropoff rid']))
+
+        # stack with format (type, time, p_rid, d_rid)
+        return cancel_disruption_times
 
     def create_disruption_stack(self):
         """
@@ -27,8 +51,7 @@ class Simulator:
             arrival_rate_request, self.sim_clock, 0)
         delay = self.poisson.disruption_times(
             arrival_rate_delay, self.sim_clock, 1)
-        cancel = self.poisson.disruption_times(
-            arrival_rate_cancel, self.sim_clock, 2)
+        cancel = self.cancel_disruption_times
         initial_no_show = self.poisson.disruption_times(
             arrival_rate_no_show, self.sim_clock, 3)
         disruption_stack = request + delay + cancel + initial_no_show
@@ -59,11 +82,17 @@ class Simulator:
                 disruption_info = None
 
         elif disruption_type == 2:
-            cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index, node_p, node_d = self.cancel(
-                disruption_time, current_route_plan)
-            disruption_info = (
-                cancel_vehicle_index, cancel_pickup_rid_index, cancel_dropoff_rid_index, node_p, node_d)
-            if cancel_pickup_rid_index < 0:
+            cancel_info = [(vehicle, p_idx, d_idx)
+                           for vehicle in range(0, len(current_route_plan))
+                           for p_idx, p_node in enumerate(current_route_plan[vehicle])
+                           if p_node[0] == disruption[2]
+                           for d_idx, d_node in enumerate(current_route_plan[vehicle])
+                           if d_node[0] == p_node[0] + 0.5]
+
+            if len(cancel_info) > 0:
+                disruption_info = (cancel_info[0][0], cancel_info[0][1], cancel_info[0][2],
+                                   disruption[2], disruption[3])
+            else:
                 disruption_type = 4
                 disruption_info = None
 
@@ -149,25 +178,33 @@ class Simulator:
         delay = timedelta(minutes=beta.rvs(
             delay_fit_a, delay_fit_b, delay_fit_loc, delay_fit_scale))
 
+        rids_indices, planned_times, vehicle_indices, rids = [], [], [], []
+
         # potential delays - nodes with planned pickup time after initial_delay
         vehicle_index = 0
-        possible_nodes = []
-        for vehicle_route in current_route_plan:
-            for idx, node in enumerate(vehicle_route):
-                if node[0] == 0:
+        for row in current_route_plan:
+            for col in range(0, len(row)):
+                if row[col][0] == 0:
                     continue
-                s = S_W if node[5]["Wheelchair"] else S_P
-                temp_planned_time = node[1] - timedelta(minutes=s)
+                s = S_W if row[col][5]["Wheelchair"] else S_P
+                temp_planned_time = row[col][1] - timedelta(minutes=s)
                 if temp_planned_time >= initial_delay:
-                    possible_nodes.append(
-                        (idx, temp_planned_time, vehicle_index, node[0]))
+                    rids_indices.append(col)
+                    planned_times.append(temp_planned_time)
+                    vehicle_indices.append(vehicle_index)
+                    rids.append(row[col][0])
             vehicle_index += 1
 
         # check whether there are any delays, if not, another disruption type will be chosen
         # if yes, pick the delay with earliest planned time
-        if len(possible_nodes) > 0:
-            possible_nodes.sort(key=lambda x: x[1])
-            return possible_nodes[0][2], possible_nodes[0][0], delay, possible_nodes[0][3]
+        if len(rids_indices) > 0:
+            temp_actual_disruption_time = min(planned_times)
+            rid_index = rids_indices[planned_times.index(
+                temp_actual_disruption_time)]
+            vehicle_index = vehicle_indices[planned_times.index(
+                temp_actual_disruption_time)]
+            rid = rids[planned_times.index(temp_actual_disruption_time)]
+            return vehicle_index, rid_index, delay, rid
         else:
             return -1, -1, -1, -1
 
@@ -210,27 +247,26 @@ class Simulator:
 
         # potential no shows - pickup nodes with planned pickup after initial_no_show
         vehicle_index = 0
-        possible_noshows = []
-        for vehicle_route in current_route_plan:
-            for idx, node in enumerate(vehicle_route):
-                if node[0] == 0:
+        for row in current_route_plan:
+            for col in range(0, len(row)):
+                if row[col][0] == 0:
                     continue
-                temp_rid = node[0]
-                s = S_W if node[5]["Wheelchair"] else S_P
-                temp_planned_time = node[1] - timedelta(minutes=s)
+                temp_rid = row[col][0]
+                s = S_W if row[col][5]["Wheelchair"] else S_P
+                temp_planned_time = row[col][1] - timedelta(minutes=s)
                 if not temp_rid % int(temp_rid) and temp_planned_time >= initial_no_show:
-                    for i in vehicle_route[idx:]:
-                        if node[0] == temp_rid + 0.5:
-                            possible_noshows.append(
-                                (temp_planned_time, vehicle_index, idx, i, temp_rid, vehicle_route[i][0]))
+                    for i in range(col, len(row)):
+                        if row[i][0] == temp_rid + 0.5:
+                            indices.append(
+                                (vehicle_index, col, i, temp_rid, row[i][0]))
+                            planned_pickup_times.append(temp_planned_time)
             vehicle_index += 1
 
         # check whether there are any no shows, if not, another disruption type will be chosen
         # if yes, pick the no show with earliest planned pickup time
-        if len(possible_noshows) > 0:
-            possible_noshows.sort(key=lambda x: x[0])
-            actual_disruption_time = possible_noshows[0][0]
-            index = possible_noshows[0][1:]
+        if len(indices) > 0:
+            actual_disruption_time = min(planned_pickup_times)
+            index = indices[planned_pickup_times.index(actual_disruption_time)]
             return index[0], index[1], index[2], index[3], index[4], actual_disruption_time
         else:
             return -1, -1, -1, -1, -1, -1
