@@ -260,10 +260,11 @@ if __name__ == "__main__":
         test_instance_d[6:8] + " 10:00:00"
 
     repair_removed = None
-    destroy_removed = None
+    destroy_removed = [1, 3, 4]
     runs = 5
 
     print("Test instance:", test_instance)
+    print("Removed:", destroy_removed)
 
     df_requests_runs, df_runtime_runs, df_operators_runs = [], [], []
     for run in range(4, runs):
