@@ -158,14 +158,18 @@ class ALNS:
         self.add_destroy_operator(operators.related_removal)
         self.add_destroy_operator(operators.worst_deviation_removal)
         if destroy_removed is not None:
-            self.destroy_operators.pop(destroy_removed)
+            destroy_removed.sort(key=lambda x: x, reverse=True)
+            for idx in destroy_removed:
+                self.destroy_operators.pop(idx)
 
         # Add repair operators
         self.add_repair_operator(operators.greedy_repair)
         self.add_repair_operator(operators.regret_2_repair)
         self.add_repair_operator(operators.regret_3_repair)
         if repair_removed is not None:
-            self.repair_operators.pop(repair_removed)
+            repair_removed.sort(key=lambda x: x, reverse=True)
+            for idx in repair_removed:
+                self.repair_operators.pop(idx)
 
     # Add operator to the heuristic instance
 
