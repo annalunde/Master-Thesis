@@ -278,17 +278,20 @@ if __name__ == "__main__":
     print("DONE WITH ALL RUNS")
 
 """
-NOTE:
-    - Add index to removed repair operator:
-        - None = none removed 
-        - 0 = greedy_repair
-        - 1 = regret_2_repair
-        - 2 = regret_3_repair
-    - Add index to removed destroy operator:
-        - None = none removed
-        - 0 = random_removal
-        - 1 = time_related_removal
-        - 2 = distance_related_removal
-        - 3 = related_removal
-        - 4 = worst_deviation_removal
+- For initial: Check if requested pickup time is before or after 14:
+    - current route plan is updated accordingly
+    - introduced vehicles and vehicle sets must be updated
+    - ALNS only on before 14 route plan
+
+- For reopt: Check if disruption time is after or before 14: 
+    - for cancel, no show & delay: affected route plan according to where to node lies
+    - for new request: check if requested pickup time is before or after 14:
+    - current route plan is updated accordingly
+    - introduced vehicles and vehicle sets must be updated
+    - global sets (might) need to be updated (only if depot is added) 
+    - two sets of vehicle clocks and sim clocks
+    - ALNS alternating on the two according to if disruption time is before or after
+    - Simulator must know where to find the disrupted node
+
+- Implement two different V params
 """
