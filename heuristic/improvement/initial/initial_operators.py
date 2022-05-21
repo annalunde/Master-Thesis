@@ -7,17 +7,18 @@ from heuristic.improvement.initial.initial_repair_generator import RepairGenerat
 
 
 class Operators:
-    def __init__(self, alns):
+    def __init__(self, alns, standby):
         self.destruction_degree = alns.destruction_degree
         self.constructor = alns.constructor
         self.T_ij = self.constructor.T_ij
-        self.repair_generator = RepairGenerator(self.constructor)
+        self.repair_generator = RepairGenerator(self.constructor, standby)
 
     # Find number of requests to remove based on degree of destruction
     def nodes_to_remove(self, route_plan):
 
         # Count number of requests in route_plan
-        total_requests = reduce(lambda count, l: count + (len(l) - 1)/2, route_plan, 0)
+        total_requests = reduce(
+            lambda count, l: count + (len(l) - 1)/2, route_plan, 0)
 
         # Calculate number of requests to remove
         return ceil(total_requests * self.destruction_degree)
@@ -41,9 +42,11 @@ class Operators:
         removal_nodes = [node for request in removal for node in request[2:]]
 
         # remove destroyed requests from route plan
-        destroyed_route_plan = [[node for node in vehicle if node not in removal_nodes] for vehicle in current_route_plan]
+        destroyed_route_plan = [
+            [node for node in vehicle if node not in removal_nodes] for vehicle in current_route_plan]
         removed_requests = [(node[2][0], node[2][5]) for node in removal]
-        index_removed_requests = [ind for request in removal for ind in request[:2]]
+        index_removed_requests = [
+            ind for request in removal for ind in request[:2]]
 
         return destroyed_route_plan, removed_requests, index_removed_requests, True
 
@@ -68,21 +71,25 @@ class Operators:
 
         # get requests to destroy
         possible_removals.sort(reverse=True, key=lambda x: x[4])
-        removal = [request for request in possible_removals[:num_remove] if request[4] > timedelta(0)]
+        removal = [request for request in possible_removals[:num_remove]
+                   if request[4] > timedelta(0)]
         removal_nodes = [node for request in removal for node in request[2:4]]
 
         # If not enough nodes have deviation > 0, remove the rest randomly
         if len(removal) < num_remove:
-            possible_removals_no_dev = [request for request in possible_removals if request[4] <= timedelta(0)]
+            possible_removals_no_dev = [
+                request for request in possible_removals if request[4] <= timedelta(0)]
             random_removal, random_removal_nodes = self.worst_deviation_random_removal(
                 possible_removals_no_dev, num_remove - len(removal))
             removal = removal + random_removal
             removal_nodes = removal_nodes + random_removal_nodes
 
         # remove destroyed requests from route plan
-        destroyed_route_plan = [[node for node in vehicle if node not in removal_nodes] for vehicle in current_route_plan]
+        destroyed_route_plan = [
+            [node for node in vehicle if node not in removal_nodes] for vehicle in current_route_plan]
         removed_requests = [(node[2][0], node[2][5]) for node in removal]
-        index_removed_requests = [ind for request in removal for ind in request[:2]]
+        index_removed_requests = [
+            ind for request in removal for ind in request[:2]]
 
         return destroyed_route_plan, removed_requests, index_removed_requests, True
 
@@ -102,7 +109,8 @@ class Operators:
 
         if len(current_infeasible_set) != 0:
             # Pick random request in infeasible_set to compare other requests to
-            initial_node = current_infeasible_set[randint(0, len(current_infeasible_set))]
+            initial_node = current_infeasible_set[randint(
+                0, len(current_infeasible_set))]
             initial_rid, initial_removal = initial_node[0], []
 
         else:
@@ -123,9 +131,11 @@ class Operators:
         removal_nodes = [node for request in removal for node in request[2:4]]
 
         # remove destroyed requests from route plan
-        destroyed_route_plan = [[node for node in vehicle if node not in removal_nodes] for vehicle in current_route_plan]
+        destroyed_route_plan = [
+            [node for node in vehicle if node not in removal_nodes] for vehicle in current_route_plan]
         removed_requests = [(node[2][0], node[2][5]) for node in removal]
-        index_removed_requests = [ind for request in removal for ind in request[:2]]
+        index_removed_requests = [
+            ind for request in removal for ind in request[:2]]
 
         return destroyed_route_plan, removed_requests, index_removed_requests, True
 
@@ -145,16 +155,18 @@ class Operators:
 
         if len(current_infeasible_set) != 0:
             # Pick random request in infeasible_set to compare other requests to
-            initial_node = current_infeasible_set[randint(0, len(current_infeasible_set))]
+            initial_node = current_infeasible_set[randint(
+                0, len(current_infeasible_set))]
             initial_p_time, initial_d_time, initial_removal = self.get_pickup(initial_node), \
-                                                              self.get_dropoff(initial_node), []
+                self.get_dropoff(initial_node), []
 
         else:
             # Pick random request in route plan to remove and to compare other requests to
             init_node_idx = randint(len(possible_removals))
             initial_node = possible_removals[init_node_idx]
             possible_removals.pop(init_node_idx)
-            initial_p_time, initial_d_time, initial_removal = initial_node[2][1], initial_node[3][1], [initial_node]
+            initial_p_time, initial_d_time, initial_removal = initial_node[2][1], initial_node[3][1], [
+                initial_node]
             num_remove -= 1
 
         diff_removals = [(request,
@@ -172,7 +184,8 @@ class Operators:
         destroyed_route_plan = [[node for node in vehicle if node not in removal_nodes] for vehicle in
                                 current_route_plan]
         removed_requests = [(node[2][0], node[2][5]) for node in removal]
-        index_removed_requests = [ind for request in removal for ind in request[:2]]
+        index_removed_requests = [
+            ind for request in removal for ind in request[:2]]
 
         return destroyed_route_plan, removed_requests, index_removed_requests, True
 
@@ -192,10 +205,11 @@ class Operators:
 
         if len(current_infeasible_set) != 0:
             # Pick random request in infeasible_set to compare other requests to
-            initial_node = current_infeasible_set[randint(0, len(current_infeasible_set))]
+            initial_node = current_infeasible_set[randint(
+                0, len(current_infeasible_set))]
             initial_rid, initial_p_time, initial_d_time, initial_removal = initial_node[0], \
-                                                                           self.get_pickup(initial_node), \
-                                                                           self.get_dropoff(initial_node), []
+                self.get_pickup(initial_node), \
+                self.get_dropoff(initial_node), []
 
         else:
             # Pick random request in route plan to remove and to compare other requests to
@@ -203,8 +217,8 @@ class Operators:
             initial_node = possible_removals[init_node_idx]
             possible_removals.pop(init_node_idx)
             initial_rid, initial_p_time, initial_d_time, initial_removal = initial_node[2][0], \
-                                                                           initial_node[2][1], \
-                                                                           initial_node[3][1], [initial_node]
+                initial_node[2][1], \
+                initial_node[3][1], [initial_node]
             num_remove -= 1
 
         diff_removals = [(request,
@@ -223,7 +237,8 @@ class Operators:
         destroyed_route_plan = [[node for node in vehicle if node not in removal_nodes] for vehicle in
                                 current_route_plan]
         removed_requests = [(node[2][0], node[2][5]) for node in removal]
-        index_removed_requests = [ind for request in removal for ind in request[:2]]
+        index_removed_requests = [
+            ind for request in removal for ind in request[:2]]
 
         return destroyed_route_plan, removed_requests, index_removed_requests, True
 
@@ -251,7 +266,8 @@ class Operators:
             current_objective = new_objective
 
         if len(self.constructor.infeasible_set) == len(unassigned_requests):
-            current_objective = self.constructor.new_objective(destroyed_route_plan, self.constructor.infeasible_set)
+            current_objective = self.constructor.new_objective(
+                destroyed_route_plan, self.constructor.infeasible_set)
 
         return route_plan, current_objective, infeasible_set
 
@@ -296,7 +312,8 @@ class Operators:
             current_objective = new_objective
 
         if len(self.constructor.infeasible_set) == len(unassigned_requests):
-            current_objective = self.constructor.new_objective(destroyed_route_plan, self.constructor.infeasible_set)
+            current_objective = self.constructor.new_objective(
+                destroyed_route_plan, self.constructor.infeasible_set)
         return route_plan, current_objective, infeasible_set
 
     def regret_3_repair(self, destroyed_route_plan, removed_requests, initial_infeasible_set, current_route_plan, index_removed_requests, delayed, still_delayed):
@@ -341,7 +358,8 @@ class Operators:
             current_objective = new_objective
 
         if len(self.constructor.infeasible_set) == len(unassigned_requests):
-            current_objective = self.constructor.new_objective(destroyed_route_plan, self.constructor.infeasible_set)
+            current_objective = self.constructor.new_objective(
+                destroyed_route_plan, self.constructor.infeasible_set)
 
         return route_plan, current_objective, infeasible_set
 
@@ -382,7 +400,7 @@ class Operators:
         rid, s = node[0], S_W if node[1]["Wheelchair"] else S_P
 
         time = node[1]["Requested Pickup Time"] + self.constructor.travel_time(
-                rid - 1, self.constructor.n + rid - 1, True) + 2*timedelta(minutes=s) \
+            rid - 1, self.constructor.n + rid - 1, True) + 2*timedelta(minutes=s) \
             if pd.isnull(node[1]["Requested Dropoff Time"]) \
             else node[1]["Requested Dropoff Time"] + 2*timedelta(minutes=s)
 

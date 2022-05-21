@@ -25,7 +25,7 @@ class Measures:
         return ride_sharing_passengers, ride_sharing_arcs, processed_nodes
 
     @staticmethod
-    def cpt_calc(filtered_away_route_plan, cost_per_trip):
+    def cpt_calc(filtered_away_route_plan, cost_per_trip, processed_nodes):
         vehicles = len(filtered_away_route_plan)
         for vehicle_idx in range(vehicles):
             passengers = cost_per_trip[vehicle_idx][0]
@@ -33,8 +33,9 @@ class Measures:
             last_node = cost_per_trip[vehicle_idx][2]
             vehicle_route = filtered_away_route_plan[vehicle_idx]
             for node in vehicle_route:
-                passengers += node[3]
-                passengers += node[4]
+                if node[0] not in processed_nodes:
+                    passengers += node[3]
+                    passengers += node[4]
             if len(vehicle_route) > 0 and init_node == None:
                 cost_per_trip[vehicle_idx] = (
                     passengers, vehicle_route[0][1], last_node)

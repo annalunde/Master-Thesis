@@ -16,7 +16,7 @@ from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
 from measures import Measures
 
 
-def main(test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, N_R):
+def main(test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, N_R, standby):
     constructor, simulator = None, None
 
     try:
@@ -24,7 +24,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         start_time = datetime.now()
         df_run = []
         cost_per_trip, ride_sharing_passengers, ride_sharing_arcs, processed_nodes, cpt, ride_sharing = {
-            idx: (0, None, None) for idx in range(V)}, 0, 0, set(), 0, 0
+            idx: (0, None, None) for idx in range(V+standby)}, 0, 0, set(), 0, 0
 
         # CUMULATIVE OBJECTIVE
         cumulative_rejected, cumulative_recalibration, cumulative_objective, cumulative_travel_time, \
@@ -34,7 +34,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         # CONSTRUCTION OF INITIAL SOLUTION
         df = pd.read_csv(config(test_instance))
         constructor = ConstructionHeuristic(
-            requests=df, vehicles=V, alpha=alpha, beta=beta)
+            requests=df, vehicles=V+standby, alpha=alpha, beta=beta)
         print("Constructing initial solution")
         initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
         measures = Measures()
@@ -46,7 +46,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             alns = ALNS(weights, reaction_factor, initial_route_plan, initial_objective, initial_infeasible_set, criterion,
                         destruction_degree, constructor, rnd_state=rnd.RandomState())
 
-            operators = Operators(alns)
+            operators = Operators(alns, standby)
 
             alns.set_operators(operators, repair_removed, destroy_removed)
 
@@ -93,9 +93,9 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             test_instance_date, "%Y-%m-%d %H:%M:%S")
         simulator = Simulator(sim_clock)
         new_request_updater = NewRequestUpdater(
-            constructor)
+            constructor, standby)
         disruption_updater = DisruptionUpdater(new_request_updater)
-        first_iteration, rejected = True, []
+        rejected = []
         print("Length of disruption stack", len(simulator.disruptions_stack))
         while len(simulator.disruptions_stack) > 0:
             start_time = datetime.now()
@@ -106,13 +106,9 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             rejection = False
 
             # use correct data path
-            if not first_iteration:
-                disruption_type, disruption_time, disruption_info = simulator.get_disruption(
-                    current_route_plan, config("data_simulator_path"), first_iteration)
-            else:
-                disruption_type, disruption_time, disruption_info = simulator.get_disruption(
-                    current_route_plan, config("data_processed_path"), first_iteration)
-                first_iteration = False
+            disruption_type, disruption_time, disruption_info = simulator.get_disruption(
+                current_route_plan, config("data_simulator_path"))
+
             # updates before heuristic
             disrupt = (False, None)
             if disruption_type == 4:  # No disruption
@@ -120,19 +116,23 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             elif disruption_type == 0:  # Disruption: new request
                 current_route_plan, vehicle_clocks, artificial_depot = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
-                before_route_plan = list(map(list, current_route_plan))
-                updated_objective, updated_travel_time, updated_deviation, _ = new_request_updater.norm_objective(
+                current_route_plan, removed_filtering, filtered_away, middle, filtered_size = disruption_updater.\
+                    filter_route_plan(current_route_plan,
+                                      vehicle_clocks, None, disruption_type, False)  # Filter route plan
+                new_request_updater.middle = middle
+                filter_objective = new_request_updater.new_objective(
                     current_route_plan, [], False)
-                current_route_plan, removed_filtering, filtered_away = disruption_updater.filter_route_plan(
-                    current_route_plan, vehicle_clocks, None)  # Filter route plan
-                filter_objective, filter_travel_time, filter_deviation, _ = new_request_updater.norm_objective(
-                    current_route_plan, [], False)
+                filter_away_objective, filter_away_travel_time, filter_away_deviation = \
+                    new_request_updater.norm_objective(
+                        filtered_away, [], True, filtered_size)
+
                 cumulative_objective = copy(
-                    cumulative_objective) + copy(updated_objective) - copy(filter_objective)
+                    cumulative_objective) + copy(filter_away_objective)
                 cumulative_travel_time = copy(
-                    cumulative_travel_time) + copy(updated_travel_time) - copy(filter_travel_time)
+                    cumulative_travel_time) + copy(filter_away_travel_time)
                 cumulative_deviation = copy(
-                    cumulative_deviation) + copy(updated_deviation) - copy(filter_deviation)
+                    cumulative_deviation) + copy(filter_away_deviation)
+
                 current_route_plan, current_objective, current_infeasible_set, vehicle_clocks, rejection, rid = new_request_updater.\
                     greedy_insertion_new_request(
                         current_route_plan, current_infeasible_set, disruption_info, disruption_time, vehicle_clocks, i, filter_objective)
@@ -155,18 +155,21 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             else:
                 current_route_plan, vehicle_clocks, artificial_depot = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
-                updated_objective, updated_travel_time, updated_deviation, _ = new_request_updater.norm_objective(
-                    current_route_plan, [], False)
-                current_route_plan, removed_filtering, filtered_away = disruption_updater.filter_route_plan(
-                    current_route_plan, vehicle_clocks, disruption_info)  # Filter route plan
-                filter_objective, filter_travel_time, filter_deviation, _ = new_request_updater.norm_objective(
-                    current_route_plan, [], False)
+                current_route_plan, removed_filtering, filtered_away, middle, filtered_size = disruption_updater.\
+                    filter_route_plan(current_route_plan,
+                                      vehicle_clocks, disruption_info, disruption_type, artificial_depot)  # Filter route plan
+                new_request_updater.middle = middle
+                filter_away_objective, filter_away_travel_time, filter_away_deviation = \
+                    new_request_updater.norm_objective(
+                        filtered_away, [], True, filtered_size)
+
                 cumulative_objective = copy(
-                    cumulative_objective) + copy(updated_objective) - copy(filter_objective)
+                    cumulative_objective) + copy(filter_away_objective)
                 cumulative_travel_time = copy(
-                    cumulative_travel_time) + copy(updated_travel_time) - copy(filter_travel_time)
+                    cumulative_travel_time) + copy(filter_away_travel_time)
                 cumulative_deviation = copy(
-                    cumulative_deviation) + copy(updated_deviation) - copy(filter_deviation)
+                    cumulative_deviation) + copy(filter_away_deviation)
+
                 current_objective = new_request_updater.new_objective(
                     current_route_plan, current_infeasible_set, False)
                 if disruption_type == 2 or disruption_type == 3:  # Disruption: cancel or no show
@@ -182,13 +185,13 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                     delay_deltas.append(current_objective)
 
             cost_per_trip = measures.cpt_calc(
-                filtered_away, cost_per_trip)
+                filtered_away, cost_per_trip, processed_nodes)
             ride_sharing_passengers, ride_sharing_arcs, processed_nodes = measures.ride_sharing(
                 filtered_away, ride_sharing_passengers, ride_sharing_arcs, processed_nodes)
 
             if len(simulator.disruptions_stack) == 0:
                 cost_per_trip = measures.cpt_calc(
-                    current_route_plan, cost_per_trip)
+                    current_route_plan, cost_per_trip, processed_nodes)
                 ride_sharing_passengers, ride_sharing_arcs, processed_nodes = measures.ride_sharing(
                     current_route_plan, ride_sharing_passengers, ride_sharing_arcs, processed_nodes)
 
@@ -201,7 +204,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                             destruction_degree, new_request_updater, rnd_state=rnd.RandomState())
 
                 operators = ReOptOperators(
-                    alns, disruption_time, vehicle_clocks)
+                    alns, disruption_time, vehicle_clocks, standby)
 
                 alns.set_operators(operators, repair_removed, destroy_removed)
 
@@ -222,8 +225,8 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             total_objective, rejected_objective = new_request_updater.total_objective(current_objective, cumulative_objective,
                                                                                       cumulative_recalibration, cumulative_rejected, rejection)
 
-            _, current_travel_time, current_deviation, _ = new_request_updater.norm_objective(
-                current_route_plan, [], False)
+            _, current_travel_time, current_deviation = new_request_updater.norm_objective(
+                current_route_plan, [], False, filtered_size)
 
             cumulative_deviation = copy(
                 cumulative_deviation) + copy(cumulative_recalibration)/new_request_updater.beta
@@ -284,6 +287,7 @@ if __name__ == "__main__":
     runs = 5
     df_runs = []
     N_Rs = [1, 2]
+    standby = 0
 
     print("Test instance:", test_instance)
     print("Naive:", naive)
@@ -293,7 +297,7 @@ if __name__ == "__main__":
         df_runs = []
         for run in range(runs):
             df_run = main(
-                test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, N_R)
+                test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, N_R, standby)
             df_runs.append(pd.DataFrame(df_run, columns=[
                 "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
 

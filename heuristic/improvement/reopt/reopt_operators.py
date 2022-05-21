@@ -7,11 +7,12 @@ from heuristic.improvement.reopt.reopt_repair_generator import ReOptRepairGenera
 
 
 class ReOptOperators:
-    def __init__(self, alns, sim_clock, vehicle_clocks):
+    def __init__(self, alns, sim_clock, vehicle_clocks, standby):
         self.destruction_degree = alns.destruction_degree
         self.constructor = alns.constructor
         self.T_ij = self.constructor.T_ij
-        self.reopt_repair_generator = ReOptRepairGenerator(self.constructor, False)
+        self.reopt_repair_generator = ReOptRepairGenerator(
+            self.constructor, False, standby)
         self.sim_clock = sim_clock
         self.vehicle_clocks = vehicle_clocks
 
@@ -46,7 +47,8 @@ class ReOptOperators:
         destroyed_route_plan = [[node for node in vehicle if node not in removal_nodes] for vehicle in
                                 current_route_plan]
         removed_requests = [(node[2][0], node[2][5]) for node in removal]
-        index_removed_requests = [ind for request in removal for ind in request[:2]]
+        index_removed_requests = [
+            ind for request in removal for ind in request[:2]]
 
         return destroyed_route_plan, removed_requests, index_removed_requests, True
 
@@ -75,12 +77,14 @@ class ReOptOperators:
 
         # get requests to destroy
         possible_removals.sort(reverse=True, key=lambda x: x[4])
-        removal = [request for request in possible_removals[:num_remove] if request[4] > timedelta(0)]
+        removal = [request for request in possible_removals[:num_remove]
+                   if request[4] > timedelta(0)]
         removal_nodes = [node for request in removal for node in request[2:4]]
 
         # If not enough nodes have deviation > 0, remove the rest randomly
         if len(removal) < num_remove:
-            possible_removals_no_dev = [request for request in possible_removals if request[4] <= timedelta(0)]
+            possible_removals_no_dev = [
+                request for request in possible_removals if request[4] <= timedelta(0)]
             random_removal, random_removal_nodes = self.worst_deviation_random_removal(
                 possible_removals_no_dev, num_remove - len(removal))
             removal = removal + random_removal
@@ -90,7 +94,8 @@ class ReOptOperators:
         destroyed_route_plan = [[node for node in vehicle if node not in removal_nodes] for vehicle in
                                 current_route_plan]
         removed_requests = [(node[2][0], node[2][5]) for node in removal]
-        index_removed_requests = [ind for request in removal for ind in request[:2]]
+        index_removed_requests = [
+            ind for request in removal for ind in request[:2]]
 
         return destroyed_route_plan, removed_requests, index_removed_requests, True
 
@@ -113,7 +118,8 @@ class ReOptOperators:
 
         if len(current_infeasible_set) != 0:
             # Pick random request in infeasible_set to compare other requests to
-            initial_node = current_infeasible_set[randint(0, len(current_infeasible_set))]
+            initial_node = current_infeasible_set[randint(
+                0, len(current_infeasible_set))]
             initial_rid, initial_removal = initial_node[0], []
 
         else:
@@ -137,7 +143,8 @@ class ReOptOperators:
         destroyed_route_plan = [[node for node in vehicle if node not in removal_nodes] for vehicle in
                                 current_route_plan]
         removed_requests = [(node[2][0], node[2][5]) for node in removal]
-        index_removed_requests = [ind for request in removal for ind in request[:2]]
+        index_removed_requests = [
+            ind for request in removal for ind in request[:2]]
 
         return destroyed_route_plan, removed_requests, index_removed_requests, True
 
@@ -160,16 +167,18 @@ class ReOptOperators:
 
         if len(current_infeasible_set) != 0:
             # Pick random request in infeasible_set to compare other requests to
-            initial_node = current_infeasible_set[randint(0, len(current_infeasible_set))]
+            initial_node = current_infeasible_set[randint(
+                0, len(current_infeasible_set))]
             initial_p_time, initial_d_time, initial_removal = self.get_pickup(initial_node), \
-                                                              self.get_dropoff(initial_node), []
+                self.get_dropoff(initial_node), []
 
         else:
             # Pick random request in route plan to remove and to compare other requests to
             init_node_idx = randint(len(possible_removals))
             initial_node = possible_removals[init_node_idx]
             possible_removals.pop(init_node_idx)
-            initial_p_time, initial_d_time, initial_removal = initial_node[2][1], initial_node[3][1], [initial_node]
+            initial_p_time, initial_d_time, initial_removal = initial_node[2][1], initial_node[3][1], [
+                initial_node]
             num_remove -= 1
 
         diff_removals = [(request,
@@ -187,7 +196,8 @@ class ReOptOperators:
         destroyed_route_plan = [[node for node in vehicle if node not in removal_nodes] for vehicle in
                                 current_route_plan]
         removed_requests = [(node[2][0], node[2][5]) for node in removal]
-        index_removed_requests = [ind for request in removal for ind in request[:2]]
+        index_removed_requests = [
+            ind for request in removal for ind in request[:2]]
 
         return destroyed_route_plan, removed_requests, index_removed_requests, True
 
@@ -210,10 +220,11 @@ class ReOptOperators:
 
         if len(current_infeasible_set) != 0:
             # Pick random request in infeasible_set to compare other requests to
-            initial_node = current_infeasible_set[randint(0, len(current_infeasible_set))]
+            initial_node = current_infeasible_set[randint(
+                0, len(current_infeasible_set))]
             initial_rid, initial_p_time, initial_d_time, initial_removal = initial_node[0], \
-                                                                           self.get_pickup(initial_node), \
-                                                                           self.get_dropoff(initial_node), []
+                self.get_pickup(initial_node), \
+                self.get_dropoff(initial_node), []
 
         else:
             # Pick random request in route plan to remove and to compare other requests to
@@ -221,8 +232,8 @@ class ReOptOperators:
             initial_node = possible_removals[init_node_idx]
             possible_removals.pop(init_node_idx)
             initial_rid, initial_p_time, initial_d_time, initial_removal = initial_node[2][0], \
-                                                                           initial_node[2][1], \
-                                                                           initial_node[3][1], [initial_node]
+                initial_node[2][1], \
+                initial_node[3][1], [initial_node]
             num_remove -= 1
 
         diff_removals = [(request,
@@ -241,7 +252,8 @@ class ReOptOperators:
         destroyed_route_plan = [[node for node in vehicle if node not in removal_nodes] for vehicle in
                                 current_route_plan]
         removed_requests = [(node[2][0], node[2][5]) for node in removal]
-        index_removed_requests = [ind for request in removal for ind in request[:2]]
+        index_removed_requests = [
+            ind for request in removal for ind in request[:2]]
 
         return destroyed_route_plan, removed_requests, index_removed_requests, True
 
@@ -426,6 +438,3 @@ class ReOptOperators:
             else node[1]["Requested Dropoff Time"] + 2 * timedelta(minutes=s)
 
         return time
-
-
-
