@@ -147,7 +147,8 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                                 current_route_plan, current_infeasible_set, disruption_info, disruption_time, vehicle_clocks, i, filter_objective)
                         if not rejection:
                             rejected.remove(rid)
-                            disruption_type = str(disruption_type) + "_False"
+                            disruption_type = str(
+                                disruption_type) + "_False:" + str(i)
                             cumulative_rejected -= 1
                             break
                 current_infeasible_set = []
