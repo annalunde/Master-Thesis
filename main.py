@@ -297,7 +297,7 @@ if __name__ == "__main__":
     naive = True
     adaptive = False
     repair_removed = None
-    destroy_removed = None
+    destroy_removed = [0, 2]
     runs = 5
     standby = 0
 
