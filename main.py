@@ -316,7 +316,7 @@ if __name__ == "__main__":
 
     df_track_run = pd.concat(df_runs)
     df_track_run.to_csv(
-        config("run_path") + branch + "Run:" + run + ":" + test_instance + "analysis" + ".csv")
+        config("run_path") + branch + "Run:" + str(run) + ":" + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
