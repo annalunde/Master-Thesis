@@ -309,15 +309,15 @@ if __name__ == "__main__":
 
     for N_R in N_Rs:
         df_runs = []
-        for run in range(runs):
-            df_run = main(
-                test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, N_R, standby)
-            df_runs.append(pd.DataFrame(df_run, columns=[
-                "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
+ #       for run in range(runs):
+        df_run = main(
+            test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, N_R, standby)
+        df_runs.append(pd.DataFrame(df_run, columns=[
+            "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
 
         df_track_run = pd.concat(df_runs)
         df_track_run.to_csv(
-            config("run_path") + branch + "N_R: " + str(N_R) + test_instance + "analysis" + ".csv")
+            config("run_path") + branch + "N_R: " + str(N_R) + "Run:" + str(run) + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
