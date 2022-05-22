@@ -298,9 +298,9 @@ if __name__ == "__main__":
     adaptive = True
     repair_removed = None
     destroy_removed = [0, 2]
-    runs = 5
+    #runs = 5
     df_runs = []
-    N_Rs = [3]
+    N_Rs = [4]
     standby = 0
 
     print("Test instance:", test_instance)
