@@ -2,17 +2,22 @@
 export cores=16
 export i=0
 export pids=""
+export stacks=("cancels_comp_instance_1" "cancels_comp_instance_2" "cancels_comp_instance_3")
+export instances=("comp_instance_1_20220110" "comp_instance_2_20211007" "comp_instance_3_20211215")
 
-for instance in comp_instance_1_20220110 comp_instance_2_20211007 comp_instance_3_20211215
+for index in $(seq 3);
 do
+    instance=${instances[$index]}
+    cancel_stack=${stacks[$index]}
     for run in $(seq 5)
     do
         # Checkout the branch and start a run in the background
         echo "Starting run $run on instance $instance on branch $1"
         #git checkout $branch
         #sleep 5
-        python main.py --run $run --instance $instance --branch $1 &
+        python main.py --run $run --instance $instance --branch $1 --cancel_stack $cancel_stack &
         #sleep 5
+        echo "Finished initializing run $run on instance $instance on branch $1"
 
         # Add the latest subprocess to the list of PIDs
         pids="$pids $!"

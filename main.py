@@ -17,7 +17,7 @@ from measures import Measures
 import argparse
 
 
-def main(test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby):
+def main(test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby, cancel_stack):
     constructor, simulator = None, None
 
     try:
@@ -92,7 +92,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         print("Start simulation")
         sim_clock = datetime.strptime(
             test_instance_date, "%Y-%m-%d %H:%M:%S")
-        simulator = Simulator(sim_clock)
+        simulator = Simulator(sim_clock, cancel_stack)
         new_request_updater = NewRequestUpdater(
             constructor, standby)
         disruption_updater = DisruptionUpdater(new_request_updater)
@@ -281,12 +281,14 @@ if __name__ == "__main__":
     parser.add_argument('--run', type=int)
     parser.add_argument('--branch', type=str)
     parser.add_argument('--instance', type=str)
+    parser.add_argument('--cancel_stack', type=str)
     args = parser.parse_args()
 
     run = args.run
     branch = args.branch
     print(f'Config says instance {test_instance}')
     test_instance = args.instance
+    cancel_stack = args.cancel_stack
     print(f'Replaced to argument instance {args.instance}')
 
     # Generate test instance datetime from filename
@@ -309,7 +311,7 @@ if __name__ == "__main__":
     df_runs = []
     # for run in range(runs):
     df_run = main(
-        test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby)
+        test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby, cancel_stack)
     df_runs.append(pd.DataFrame(df_run, columns=[
         "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
 

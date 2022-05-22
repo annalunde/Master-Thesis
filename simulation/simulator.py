@@ -6,18 +6,20 @@ from scipy.stats import gamma, beta
 from numpy.random import rand, seed
 import pandas as pd
 from decouple import config
+import argparse
 
 
 class Simulator:
-    def __init__(self, sim_clock):
+    def __init__(self, sim_clock, cancel_stack):
         self.sim_clock = sim_clock
         self.poisson = Poisson()
+        self.cancel_stack = cancel_stack
         self.cancel_disruption_times = self.fixed_cancel_stack()
         self.disruptions_stack = self.create_disruption_stack()
 
     def fixed_cancel_stack(self):
         cancel_disruption_times = []
-        df = pd.read_csv(config(cancel_stack))
+        df = pd.read_csv(config(self.cancel_stack))
         df['Cancelation Time'] = pd.to_datetime(
             df['Cancelation Time'], format="%Y-%m-%d %H:%M:%S")
         df['removed time'] = pd.to_datetime(
