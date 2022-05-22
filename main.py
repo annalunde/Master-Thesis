@@ -279,9 +279,15 @@ if __name__ == "__main__":
     """
     parser = argparse.ArgumentParser()
     parser.add_argument('--run', type=int)
+    parser.add_argument('--branch', type=str)
+    parser.add_argument('--instance', type=str)
     args = parser.parse_args()
 
     run = args.run
+    branch = args.branch
+    print(f'Config says instance {test_instance}')
+    test_instance = args.instance
+    print(f'Replaced to argument instance {args.instance}')
 
     # Generate test instance datetime from filename
     test_instance_d = test_instance.split(
@@ -310,7 +316,7 @@ if __name__ == "__main__":
 
     df_track_run = pd.concat(df_runs)
     df_track_run.to_csv(
-        config("run_path") + "Cancel_Disruptions" + "Run:" + run + ":" + test_instance + "analysis" + ".csv")
+        config("run_path") + branch + "Run:" + run + ":" + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
