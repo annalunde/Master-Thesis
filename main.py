@@ -14,6 +14,7 @@ from simulation.simulator import Simulator
 from heuristic.improvement.reopt.disruption_updater import DisruptionUpdater
 from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
 from measures import Measures
+import argparse
 
 
 def main(test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, N_R, standby):
@@ -274,6 +275,18 @@ if __name__ == "__main__":
     profile.display()
     """
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--run', type=int)
+    parser.add_argument('--branch', type=str)
+    parser.add_argument('--instance', type=str)
+    args = parser.parse_args()
+
+    run = args.run
+    branch = args.branch
+    print(f'Config says instance {test_instance}')
+    test_instance = args.instance
+    print(f'Replaced to argument instance {args.instance}')
+
     # Generate test instance datetime from filename
     test_instance_d = test_instance.split(
         "/")[-1].split("_")[-1].split(".")[0]
@@ -284,10 +297,10 @@ if __name__ == "__main__":
     naive = False
     adaptive = False
     repair_removed = None
-    destroy_removed = [0,2]
+    destroy_removed = [0, 2]
     runs = 5
     df_runs = []
-    N_Rs = [1, 2]
+    N_Rs = [1]
     standby = 0
 
     print("Test instance:", test_instance)
@@ -304,7 +317,7 @@ if __name__ == "__main__":
 
         df_track_run = pd.concat(df_runs)
         df_track_run.to_csv(
-            config("run_path") + "N_R:" + str(N_R) + test_instance + "analysis" + ".csv")
+            config("run_path") + branch + "N_R: " + str(N_R) + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
