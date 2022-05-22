@@ -306,6 +306,7 @@ if __name__ == "__main__":
     print("Test instance:", test_instance)
     print("Naive:", naive)
     print("Adaptive:", adaptive)
+    print("NR:", N_Rs)
 
     for N_R in N_Rs:
         df_runs = []
