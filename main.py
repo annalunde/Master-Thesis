@@ -296,7 +296,7 @@ if __name__ == "__main__":
     branch = args.branch
     print(f'Config says instance {test_instance}')
     test_instance = args.instance
-    cancel_stack = args.req_stack
+    req_stack = args.req_stack
     print(f'Replaced to argument instance {args.instance}')
 
     # Generate test instance datetime from filename
