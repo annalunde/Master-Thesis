@@ -9,15 +9,16 @@ from decouple import config
 
 
 class Simulator:
-    def __init__(self, sim_clock):
+    def __init__(self, sim_clock, req_stack):
         self.sim_clock = sim_clock
         self.poisson = Poisson()
+        self.request_stack = req_stack
         self.request_disruption_times, self.initial_requests = self.fixed_request_stack()
         self.disruptions_stack = self.create_disruption_stack()
 
     def fixed_request_stack(self):
         request_disruption_times, new_requests, initial_requests = [], [], []
-        df = pd.read_csv(config(request_stack))
+        df = pd.read_csv(config(self.request_stack))
         df['Request Creation Time'] = pd.to_datetime(
             df['Request Creation Time'], format="%Y-%m-%d %H:%M:%S")
         df['Requested Pickup Time'] = pd.to_datetime(
@@ -269,7 +270,6 @@ class Simulator:
             return -1, -1, -1, -1, -1, -1
 
     def get_and_drop_random_request(self, data_path, request_arrival):
-
 
         df_same_day_after_10 = pd.read_csv(data_path, index_col=0)
 
