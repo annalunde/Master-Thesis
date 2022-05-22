@@ -14,6 +14,7 @@ from simulation.simulator import Simulator
 from heuristic.improvement.reopt.disruption_updater import DisruptionUpdater
 from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
 from measures import Measures
+import argparse
 
 
 def main(test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby):
@@ -276,6 +277,11 @@ if __name__ == "__main__":
     cProfile.run('main()', 'profiling/restats')
     profile.display()
     """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--run', type=int)
+    args = parser.parse_args()
+
+    run = args.run
 
     # Generate test instance datetime from filename
     test_instance_d = test_instance.split(
@@ -285,10 +291,10 @@ if __name__ == "__main__":
         test_instance_d[6:8] + " 10:00:00"
 
     naive = False
-    adaptive = False
+    adaptive = True
     repair_removed = None
     destroy_removed = [0, 2]
-    runs = 5
+    #runs = 1
     standby = 0
 
     print("Test instance:", test_instance)
@@ -296,15 +302,15 @@ if __name__ == "__main__":
     print("Adaptive:", adaptive)
 
     df_runs = []
-    for run in range(runs):
-        df_run = main(
-            test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby)
-        df_runs.append(pd.DataFrame(df_run, columns=[
-            "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
+#    for run in range(runs):
+    df_run = main(
+        test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby)
+    df_runs.append(pd.DataFrame(df_run, columns=[
+        "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
 
     df_track_run = pd.concat(df_runs)
     df_track_run.to_csv(
-        config("run_path") + "Cancel_Disruptions" + test_instance + "analysis" + ".csv")
+        config("run_path") + "Cancel_Disruptions" + "Run:" + run + ":" + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
