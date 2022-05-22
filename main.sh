@@ -13,6 +13,7 @@ do
         #sleep 5
         python main.py --run $run --instance $instance --branch $1 &
         #sleep 5
+        echo "Finished initializing run $run on instance $instance on branch $1"
 
         # Add the latest subprocess to the list of PIDs
         pids="$pids $!"
