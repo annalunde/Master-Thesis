@@ -14,6 +14,7 @@ from simulation.simulator import Simulator
 from heuristic.improvement.reopt.disruption_updater import DisruptionUpdater
 from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
 from measures import Measures
+import argparse
 
 
 def main(test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby):
@@ -275,6 +276,17 @@ if __name__ == "__main__":
     cProfile.run('main()', 'profiling/restats')
     profile.display()
     """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--run', type=int)
+    parser.add_argument('--branch', type=str)
+    parser.add_argument('--instance', type=str)
+    args = parser.parse_args()
+
+    run = args.run
+    branch = args.branch
+    print(f'Config says instance {test_instance}')
+    test_instance = args.instance
+    print(f'Replaced to argument instance {args.instance}')
 
     # Generate test instance datetime from filename
     test_instance_d = test_instance.split(
@@ -287,7 +299,7 @@ if __name__ == "__main__":
     adaptive = True
     repair_removed = None
     destroy_removed = [0, 2]
-    runs = 5
+    #runs = 5
     standby_vehicles = [-2]
 
     print("Test instance:", test_instance)
@@ -296,15 +308,15 @@ if __name__ == "__main__":
 
     for standby in standby_vehicles:
         df_runs = []
-        for run in range(runs):
-            df_run = main(
-                test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby)
-            df_runs.append(pd.DataFrame(df_run, columns=[
-                "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
+        # for run in range(runs):
+        df_run = main(
+            test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby)
+        df_runs.append(pd.DataFrame(df_run, columns=[
+            "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
 
         df_track_run = pd.concat(df_runs)
         df_track_run.to_csv(
-            config("run_path") + "Extra_Vehicles" + str(standby) + test_instance + "analysis" + ".csv")
+            config("run_path") + branch + "Extra_Vehicles" + str(standby) + "Run:" + str(run) + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
