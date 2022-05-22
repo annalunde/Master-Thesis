@@ -300,7 +300,6 @@ if __name__ == "__main__":
     adaptive = True
     repair_removed = None
     destroy_removed = [0, 2]
-    #runs = 1
     standby = 0
 
     print("Test instance:", test_instance)
@@ -308,7 +307,7 @@ if __name__ == "__main__":
     print("Adaptive:", adaptive)
 
     df_runs = []
-#    for run in range(runs):
+    # for run in range(runs):
     df_run = main(
         test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby)
     df_runs.append(pd.DataFrame(df_run, columns=[
@@ -321,7 +320,7 @@ if __name__ == "__main__":
     print("DONE WITH ALL RUNS")
 
 """
-TODO:
+NOTE:
     - Add index to removed repair operator:
         - None = none removed 
         - 0 = greedy_repair
