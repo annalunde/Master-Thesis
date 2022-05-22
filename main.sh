@@ -8,10 +8,10 @@ do
     for run in $(seq 5)
     do
         # Checkout the branch and start a run in the background
-        echo "Starting run $run on branch $branch"
+        echo "Starting run $run on instance $instance"
         #git checkout $branch
         #sleep 5
-        python main.py --run $run --instance $instance --branch $branch &
+        python main.py --run $run --instance $instance --branch $1 &
         #sleep 5
 
         # Add the latest subprocess to the list of PIDs
