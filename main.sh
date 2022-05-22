@@ -8,7 +8,7 @@ do
     for run in $(seq 5)
     do
         # Checkout the branch and start a run in the background
-        echo "Starting run $run on instance $instance"
+        echo "Starting run $run on instance $instance on branch $1"
         #git checkout $branch
         #sleep 5
         python main.py --run $run --instance $instance --branch $1 &
