@@ -298,7 +298,7 @@ if __name__ == "__main__":
     test_instance = args.instance
     req_stack = args.req_stack
     print(f'Replaced to argument instance {args.instance}')
-
+    print(f"req stack:{args.req_stack}")
     # Generate test instance datetime from filename
     test_instance_d = test_instance.split(
         "/")[-1].split("_")[-1].split(".")[0]
