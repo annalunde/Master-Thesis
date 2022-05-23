@@ -13,6 +13,7 @@ do
     do
         # Checkout the branch and start a run in the background
         echo "Starting run $run on instance $instance on branch $1"
+        echo "Cancel stack is set to $cancel_stack"
         #git checkout $branch
         #sleep 5
         python main.py --run $run --instance $instance --branch $1 --cancel_stack $cancel_stack &
