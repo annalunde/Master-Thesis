@@ -13,6 +13,7 @@ from heuristic.improvement.simulated_annealing import SimulatedAnnealing
 from simulation.simulator import Simulator
 from heuristic.improvement.reopt.disruption_updater import DisruptionUpdater
 from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
+from measures import Measures
 import argparse
 
 
@@ -146,6 +147,10 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                 current_infeasible_set = []
 
             else:
+                removed_time = None
+                if disruption_type == 2:
+                    removed_time = current_route_plan[disruption_info[0]
+                                                      ][disruption_info[1]][1]
                 current_route_plan, vehicle_clocks, artificial_depot = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
 
@@ -263,15 +268,16 @@ if __name__ == "__main__":
         test_instance_d[4:6] + "-" + \
         test_instance_d[6:8] + " 10:00:00"
 
-    naive = True
-    adaptive = False
+    naive = False
+    adaptive = True
     repair_removed = None
     destroy_removed = [0, 2]
     standby = 0
 
     print("Test instance:", test_instance)
 
-    df_requests_runs, df_runtime_runs, df_operators_runs = [], [], []
+    df_runs = []
+    # for run in range(runs):
     df_run = main(
         test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby)
     df_runs.append(pd.DataFrame(df_run, columns=[
