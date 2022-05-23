@@ -92,6 +92,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                        cumulative_recalibration.total_seconds(), ride_time_objective.total_seconds(), ride_sharing, cpt])
         print("Initial objective", current_objective.total_seconds())
         print("Initial rejected", cumulative_rejected)
+        cumulative_deviation = copy(cumulative_recalibration)/beta
 
         # SIMULATION
         print("Start simulation")
@@ -230,15 +231,13 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                         current_route_plan, current_infeasible_set, current_objective)
                     cumulative_recalibration += delta_dev_objective
                     current_objective -= delta_dev_objective
+                    cumulative_deviation += delta_dev_objective/beta
 
             total_objective, rejected_objective = new_request_updater.total_objective(current_objective, cumulative_objective,
                                                                                       cumulative_recalibration, cumulative_rejected, rejection)
 
             _, current_travel_time, current_deviation = new_request_updater.norm_objective(
                 current_route_plan, [], False, filtered_size)
-
-            cumulative_deviation = copy(
-                cumulative_deviation) + copy(cumulative_recalibration)/new_request_updater.beta
 
             ride_time_objective = copy(
                 cumulative_travel_time) + copy(current_travel_time)
