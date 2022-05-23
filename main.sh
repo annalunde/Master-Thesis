@@ -2,10 +2,10 @@
 export cores=16
 export i=0
 export pids=""
-export stacks=(" requests_comp_instance_1" "requests_comp_instance_2" "requests_comp_instance_3")
-export instances=(" comp_instance_1_20220110" "comp_instance_2_20211007" "comp_instance_3_20211215")
+export stacks=("requests_comp_instance_1" "requests_comp_instance_2" "requests_comp_instance_3")
+export instances=("comp_instance_1_20220110" "comp_instance_2_20211007" "comp_instance_3_20211215")
 
-for index in $(seq 1);
+for index in $(seq 0 1);
 do
     instance=${instances[$index]}
     req_stack=${stacks[$index]}
