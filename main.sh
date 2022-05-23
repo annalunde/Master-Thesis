@@ -5,7 +5,7 @@ export pids=""
 export stacks=("cancels_comp_instance_1" "cancels_comp_instance_2" "cancels_comp_instance_3")
 export instances=("comp_instance_1_20220110" "comp_instance_2_20211007" "comp_instance_3_20211215")
 
-for index in $(seq 3);
+for index in $(seq 0 2);
 do
     instance=${instances[$index]}
     cancel_stack=${stacks[$index]}
