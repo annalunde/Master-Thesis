@@ -84,7 +84,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                                                       cumulative_recalibration)
 
         df_run.append([run, "Initial", total_objective.total_seconds(), (datetime.now() - start_time).total_seconds(), cumulative_rejected, rejected_objective.total_seconds(),
-                       cumulative_recalibration.total_seconds()/beta, ride_time_objective.total_seconds(), ride_sharing, cpt])
+                       cumulative_recalibration.total_seconds()/beta, ride_time_objective.total_seconds(), ride_sharing, cpt, len(current_route_plan), "10:00"])
         print("Initial objective", current_objective.total_seconds())
         print("Initial rejected", cumulative_rejected)
         cumulative_deviation = copy(cumulative_recalibration)/beta
@@ -260,7 +260,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                           for elem in cost_per_trip_filtered.items())/len(cost_per_trip_filtered)
             introduced_vehicles = len(current_route_plan)
             df_run.append([run, str(disruption_type), total_objective.total_seconds(), (datetime.now() - start_time).total_seconds(), cumulative_rejected, rejected_objective.total_seconds(),
-                          deviation_objective.total_seconds(), ride_time_objective.total_seconds(), ride_sharing, cpt, introduced_vehicles,simulator.sim_clock])
+                          deviation_objective.total_seconds(), ride_time_objective.total_seconds(), ride_sharing, cpt, introduced_vehicles, str(simulator.sim_clock)])
 
         print("End simulation")
         print("Rejected rids", rejected)
