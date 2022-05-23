@@ -96,7 +96,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                                                       cumulative_recalibration)
 
         df_run.append([run, "Initial", total_objective.total_seconds(), (datetime.now() - start_time).total_seconds(), cumulative_rejected, rejected_objective.total_seconds(),
-                       cumulative_recalibration.total_seconds()/beta, ride_time_objective.total_seconds(), ride_sharing, cpt])
+                       cumulative_recalibration.total_seconds()/beta, ride_time_objective.total_seconds(), ride_sharing, cpt, len(current_route_plan), "10:00"])
         print("Initial objective", current_objective.total_seconds())
         print("Initial rejected", cumulative_rejected)
         cumulative_deviation = copy(cumulative_recalibration)/beta
@@ -253,11 +253,11 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             cost_per_trip_filtered = dict(
                 filter(lambda elem: elem[1][0] > 0, cost_per_trip.items()))
             if len(cost_per_trip_filtered) > 0:
-                cpt = sum(elem[1][0]/((elem[1][2] - elem[1][1]).total_seconds()/3600)
+                cpt = sum(elem[1][0]/8
                           for elem in cost_per_trip_filtered.items())/len(cost_per_trip_filtered)
 
             df_run.append([run, str(disruption_type), total_objective.total_seconds(), (datetime.now() - start_time).total_seconds(), cumulative_rejected, rejected_objective.total_seconds(),
-                          deviation_objective.total_seconds(), ride_time_objective.total_seconds(), ride_sharing, cpt])
+                          deviation_objective.total_seconds(), ride_time_objective.total_seconds(), ride_sharing, cpt, len(current_route_plan), str(simulator.sim_clock)])
 
         print("End simulation")
         print("Rejected rids", rejected)
@@ -321,7 +321,7 @@ if __name__ == "__main__":
     df_run = main(
         test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby, req_stack)
     df_runs.append(pd.DataFrame(df_run, columns=[
-        "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
+        "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip", "Introduced Vehicles", "Sim_Clock"]))
 
     df_track_run = pd.concat(df_runs)
     df_track_run.to_csv(
