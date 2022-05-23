@@ -16,6 +16,7 @@ S_W = 5  # wheelchair
 R_F = 1.5
 
 # Number of vehicles
+V = 16
 V_before2 = 16
 V_after2 = 16
 
@@ -82,6 +83,7 @@ N_U_reopt = 0.3
 # Destruction degree
 destruction_degree = 0.4
 
+breakpoint_hour = " 14:00:00"
 
 # Running data
 # "comp_instance_1_20220110", "comp_instance_2_20211007","comp_instance_3_20211215"

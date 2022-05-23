@@ -2,9 +2,13 @@ from datetime import timedelta, datetime
 
 
 class DisruptionUpdater:
-    def __init__(self, new_request_updater):
+    def __init__(self, new_request_updater, breakpoint_hour_date):
         self.new_request_updater = new_request_updater
         self.alone_rids = []
+        self.breakpoint_hour_date = breakpoint_hour_date
+
+    def before2(self, disruption_type, disruption_info, sim_clock):
+        return disruption_info['Requested Pickup Time'] >= self.breakpoint_hour_date
 
     def update_route_plan(self, current_route_plan, disruption_type, disruption_info, sim_clock):
 
