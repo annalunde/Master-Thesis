@@ -197,7 +197,7 @@ class NewRequestUpdater:
         cum_rej = cumulative_rejected if not rejection else cumulative_rejected - 1
         total_objective = current_objective + \
             cumulative_objective + cumulative_recalibration + self.gamma*cum_rej
-        return total_objective, self.gamma*cum_rej
+        return total_objective, self.gamma*cumulative_rejected
 
     def travel_matrix(self, df):
         # Lat and lon for each request
