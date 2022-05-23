@@ -26,7 +26,7 @@ class ALNS:
         self.destroy_repair_updater = Destroy_Repair_Updater(constructor)
 
     # Run ALNS algorithm
-    def iterate(self, num_iterations, z, disrupted, index_removed, disruption_time, delayed, reopt, df_operators, run):
+    def iterate(self, num_iterations, z, disrupted, index_removed, disruption_time, delayed, reopt, run):
 
         N_U = N_U_reopt if reopt else N_U_init
         weights = np.asarray(self.weights, dtype=np.float16)
@@ -139,14 +139,11 @@ class ALNS:
                     len(self.destroy_operators), dtype=np.float16), np.zeros(
                     len(self.repair_operators), dtype=np.float16)
 
-        df_operators.append([run, not reopt, i, d_operator, r_operator, d_weights[destroy], r_weights[repair], d_scores[destroy],
-                             r_scores[repair], d_count[destroy], r_count[repair], (datetime.now() - start_time).total_seconds(), updated_now, best_objective])
-
         if delayed[0]:
             still_delayed_nodes = self.filter_still_delayed(
                 delayed, best, initial_route_plan)
 
-        return df_operators, best, best_objective, best_infeasible_set, still_delayed_nodes
+        return best, best_objective, best_infeasible_set, still_delayed_nodes
 
     def set_operators(self, operators, repair_removed, destroy_removed):
         # Add destroy operators

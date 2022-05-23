@@ -13,6 +13,8 @@ from heuristic.improvement.simulated_annealing import SimulatedAnnealing
 from simulation.simulator import Simulator
 from heuristic.improvement.reopt.disruption_updater import DisruptionUpdater
 from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
+from measures import Measures
+import argparse
 
 
 def main(test_instance, test_instance_date, run, repair_removed, destroy_removed):
@@ -21,17 +23,18 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
     try:
         # TRACKING
         start_time = datetime.now()
-        df_operators, df_runtime, df_reqs = [], [], []
+        df_run = []
 
         # CUMULATIVE OBJECTIVE
-        cumulative_rejected, cumulative_recalibration, cumulative_objective, cumulative_travel_time, \
-            cumulative_deviation = 0, timedelta(
+        cumulative_rejected_b2, cumulative_rejected_a2, cumulative_recalibration_b2, cumulative_recalibration_a2, cumulative_objective_b2, cumulative_objective_a2, cumulative_travel_time_b2, \
+            cumulative_travel_time_a2, cumulative_deviation_a2, cumulative_deviation_b2 = 0, 0, timedelta(
+                0), timedelta(0), timedelta(0), timedelta(0), timedelta(
                 0), timedelta(0), timedelta(0), timedelta(0)
 
         # CONSTRUCTION OF INITIAL SOLUTION
         df = pd.read_csv(config(test_instance))
         constructor = ConstructionHeuristic(
-            requests=df.head(10), vehicles=V, alpha=alpha, beta=beta)
+            requests=df, vehicles_before2=V_before2, vehicles_after2=V_after2, alpha=alpha, beta=beta)
         print("Constructing initial solution")
         initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
 
@@ -48,8 +51,8 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         # Run ALNS
         delayed = (False, None, None)
 
-        df_operators, current_route_plan, current_objective, current_infeasible_set, _ = alns.iterate(
-            initial_iterations, initial_Z, None, None, None, delayed, False, df_operators, run)
+        current_route_plan, current_objective, current_infeasible_set, _ = alns.iterate(
+            initial_iterations, initial_Z, None, None, None, delayed, False, run)
 
         if current_infeasible_set:
             cumulative_rejected = len(current_infeasible_set)
@@ -88,7 +91,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         new_request_updater = NewRequestUpdater(
             constructor)
         disruption_updater = DisruptionUpdater(new_request_updater)
-        first_iteration, rejected = True, []
+        rejected = []
         print("Length of disruption stack", len(simulator.disruptions_stack))
         while len(simulator.disruptions_stack) > 0:
             start_time = datetime.now()
@@ -99,13 +102,9 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             rejection = False
 
             # use correct data path
-            if not first_iteration:
-                disruption_type, disruption_time, disruption_info = simulator.get_disruption(
-                    current_route_plan, config("data_simulator_path"), first_iteration)
-            else:
-                disruption_type, disruption_time, disruption_info = simulator.get_disruption(
-                    current_route_plan, config("data_processed_path"), first_iteration)
-                first_iteration = False
+            disruption_type, disruption_time, disruption_info = simulator.get_disruption(
+                current_route_plan, config("data_simulator_path"))
+
             # updates before heuristic
             disrupt = (False, None)
             if disruption_type == 4:  # No disruption
@@ -115,7 +114,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                     current_route_plan, disruption_type, disruption_info, disruption_time)
                 current_route_plan, removed_filtering, filtered_away, middle, filtered_size = disruption_updater.\
                     filter_route_plan(current_route_plan,
-                                      vehicle_clocks, None)  # Filter route plan
+                                      vehicle_clocks, None, disruption_type, False)  # Filter route plan
                 new_request_updater.middle = middle
                 filter_objective = new_request_updater.new_objective(
                     current_route_plan, [], False)
@@ -147,16 +146,18 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                             cumulative_rejected -= 1
                             break
                 current_infeasible_set = []
-                df_reqs.append(
-                    [run, rid, (datetime.now() - start_time).total_seconds()])
 
             else:
+                removed_time = None
+                if disruption_type == 2:
+                    removed_time = current_route_plan[disruption_info[0]
+                                                      ][disruption_info[1]][1]
                 current_route_plan, vehicle_clocks, artificial_depot = disruption_updater.update_route_plan(
                     current_route_plan, disruption_type, disruption_info, disruption_time)
 
                 current_route_plan, removed_filtering, filtered_away, middle, filtered_size = disruption_updater.\
                     filter_route_plan(current_route_plan,
-                                      vehicle_clocks, None)  # Filter route plan
+                                      vehicle_clocks, disruption_info, disruption_type, artificial_depot)  # Filter route plan
                 new_request_updater.middle = middle
                 filter_away_objective, filter_away_travel_time, filter_away_deviation = \
                     new_request_updater.norm_objective(
@@ -197,8 +198,8 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                 alns.set_operators(operators, repair_removed, destroy_removed)
 
                 # Run ALNS
-                df_operators, current_route_plan, current_objective, current_infeasible_set, still_delayed_nodes = alns.iterate(
-                    reopt_iterations, reopt_Z, disrupt[0], disrupt[1], disruption_time, delayed, True, df_operators, run)
+                current_route_plan, current_objective, current_infeasible_set, still_delayed_nodes = alns.iterate(
+                    reopt_iterations, reopt_Z, disrupt[0], disrupt[1], disruption_time, delayed, True,  run)
 
                 if delayed[0]:
                     delay_deltas[-1] = delay_deltas[-1] - current_objective
@@ -222,9 +223,6 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             deviation_objective = copy(
                 cumulative_deviation) + copy(current_deviation)
 
-            df_runtime.append([run, str(disruption_type), total_objective.total_seconds(), (datetime.now() - start_time).total_seconds(), cumulative_rejected, rejected_objective.total_seconds(),
-                               deviation_objective.total_seconds(), ride_time_objective.total_seconds()])
-
         print("End simulation")
         print("Rejected rids", rejected)
 
@@ -240,7 +238,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         print("File name: ", filename)
         print("Line number: ", line_number)
 
-    return df_operators, df_runtime, df_reqs
+    return df_run
 
 
 if __name__ == "__main__":
@@ -250,6 +248,17 @@ if __name__ == "__main__":
     cProfile.run('main()', 'profiling/restats')
     profile.display()
     """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--run', type=int)
+    parser.add_argument('--branch', type=str)
+    parser.add_argument('--instance', type=str)
+    args = parser.parse_args()
+
+    run = args.run
+    branch = args.branch
+    print(f'Config says instance {test_instance}')
+    test_instance = args.instance
+    print(f'Replaced to argument instance {args.instance}')
 
     # Generate test instance datetime from filename
     test_instance_d = test_instance.split(
@@ -258,40 +267,44 @@ if __name__ == "__main__":
         test_instance_d[4:6] + "-" + \
         test_instance_d[6:8] + " 10:00:00"
 
-    naive = True
-    adaptive = False
+    naive = False
+    adaptive = True
     repair_removed = None
-    destroy_removed = None
-    runs = 5
+    destroy_removed = [0, 2]
     standby = 0
 
     print("Test instance:", test_instance)
 
-    df_requests_runs, df_runtime_runs, df_operators_runs = [], [], []
-    for run in range(runs):
-        df_run = main(
-            test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby)
-        df_runs.append(pd.DataFrame(df_run, columns=[
-            "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
+    df_runs = []
+    # for run in range(runs):
+    df_run = main(
+        test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby)
+    df_runs.append(pd.DataFrame(df_run, columns=[
+        "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
 
     df_track_run = pd.concat(df_runs)
     df_track_run.to_csv(
-        config("run_path") + "Naive:" + str(naive) + test_instance + "analysis" + ".csv")
+        config("run_path") + "Before2_After2" + "Run:" + str(run) + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
 """
-NOTE:
-    - Add index to removed repair operator:
-        - None = none removed 
-        - 0 = greedy_repair
-        - 1 = regret_2_repair
-        - 2 = regret_3_repair
-    - Add index to removed destroy operator:
-        - None = none removed
-        - 0 = random_removal
-        - 1 = time_related_removal
-        - 2 = distance_related_removal
-        - 3 = related_removal
-        - 4 = worst_deviation_removal
+- Update tracking info
+
+- For initial: Check if requested pickup time is before or after 14:
+    - current route plan is updated accordingly
+    - introduced vehicles and vehicle sets must be updated
+    - ALNS only on before 14 route plan
+
+- For reopt: Check if disruption time is after or before 14: 
+    - for cancel, no show & delay: affected route plan according to where to node lies
+    - for new request: check if requested pickup time is before or after 14:
+    - current route plan is updated accordingly
+    - introduced vehicles and vehicle sets must be updated
+    - global sets (might) need to be updated (only if depot is added) 
+    - two sets of vehicle clocks and sim clocks
+    - ALNS alternating on the two according to if disruption time is before or after
+    - Simulator must know where to find the disrupted node
+
+- Implement two different V params
 """
