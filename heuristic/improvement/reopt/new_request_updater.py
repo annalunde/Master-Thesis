@@ -26,6 +26,7 @@ class NewRequestUpdater:
         self.alpha = constructor.alpha
         self.beta = constructor.beta
         self.gamma = constructor.gamma
+        self.remove_cancel = constructor.remove_cancel
         self.middle = []
         self.obj_processed_nodes = []
 
@@ -81,23 +82,28 @@ class NewRequestUpdater:
         rid = len(self.requests.index)
         route_plan = list(map(list, current_route_plan))
         infeasible_set = copy(current_infeasible_set)
-        request = self.requests.iloc[-1]
-        request["Requested Pickup Time"] = request["Requested Pickup Time"] + \
-            i*U_D
+        cancelled = False
+        if rid not in self.remove_cancel:
+            request = self.requests.iloc[-1]
+            request["Requested Pickup Time"] = request["Requested Pickup Time"] + \
+                i*U_D
 
-        self.re_opt_repair_generator.greedy = True
-        route_plan, new_objective, infeasible_set, vehicle_clocks = self.re_opt_repair_generator.generate_insertions(
-            route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=None,
-            index_removed=None, sim_clock=sim_clock, vehicle_clocks=vehicle_clocks,
-            objectives=False, delayed=(False, None, None), still_delayed_nodes=[],
-            prev_objective=current_objective)
+            self.re_opt_repair_generator.greedy = True
+            route_plan, new_objective, infeasible_set, vehicle_clocks = self.re_opt_repair_generator.generate_insertions(
+                route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=None,
+                index_removed=None, sim_clock=sim_clock, vehicle_clocks=vehicle_clocks,
+                objectives=False, delayed=(False, None, None), still_delayed_nodes=[],
+                prev_objective=current_objective)
 
-        rejection = False if (rid, request) not in infeasible_set else True
-        infeasible_set = [] if rejection else infeasible_set
-        # update current objective
-        self.current_objective = new_objective
+            rejection = False if (rid, request) not in infeasible_set else True
+            infeasible_set = [] if rejection else infeasible_set
+            # update current objective
+            self.current_objective = new_objective
+        else:
+            rejection = False
+            cancelled = True
         self.re_opt_repair_generator.greedy = False
-        return route_plan, self.current_objective, infeasible_set, vehicle_clocks, rejection, rid
+        return route_plan, self.current_objective, infeasible_set, vehicle_clocks, rejection, rid, cancelled
 
     def new_objective(self, new_routeplan, new_infeasible_set, greedy):
         total_deviation, total_travel_time = timedelta(

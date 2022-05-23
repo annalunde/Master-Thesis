@@ -87,4 +87,4 @@ destruction_degree = 0.4
 test_instance = "comp_instance_1_20220110"
 
 
-#cancel_stack = "cancels_comp_instance_1"
+cancel_stack = "cancels_comp_instance_1"

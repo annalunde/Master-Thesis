@@ -11,7 +11,7 @@ pd.options.mode.chained_assignment = None
 
 
 class ConstructionHeuristic:
-    def __init__(self, requests, vehicles, alpha, beta):
+    def __init__(self, requests, vehicles, alpha, beta, remove_cancel):
         self.vehicles = [i for i in range(vehicles)]
         self.n = len(requests.index)
         self.num_nodes_and_depots = vehicles + 2 * self.n
@@ -38,6 +38,7 @@ class ConstructionHeuristic:
         self.gamma = self.alpha * 4 * \
             timedelta(seconds=np.amax(self.T_ij)) + self.beta * \
             timedelta(minutes=15) * 2 * (self.n / vehicles)
+        self.remove_cancel = remove_cancel
 
     def compute_pickup_time(self, requests):
         requests["Requested Pickup Time"] = pd.to_datetime(
@@ -93,16 +94,19 @@ class ConstructionHeuristic:
         prev_objective = timedelta(0)
 
         for i in range(unassigned_requests.shape[0]):
-            # while not unassigned_requests.empty:
-            request = unassigned_requests.iloc[i]
 
-            route_plan, new_objective = self.insertion_generator.generate_insertions(
-                route_plan=route_plan, request=request, rid=rid, prev_objective=prev_objective)
+            if rid not in self.remove_cancel:
 
-            # update current objective
-            self.current_objective = new_objective
+                # while not unassigned_requests.empty:
+                request = unassigned_requests.iloc[i]
 
-            prev_objective = new_objective
+                route_plan, new_objective = self.insertion_generator.generate_insertions(
+                    route_plan=route_plan, request=request, rid=rid, prev_objective=prev_objective)
+
+                # update current objective
+                self.current_objective = new_objective
+
+                prev_objective = new_objective
 
             rid += 1
         return route_plan, self.current_objective, self.infeasible_set

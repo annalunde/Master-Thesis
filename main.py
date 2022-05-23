@@ -34,8 +34,13 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
 
         # CONSTRUCTION OF INITIAL SOLUTION
         df = pd.read_csv(config(test_instance))
+
+        sim_clock = datetime.strptime(
+            test_instance_date, "%Y-%m-%d %H:%M:%S")
+        simulator = Simulator(sim_clock, cancel_stack)
+
         constructor = ConstructionHeuristic(
-            requests=df, vehicles=V+standby, alpha=alpha, beta=beta)
+            requests=df, vehicles=V+standby, alpha=alpha, beta=beta, remove_cancel=simulator.remove_cancel)
         print("Constructing initial solution")
         initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
         measures = Measures()
@@ -90,9 +95,6 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
 
         # SIMULATION
         print("Start simulation")
-        sim_clock = datetime.strptime(
-            test_instance_date, "%Y-%m-%d %H:%M:%S")
-        simulator = Simulator(sim_clock, cancel_stack)
         new_request_updater = NewRequestUpdater(
             constructor, standby)
         disruption_updater = DisruptionUpdater(new_request_updater)
@@ -134,10 +136,12 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                 cumulative_deviation = copy(
                     cumulative_deviation) + copy(filter_away_deviation)
 
-                current_route_plan, current_objective, current_infeasible_set, vehicle_clocks, rejection, rid = new_request_updater.\
+                current_route_plan, current_objective, current_infeasible_set, vehicle_clocks, rejection, rid, cancelled = new_request_updater.\
                     greedy_insertion_new_request(
                         current_route_plan, current_infeasible_set, disruption_info, disruption_time, vehicle_clocks, i, filter_objective)
                 disruption_type = str(disruption_type) + "_False"
+                if cancelled:
+                    break
                 if rejection:
                     disruption_type = str(disruption_type) + "_True"
                     rejected.append(rid)

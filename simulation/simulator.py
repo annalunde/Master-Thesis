@@ -14,11 +14,11 @@ class Simulator:
         self.sim_clock = sim_clock
         self.poisson = Poisson()
         self.cancel_stack = cancel_stack
-        self.cancel_disruption_times = self.fixed_cancel_stack()
+        self.cancel_disruption_times, self.remove_cancel = self.fixed_cancel_stack()
         self.disruptions_stack = self.create_disruption_stack()
 
     def fixed_cancel_stack(self):
-        cancel_disruption_times = []
+        cancel_disruption_times, remove_cancel = [], []
         df = pd.read_csv(config(self.cancel_stack))
         df['Cancelation Time'] = pd.to_datetime(
             df['Cancelation Time'], format="%Y-%m-%d %H:%M:%S")
@@ -32,13 +32,17 @@ class Simulator:
                     # add to cancel stack and push cancellation time to 1 hour before service time
                     cancel_disruption_times.append((2, row["removed time"] - timedelta(hours=1),
                                                     row['pickup rid'], row['dropoff rid']))
+                else:
+                    # should be completely removed
+                    remove_cancel.append(row['pickup rid'])
             else:
                 # add to cancel stack
                 cancel_disruption_times.append((2, row["Cancelation Time"],
                                                 row['pickup rid'], row['dropoff rid']))
 
         # stack with format (type, time, p_rid, d_rid)
-        return cancel_disruption_times
+        # remove stack with format (request rid)
+        return cancel_disruption_times, remove_cancel
 
     def create_disruption_stack(self):
         """
