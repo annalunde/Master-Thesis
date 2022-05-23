@@ -89,7 +89,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                                                       cumulative_recalibration)
 
         df_run.append([run, "Initial", total_objective.total_seconds(), (datetime.now() - start_time).total_seconds(), cumulative_rejected, rejected_objective.total_seconds(),
-                       cumulative_recalibration.total_seconds(), ride_time_objective.total_seconds(), ride_sharing, cpt])
+                       cumulative_recalibration.total_seconds()/beta, ride_time_objective.total_seconds(), ride_sharing, cpt])
         print("Initial objective", current_objective.total_seconds())
         print("Initial rejected", cumulative_rejected)
         cumulative_deviation = copy(cumulative_recalibration)/beta
