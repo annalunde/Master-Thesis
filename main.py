@@ -14,6 +14,7 @@ from simulation.simulator import Simulator
 from heuristic.improvement.reopt.disruption_updater import DisruptionUpdater
 from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
 from measures import Measures
+import argparse
 
 
 def main(test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby):
@@ -286,6 +287,17 @@ if __name__ == "__main__":
     cProfile.run('main()', 'profiling/restats')
     profile.display()
     """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--run', type=int)
+    parser.add_argument('--branch', type=str)
+    parser.add_argument('--instance', type=str)
+    args = parser.parse_args()
+
+    run = args.run
+    branch = args.branch
+    print(f'Config says instance {test_instance}')
+    test_instance = args.instance
+    print(f'Replaced to argument instance {args.instance}')
 
     # Generate test instance datetime from filename
     test_instance_d = test_instance.split(
@@ -295,10 +307,9 @@ if __name__ == "__main__":
         test_instance_d[6:8] + " 10:00:00"
 
     naive = False
-    adaptive = False
+    adaptive = True
     repair_removed = None
     destroy_removed = [0, 2]
-    runs = 5
     standby = 0
 
     print("Test instance:", test_instance)
@@ -306,31 +317,14 @@ if __name__ == "__main__":
     print("Adaptive:", adaptive)
 
     df_runs, df_requests_runs, df_cancel_runs = [], [], []
-    for run in range(runs):
-        df_run, df_cancel, df_req_runtime = main(
-            test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby)
-        df_runs.append(pd.DataFrame(df_run, columns=[
-            "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
-
-        if run == 0:
-            df_requests_runs.append(pd.DataFrame(df_req_runtime, columns=[
-                "Rid", "Request Creation Time", "Requested Pickup Time", "Requested Dropoff Time", "Wheelchair",
-                "Number of Passengers", "Origin Lat", "Origin Lng", "Destination Lat", "Destination Lng"]))
-
-            df_cancel_runs.append(pd.DataFrame(df_cancel, columns=[
-                "Cancelation Time", "pickup rid", "dropoff rid", "removed time"]))
-
-            df_track_req_runtime = pd.concat(df_requests_runs)
-            df_track_req_runtime.to_csv(
-                config("run_path") + "Naive" + str(naive) + test_instance + "runtime_reqs" + ".csv")
-
-            df_cancel_total = pd.concat(df_cancel_runs)
-            df_cancel_total.to_csv(
-                config("run_path") + "Naive" + str(naive) + test_instance + "cancel_info" + ".csv")
+    df_run, df_cancel, df_req_runtime = main(
+        test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby)
+    df_runs.append(pd.DataFrame(df_run, columns=[
+        "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip"]))
 
     df_track_run = pd.concat(df_runs)
     df_track_run.to_csv(
-        config("run_path") + "Naive" + str(naive) + test_instance + "analysis" + ".csv")
+        config("run_path") + "Heuristic" + "Run:" + str(run) + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
