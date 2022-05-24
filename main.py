@@ -183,8 +183,8 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                         None, None, None) if artificial_depot or disruption_type == 3 else index_removed[0]
                     disrupt = (True, index_removed)
                 elif disruption_type == 1:  # Disruption: delay
-                    node_idx = next(i for i, (node, *_) in enumerate(current_route_plan[disruption_info[0]]) if
-                                    node == disruption_info[3])
+                    node_idx = next(i for i, (node, *_) in enumerate(
+                        current_route_plan[disruption_info[0]]) if node == disruption_info[3])
                     delayed = (True, disruption_info[0], node_idx)
                     delay_deltas.append(current_objective)
 
