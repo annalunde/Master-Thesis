@@ -24,8 +24,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         # TRACKING
         start_time = datetime.now()
         df_run = []
-        cost_per_trip, ride_sharing_passengers, ride_sharing_arcs, processed_nodes, cpt, ride_sharing = {
-            idx: (0, None, None) for idx in range(V+standby)}, 0, 0, set(), 0, 0
+        passengers_total, ride_sharing_passengers, ride_sharing_arcs, processed_nodes, ride_sharing = 0, 0, 0, set(), 0
 
         # CUMULATIVE OBJECTIVE
         cumulative_rejected, cumulative_recalibration, cumulative_objective, cumulative_travel_time, \
@@ -89,7 +88,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                                                       cumulative_recalibration)
 
         df_run.append([run, "Initial", total_objective.total_seconds(), (datetime.now() - start_time).total_seconds(), cumulative_rejected, rejected_objective.total_seconds(),
-                       cumulative_recalibration.total_seconds()/beta, ride_time_objective.total_seconds(), ride_sharing, cpt, len(current_route_plan), "10:00"])
+                       cumulative_recalibration.total_seconds()/beta, ride_time_objective.total_seconds(), ride_sharing, ride_sharing_arcs, ride_sharing_passengers, passengers_total, len(current_route_plan), "10:00"])
         print("Initial objective", current_objective.total_seconds())
         print("Initial rejected", cumulative_rejected)
         cumulative_deviation = copy(cumulative_recalibration)/beta
@@ -194,14 +193,14 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                     delayed = (True, disruption_info[0], node_idx)
                     delay_deltas.append(current_objective)
 
-            cost_per_trip = measures.cpt_calc(
-                filtered_away, cost_per_trip, processed_nodes)
+            passengers_total = measures.cpt_calc(
+                filtered_away, passengers_total, processed_nodes)
             ride_sharing_passengers, ride_sharing_arcs, processed_nodes = measures.ride_sharing(
                 filtered_away, ride_sharing_passengers, ride_sharing_arcs, processed_nodes)
 
             if len(simulator.disruptions_stack) == 0:
-                cost_per_trip = measures.cpt_calc(
-                    current_route_plan, cost_per_trip, processed_nodes)
+                passengers_total = measures.cpt_calc(
+                    current_route_plan, passengers_total, processed_nodes)
                 ride_sharing_passengers, ride_sharing_arcs, processed_nodes = measures.ride_sharing(
                     current_route_plan, ride_sharing_passengers, ride_sharing_arcs, processed_nodes)
 
@@ -246,14 +245,9 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
 
             ride_sharing = ride_sharing_passengers / \
                 ride_sharing_arcs if ride_sharing_arcs > 0 else 0
-            cost_per_trip_filtered = dict(
-                filter(lambda elem: elem[1][0] > 0, cost_per_trip.items()))
-            if len(cost_per_trip_filtered) > 0:
-                cpt = sum(
-                    elem[1][0]/8 for elem in cost_per_trip_filtered.items())/len(cost_per_trip_filtered)
 
             df_run.append([run, str(disruption_type), total_objective.total_seconds(), (datetime.now() - start_time).total_seconds(), cumulative_rejected, rejected_objective.total_seconds(),
-                          deviation_objective.total_seconds(), ride_time_objective.total_seconds(), ride_sharing, cpt, len(current_route_plan), str(simulator.sim_clock)])
+                          deviation_objective.total_seconds(), ride_time_objective.total_seconds(), ride_sharing, ride_sharing_arcs, ride_sharing_passengers, passengers_total, len(current_route_plan), str(simulator.sim_clock)])
 
         print("End simulation")
         print("Rejected rids", rejected)
@@ -316,7 +310,7 @@ if __name__ == "__main__":
     df_run = main(
         test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby, cancel_stack)
     df_runs.append(pd.DataFrame(df_run, columns=[
-        "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip", "Introduced Vehicles", "Sim_Clock"]))
+        "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Ride Sharing Arcs", "Ride Sharing Passengers", "Total Served Passengers", "Introduced Vehicles", "Sim_Clock"]))
 
     df_track_run = pd.concat(df_runs)
     df_track_run.to_csv(
