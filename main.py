@@ -301,7 +301,7 @@ if __name__ == "__main__":
         test_instance_d[4:6] + "-" + \
         test_instance_d[6:8] + " 10:00:00"
 
-    naive = False
+    naive = True
     adaptive = False
     repair_removed = None
     destroy_removed = [0, 2]
@@ -319,7 +319,7 @@ if __name__ == "__main__":
 
     df_track_run = pd.concat(df_runs)
     df_track_run.to_csv(
-        config("run_path") + "Heuristic" + "Run:" + str(run) + test_instance + "analysis" + ".csv")
+        config("run_path") + "Naive" + "Run:" + str(run) + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
