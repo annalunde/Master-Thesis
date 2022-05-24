@@ -293,7 +293,7 @@ if __name__ == "__main__":
     repair_removed = None
     destroy_removed = [0, 2]
     #runs = 5
-    standby_vehicles = [-1]
+    standby_vehicles = [1]
 
     print(f"Running with standby {standby_vehicles[0]}")
     print("Test instance:", test_instance)
