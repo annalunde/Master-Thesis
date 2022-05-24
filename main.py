@@ -236,7 +236,7 @@ if __name__ == "__main__":
     print("Test instance:", test_instance)
 
     repair_removed = None
-    destroy_removed =  # [0, 2]
+    destroy_removed = None  # [0, 2]
     #runs = 5
     df_requests_runs, df_runtime_runs, df_operators_runs = [], [], []
     # for run in range(runs):
