@@ -303,6 +303,8 @@ if __name__ == "__main__":
     print("Test instance:", test_instance)
     print("Naive:", naive)
     print("Adaptive:", adaptive)
+    print("V: ", V)
+    print("V after breakpoint", V_after_breakpoint)
 
     df_runs = []
     df_run = main(
