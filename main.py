@@ -17,7 +17,7 @@ from measures import Measures
 import argparse
 
 
-def main(test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby):
+def main(test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby, breakpoint_hour_date):
     constructor, simulator = None, None
 
     try:
@@ -34,13 +34,12 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         # CONSTRUCTION OF INITIAL SOLUTION
         df = pd.read_csv(config(test_instance))
         constructor = ConstructionHeuristic(
-            requests=df, vehicles=V+standby, alpha=alpha, beta=beta)
+            requests=df, vehicles=V+standby, vehicles_after_breakpoint=V_after_breakpoint, alpha=alpha, beta=beta, breakpoint_hour_date=breakpoint_hour_date)
         print("Constructing initial solution")
         initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
         measures = Measures()
 
         # IMPROVEMENT OF INITIAL SOLUTION
-        # if not naive:
         criterion = SimulatedAnnealing(cooling_rate)
 
         alns = ALNS(weights, reaction_factor, initial_route_plan, initial_objective, initial_infeasible_set, criterion,
@@ -90,8 +89,9 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             test_instance_date, "%Y-%m-%d %H:%M:%S")
         simulator = Simulator(sim_clock)
         new_request_updater = NewRequestUpdater(
-            constructor, standby)
-        disruption_updater = DisruptionUpdater(new_request_updater)
+            constructor, standby, breakpoint_hour_date, V_after_breakpoint)
+        disruption_updater = DisruptionUpdater(
+            new_request_updater)
         rejected = []
         print("Length of disruption stack", len(simulator.disruptions_stack))
         while len(simulator.disruptions_stack) > 0:
@@ -296,9 +296,12 @@ if __name__ == "__main__":
     test_instance_date = test_instance_d[0:4] + "-" + \
         test_instance_d[4:6] + "-" + \
         test_instance_d[6:8] + " 10:00:00"
+    breakpoint_hour_date = test_instance_d[0:4] + "-" + \
+        test_instance_d[4:6] + "-" + \
+        test_instance_d[6:8] + breakpoint_hour
 
-    naive = True
-    adaptive = False
+    naive = False
+    adaptive = True
     repair_removed = None
     destroy_removed = [0, 2]
     standby = 0
@@ -309,28 +312,22 @@ if __name__ == "__main__":
 
     df_runs, df_requests_runs, df_cancel_runs = [], [], []
     df_run, df_cancel, df_req_runtime = main(
-        test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby)
+        test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby, breakpoint_hour_date)
     df_runs.append(pd.DataFrame(df_run, columns=[
         "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Ride Sharing Arcs", "Ride Sharing Passengers", "Total Served Passengers", "Introduced Vehicles", "Sim_Clock"]))
 
     df_track_run = pd.concat(df_runs)
     df_track_run.to_csv(
-        config("run_path") + "Semi-Naive" + "Run:" + str(run) + test_instance + "analysis" + ".csv")
+        config("run_path") + "Breakpoint:" + str(breakpoint_hour) + "_V:" + str(V) + "_V_afterbreak:" + str(V_after_breakpoint) + "_Run:" + str(run) + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
+
 """
-TODO:
-    - Add index to removed repair operator:
-        - None = none removed 
-        - 0 = greedy_repair
-        - 1 = regret_2_repair
-        - 2 = regret_3_repair
-    - Add index to removed destroy operator:
-        - None = none removed
-        - 0 = random_removal
-        - 1 = time_related_removal
-        - 2 = distance_related_removal
-        - 3 = related_removal
-        - 4 = worst_deviation_removal
+- For initial & reopt: Check if requested pickup time is before or after breakpoint:
+    - if after breakpoint:
+        - can only add it to vehicles after breakpoint set
+    - else: as usual
+
+- Implement two different V params
 """

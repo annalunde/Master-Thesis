@@ -6,9 +6,11 @@ class InsertionGenerator:
     def __init__(self, construction_heuristic):
         self.heuristic = construction_heuristic
 
-    def generate_insertions(self, route_plan, request, rid, prev_objective):
+    def generate_insertions(self, route_plan, request, rid, prev_objective, after_breakpoint):
         possible_insertions = {}  # dict: delta objective --> route plan
-        for introduced_vehicle in self.heuristic.introduced_vehicles:
+        vehicles_set = [i for i in range(self.heuristic.vehicles_after_breakpoint)
+                        ] if after_breakpoint else self.heuristic.introduced_vehicles
+        for introduced_vehicle in vehicles_set:
             # generate all possible insertions
 
             if not route_plan[introduced_vehicle]:
