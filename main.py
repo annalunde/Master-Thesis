@@ -241,7 +241,8 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             ride_sharing = ride_sharing_passengers / \
                 ride_sharing_arcs if ride_sharing_arcs > 0 else 0
 
-            introduced_vehicles = len(current_route_plan)
+            d_iterator = filter(lambda x: len(x) > 0, current_route_plan)
+            introduced_vehicles = len(list(d_iterator))
             df_run.append([run, str(disruption_type), total_objective.total_seconds(), (datetime.now() - start_time).total_seconds(), cumulative_rejected, rejected_objective.total_seconds(),
                           deviation_objective.total_seconds(), ride_time_objective.total_seconds(), ride_sharing, ride_sharing_arcs, ride_sharing_passengers, passengers_total, introduced_vehicles, str(simulator.sim_clock)])
 
