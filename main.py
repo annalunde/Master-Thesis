@@ -33,6 +33,9 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
 
         # CONSTRUCTION OF INITIAL SOLUTION
         df = pd.read_csv(config(test_instance))
+        breakpoint_hour_date = pd.to_datetime(
+            breakpoint_hour_date, format="%Y-%m-%d %H:%M:%S"
+        )
         constructor = ConstructionHeuristic(
             requests=df, vehicles=V+standby, vehicles_after_breakpoint=V_after_breakpoint, alpha=alpha, beta=beta, breakpoint_hour_date=breakpoint_hour_date)
         print("Constructing initial solution")
@@ -45,7 +48,8 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         alns = ALNS(weights, reaction_factor, initial_route_plan, initial_objective, initial_infeasible_set, criterion,
                     destruction_degree, constructor, rnd_state=rnd.RandomState())
 
-        operators = Operators(alns, standby)
+        operators = Operators(
+            alns, standby, V_after_breakpoint, breakpoint_hour_date)
 
         alns.set_operators(operators, repair_removed, destroy_removed)
 
@@ -203,7 +207,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                             destruction_degree, new_request_updater, rnd_state=rnd.RandomState())
 
                 operators = ReOptOperators(
-                    alns, disruption_time, vehicle_clocks, standby)
+                    alns, disruption_time, vehicle_clocks, standby, V_after_breakpoint, breakpoint_hour_date)
 
                 alns.set_operators(operators, repair_removed, destroy_removed)
 
@@ -266,6 +270,7 @@ if __name__ == "__main__":
     cProfile.run('main()', 'profiling/restats')
     profile.display()
     """
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--run', type=int)
     parser.add_argument('--branch', type=str)
@@ -294,13 +299,12 @@ if __name__ == "__main__":
     destroy_removed = [0, 2]
     standby = 0
 
-    print(f"Running with standby {standby_vehicles[0]}")
     print("Test instance:", test_instance)
     print("Naive:", naive)
     print("Adaptive:", adaptive)
 
-    df_runs, df_requests_runs, df_cancel_runs = [], [], []
-    df_run, df_cancel, df_req_runtime = main(
+    df_runs = []
+    df_run = main(
         test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby, breakpoint_hour_date)
     df_runs.append(pd.DataFrame(df_run, columns=[
         "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Ride Sharing Arcs", "Ride Sharing Passengers", "Total Served Passengers", "Introduced Vehicles", "Sim_Clock"]))

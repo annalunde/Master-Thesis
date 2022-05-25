@@ -14,15 +14,15 @@ class ReOptRepairGenerator:
         self.vehicles = copy(self.heuristic.vehicles)
         self.greedy = greedy
         self.V = V+standby
-        self.V_afterbreakpoint = after_breakpoint_vehicles
+        self.vehicles_after_breakpoint = after_breakpoint_vehicles
 
     def generate_insertions(self, route_plan, request, rid, infeasible_set, initial_route_plan, index_removed, sim_clock, objectives, delayed, still_delayed_nodes, vehicle_clocks, prev_objective, after_breakpoint):
         possible_insertions = {}  # dict: delta objective --> route plan
         self.introduced_vehicles = set([i for i in range(len(route_plan))])
         self.vehicles = [i for i in range(len(route_plan), self.V)]
-        vehicle_set = set([i for i in range(self.V_afterbreakpoint)]
-                          ) if after_breakpoint else self.introduced_vehicles
-        for introduced_vehicle in vehicle_set:
+        vehicles_set = set([i for i in self.introduced_vehicles if i <
+                            self.vehicles_after_breakpoint]) if after_breakpoint else self.introduced_vehicles
+        for introduced_vehicle in vehicles_set:
             # generate all possible insertions
             if len(route_plan[introduced_vehicle]) == 1 and route_plan[introduced_vehicle][0][0] == 0:
                 # it is trivial to add the new request
@@ -412,24 +412,46 @@ class ReOptRepairGenerator:
         # check if no possible insertions have been made and introduce a new vehicle
         if not len(possible_insertions):
             if self.vehicles:
-                temp_route_plan = list(map(list, route_plan))
-                new_vehicle = self.vehicles.pop(0)
-                temp_route_plan.append([])
-                self.introduced_vehicles.add(new_vehicle)
-                temp_route_plan[new_vehicle], depot_check = self.add_initial_nodes(
-                    request=request, introduced_vehicle=new_vehicle, rid=rid,
-                    vehicle_route=temp_route_plan[new_vehicle], depot=False, sim_clock=sim_clock)
+                if after_breakpoint:
+                    if self.vehicles[0] < self.vehicles_after_breakpoint:
+                        temp_route_plan = list(map(list, route_plan))
+                        new_vehicle = self.vehicles.pop(0)
+                        temp_route_plan.append([])
+                        self.introduced_vehicles.add(new_vehicle)
+                        temp_route_plan[new_vehicle], depot_check = self.add_initial_nodes(
+                            request=request, introduced_vehicle=new_vehicle, rid=rid, vehicle_route=temp_route_plan[new_vehicle], depot=False, sim_clock=sim_clock)
 
-                if not depot_check:
-                    vehicle_clocks.append(sim_clock)
+                        if not depot_check:
+                            vehicle_clocks.append(sim_clock)
 
-                    # calculate change in objective
-                    change_objective = self.heuristic.new_objective(
-                        temp_route_plan, infeasible_set, self.greedy)
-                    possible_insertions[change_objective] = temp_route_plan
+                            # calculate change in objective
+                            change_objective = self.heuristic.new_objective(
+                                temp_route_plan, infeasible_set, self.greedy)
+                            possible_insertions[change_objective] = temp_route_plan
+
+                    # if no new vehicles available, append the request in an infeasible set
+                    else:
+                        if (rid, request) not in infeasible_set:
+                            infeasible_set.append((rid, request))
                 else:
-                    if (rid, request) not in infeasible_set:
-                        infeasible_set.append((rid, request))
+                    temp_route_plan = list(map(list, route_plan))
+                    new_vehicle = self.vehicles.pop(0)
+                    temp_route_plan.append([])
+                    self.introduced_vehicles.add(new_vehicle)
+                    temp_route_plan[new_vehicle], depot_check = self.add_initial_nodes(
+                        request=request, introduced_vehicle=new_vehicle, rid=rid,
+                        vehicle_route=temp_route_plan[new_vehicle], depot=False, sim_clock=sim_clock)
+
+                    if not depot_check:
+                        vehicle_clocks.append(sim_clock)
+
+                        # calculate change in objective
+                        change_objective = self.heuristic.new_objective(
+                            temp_route_plan, infeasible_set, self.greedy)
+                        possible_insertions[change_objective] = temp_route_plan
+                    else:
+                        if (rid, request) not in infeasible_set:
+                            infeasible_set.append((rid, request))
 
             # if no new vehicles available, append the request in an infeasible set
             else:

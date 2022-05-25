@@ -7,14 +7,16 @@ from heuristic.improvement.reopt.reopt_repair_generator import ReOptRepairGenera
 
 
 class ReOptOperators:
-    def __init__(self, alns, sim_clock, vehicle_clocks, standby):
+    def __init__(self, alns, sim_clock, vehicle_clocks, standby, after_breakpoint_vehicles, breakpoint_hour_date):
         self.destruction_degree = alns.destruction_degree
         self.constructor = alns.constructor
         self.T_ij = self.constructor.T_ij
         self.reopt_repair_generator = ReOptRepairGenerator(
-            self.constructor, False, standby)
+            self.constructor, False, standby, after_breakpoint_vehicles)
         self.sim_clock = sim_clock
         self.vehicle_clocks = vehicle_clocks
+        self.after_breakpoint_vehicles = after_breakpoint_vehicles
+        self.breakpoint_hour_date = breakpoint_hour_date
 
     # Find number of requests to remove based on degree of destruction
     def nodes_to_remove(self, possible_removals):
@@ -269,13 +271,14 @@ class ReOptOperators:
             # while not unassigned_requests.empty:
             rid = unassigned_requests.iloc[i][0]
             request = unassigned_requests.iloc[i][1]
+            after_breakpoint = request['Requested Pickup Time'] >= self.breakpoint_hour_date
             index_removal = [
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
             route_plan, new_objective, infeasible_set, vehicle_clocks = self.reopt_repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=self.constructor.infeasible_set,
                 initial_route_plan=current_route_plan, index_removed=index_removal, sim_clock=self.sim_clock, objectives=False, delayed=delayed, still_delayed_nodes=still_delayed_nodes,
-                vehicle_clocks=self.vehicle_clocks, prev_objective=current_objective)
+                vehicle_clocks=self.vehicle_clocks, prev_objective=current_objective, after_breakpoint=after_breakpoint)
 
             self.vehicle_clocks = vehicle_clocks
 
@@ -299,6 +302,8 @@ class ReOptOperators:
         for i in range(unassigned_requests.shape[0]):
             rid = unassigned_requests.iloc[i][0]
             request = unassigned_requests.iloc[i][1]
+            after_breakpoint = request['Requested Pickup Time'] >= self.breakpoint_hour_date
+
             index_removal = [
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
@@ -307,7 +312,7 @@ class ReOptOperators:
                 initial_route_plan=current_route_plan, index_removed=index_removal, sim_clock=self.sim_clock, objectives=2, delayed=delayed, still_delayed_nodes=still_delayed_nodes,
                 vehicle_clocks=self.vehicle_clocks,
                 prev_objective=self.constructor.new_objective(destroyed_route_plan, self.constructor.infeasible_set,
-                                                              False))
+                                                              False), after_breakpoint=after_breakpoint)
 
             self.constructor.infeasible_set = []
 
@@ -324,13 +329,15 @@ class ReOptOperators:
         for i in regret_values:
             rid = i[0]
             request = i[1]
+            after_breakpoint = request['Requested Pickup Time'] >= self.breakpoint_hour_date
+
             index_removal = [
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
             route_plan, new_objective, infeasible_set, vehicle_clocks = self.reopt_repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=self.constructor.infeasible_set,
                 initial_route_plan=current_route_plan, index_removed=index_removal, sim_clock=self.sim_clock, objectives=0, delayed=delayed, still_delayed_nodes=still_delayed_nodes,
-                vehicle_clocks=self.vehicle_clocks, prev_objective=current_objective)
+                vehicle_clocks=self.vehicle_clocks, prev_objective=current_objective, after_breakpoint=after_breakpoint)
 
             self.vehicle_clocks = vehicle_clocks
 
@@ -354,6 +361,7 @@ class ReOptOperators:
         for i in range(unassigned_requests.shape[0]):
             rid = unassigned_requests.iloc[i][0]
             request = unassigned_requests.iloc[i][1]
+            after_breakpoint = request['Requested Pickup Time'] >= self.breakpoint_hour_date
             index_removal = [
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
@@ -362,7 +370,7 @@ class ReOptOperators:
                 initial_route_plan=current_route_plan, index_removed=index_removal, sim_clock=self.sim_clock, objectives=3, delayed=delayed, still_delayed_nodes=still_delayed_nodes,
                 vehicle_clocks=self.vehicle_clocks,
                 prev_objective=self.constructor.new_objective(destroyed_route_plan, self.constructor.infeasible_set,
-                                                              False))
+                                                              False), after_breakpoint=after_breakpoint)
 
             self.constructor.infeasible_set = []
 
@@ -378,13 +386,14 @@ class ReOptOperators:
         for i in regret_values:
             rid = i[0]
             request = i[1]
+            after_breakpoint = request['Requested Pickup Time'] >= self.breakpoint_hour_date
             index_removal = [
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
             route_plan, new_objective, infeasible_set, vehicle_clocks = self.reopt_repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=self.constructor.infeasible_set,
                 initial_route_plan=current_route_plan, index_removed=index_removal, sim_clock=self.sim_clock, objectives=0, delayed=delayed, still_delayed_nodes=still_delayed_nodes,
-                vehicle_clocks=self.vehicle_clocks, prev_objective=current_objective)
+                vehicle_clocks=self.vehicle_clocks, prev_objective=current_objective, after_breakpoint=after_breakpoint)
 
             self.vehicle_clocks = vehicle_clocks
 

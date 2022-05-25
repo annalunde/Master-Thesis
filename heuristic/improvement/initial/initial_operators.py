@@ -7,11 +7,14 @@ from heuristic.improvement.initial.initial_repair_generator import RepairGenerat
 
 
 class Operators:
-    def __init__(self, alns, standby):
+    def __init__(self, alns, standby, after_breakpoint_vehicles, breakpoint_hour_date):
         self.destruction_degree = alns.destruction_degree
         self.constructor = alns.constructor
         self.T_ij = self.constructor.T_ij
-        self.repair_generator = RepairGenerator(self.constructor, standby)
+        self.repair_generator = RepairGenerator(
+            self.constructor, standby, after_breakpoint_vehicles)
+        self.after_breakpoint_vehicles = after_breakpoint_vehicles
+        self.breakpoint_hour_date = breakpoint_hour_date
 
     # Find number of requests to remove based on degree of destruction
     def nodes_to_remove(self, route_plan):
@@ -254,13 +257,14 @@ class Operators:
             # while not unassigned_requests.empty:
             rid = unassigned_requests.iloc[i][0]
             request = unassigned_requests.iloc[i][1]
+            after_breakpoint = request['Requested Pickup Time'] >= self.breakpoint_hour_date
             index_removal = [
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
             route_plan, new_objective, infeasible_set = self.repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=self.constructor.infeasible_set,
                 initial_route_plan=current_route_plan, index_removed=index_removal, objectives=0,
-                prev_objective=current_objective)
+                prev_objective=current_objective, after_breakpoint=after_breakpoint)
 
             # update current objective
             current_objective = new_objective
@@ -281,13 +285,14 @@ class Operators:
         for i in range(unassigned_requests.shape[0]):
             rid = unassigned_requests.iloc[i][0]
             request = unassigned_requests.iloc[i][1]
+            after_breakpoint = request['Requested Pickup Time'] >= self.breakpoint_hour_date
             index_removal = [
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
             first_objective, second_objective = self.repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=self.constructor.infeasible_set,
                 initial_route_plan=current_route_plan, index_removed=index_removal, objectives=2,
-                prev_objective=self.constructor.new_objective(destroyed_route_plan, self.constructor.infeasible_set))
+                prev_objective=self.constructor.new_objective(destroyed_route_plan, self.constructor.infeasible_set), after_breakpoint=after_breakpoint)
 
             self.constructor.infeasible_set = []
 
@@ -300,13 +305,14 @@ class Operators:
         for i in regret_values:
             rid = i[0]
             request = i[1]
+            after_breakpoint = request['Requested Pickup Time'] >= self.breakpoint_hour_date
             index_removal = [
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
             route_plan, new_objective, infeasible_set = self.repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=self.constructor.infeasible_set,
                 initial_route_plan=current_route_plan, index_removed=index_removal, objectives=0,
-                prev_objective=current_objective)
+                prev_objective=current_objective, after_breakpoint=after_breakpoint)
 
             # update current objective
             current_objective = new_objective
@@ -327,13 +333,14 @@ class Operators:
         for i in range(unassigned_requests.shape[0]):
             rid = unassigned_requests.iloc[i][0]
             request = unassigned_requests.iloc[i][1]
+            after_breakpoint = request['Requested Pickup Time'] >= self.breakpoint_hour_date
             index_removal = [
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
             first_objective, third_objective = self.repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=self.constructor.infeasible_set,
                 initial_route_plan=current_route_plan, index_removed=index_removal, objectives=3,
-                prev_objective=self.constructor.new_objective(destroyed_route_plan, self.constructor.infeasible_set))
+                prev_objective=self.constructor.new_objective(destroyed_route_plan, self.constructor.infeasible_set), after_breakpoint=after_breakpoint)
 
             self.constructor.infeasible_set = []
 
@@ -346,13 +353,14 @@ class Operators:
         for i in regret_values:
             rid = i[0]
             request = i[1]
+            after_breakpoint = request['Requested Pickup Time'] >= self.breakpoint_hour_date
             index_removal = [
                 i for i in index_removed_requests if i[0] == rid or i[0] == rid+0.5]
 
             route_plan, new_objective, infeasible_set = self.repair_generator.generate_insertions(
                 route_plan=route_plan, request=request, rid=rid, infeasible_set=self.constructor.infeasible_set,
                 initial_route_plan=current_route_plan, index_removed=index_removal, objectives=0,
-                prev_objective=current_objective)
+                prev_objective=current_objective, after_breakpoint=after_breakpoint)
 
             # update current objective
             current_objective = new_objective
