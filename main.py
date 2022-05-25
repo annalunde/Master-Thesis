@@ -23,9 +23,8 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
     try:
         # TRACKING
         start_time = datetime.now()
-        df_run_b2, df_run_a2 = [], []
-        cost_per_trip_b2, cost_per_trip_a2, ride_sharing_passengers_b2, ride_sharing_passengers_a2, ride_sharing_arcs_b2, ride_sharing_arcs_a2, processed_nodes_b2, processed_nodes_a2, cpt_b2, cpt_a2, ride_sharing_b2, ride_sharing_a2 = {
-            idx: (0, None, None) for idx in range(V_before2+standby)}, {idx: (0, None, None) for idx in range(V_after2+standby)}, 0, 0, set(), 0, 0
+        df_total_run, df_run_b2, df_run_a2 = [], [], []
+        passengers_total_b2, passengers_total_a2, ride_sharing_passengers_b2, ride_sharing_passengers_a2, ride_sharing_arcs_b2, ride_sharing_arcs_a2, processed_nodes_b2, processed_nodes_a2, ride_sharing_b2, ride_sharing_a2 = 0, 0, 0, 0, 0, 0, set(), set(), 0, 0
 
         # CUMULATIVE OBJECTIVE
         cumulative_rejected_b2, cumulative_rejected_a2, cumulative_recalibration_b2, cumulative_recalibration_a2, cumulative_objective_b2, cumulative_objective_a2, cumulative_travel_time_b2, \
@@ -38,13 +37,13 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         constructor = ConstructionHeuristic(
             requests=df, vehicles_before2=V_before2, vehicles_after2=V_after2, alpha=alpha, beta=beta)
         print("Constructing initial solution")
-        initial_route_plan_b2, initial_objective_b2, initial_infeasible_set_b2, initial_route_plan_a2, initial_objective_a2, initial_infeasible_set_a2 = constructor.construct_initial()
+        initial_route_plan_b2, initial_objective_b2, initial_infeasible_set_b2, initial_route_plan_a2, initial_objective_a2, initial_infeasible_set_a2 = constructor.construct_initial()  # TODO
 
         # IMPROVEMENT OF INITIAL SOLUTION
         criterion = SimulatedAnnealing(cooling_rate)
 
         alns = ALNS(weights, reaction_factor, initial_route_plan_b2, initial_objective_b2, initial_infeasible_set_b2, initial_route_plan_a2, initial_objective_a2, initial_infeasible_set_a2, criterion,
-                    destruction_degree, constructor, rnd_state=rnd.RandomState())
+                    destruction_degree, constructor, rnd_state=rnd.RandomState())  # TODO
 
         operators = Operators(alns)
 
@@ -55,7 +54,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         delayed_a2 = (False, None, None)
 
         current_route_plan_b2, current_objective_b2, current_infeasible_set_b2, current_route_plan_a2, current_objective_a2, current_infeasible_set_a2, _ = alns.iterate(
-            initial_iterations, initial_Z, None, None, None, delayed_b2, delayed_a2, False, run)
+            initial_iterations, initial_Z, None, None, None, delayed_b2, delayed_a2, False, run)  # TODO
 
         if current_infeasible_set_b2 or current_infeasible_set_a2:
             cumulative_rejected_b2 = len(current_infeasible_set_b2)
@@ -92,10 +91,10 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         total_objective_a2 = constructor.total_objective(current_objective_a2, cumulative_objective_a2,
                                                          cumulative_recalibration_a2)
 
-        df_run_b2.append([run, "Initial", total_objective_b2.total_seconds(), (datetime.now() - start_time).total_seconds(), cumulative_rejected_b2, rejected_objective_b2.total_seconds(),
-                          cumulative_recalibration_b2.total_seconds()/beta, ride_time_objective_b2.total_seconds(), ride_sharing_b2, cpt_b2, len(current_route_plan_b2), "10:00"])
-        df_run_a2.append([run, "Initial", total_objective.total_seconds(), (datetime.now() - start_time).total_seconds(), cumulative_rejected, rejected_objective.total_seconds(),
-                          cumulative_recalibration.total_seconds()/beta, ride_time_objective.total_seconds(), ride_sharing, cpt, len(current_route_plan), "10:00"])
+        df_run_b2.append([run, "Before2", "Initial", total_objective_b2.total_seconds(), (datetime.now() - start_time).total_seconds(), cumulative_rejected_b2, rejected_objective_b2.total_seconds(),
+                          cumulative_recalibration_b2.total_seconds()/beta, ride_time_objective_b2.total_seconds(), ride_sharing_b2, ride_sharing_arcs_b2, ride_sharing_passengersb2, passengers_total_b2, len(current_route_plan_b2), "10:00"])
+        df_run_a2.append([run, "After2", "Initial", total_objective_a2.total_seconds(), (datetime.now() - start_time).total_seconds(), cumulative_rejected_a2, rejected_objective_a2.total_seconds(),
+                          cumulative_recalibration_a2.total_seconds()/beta, ride_time_objective_a2.total_seconds(), ride_sharing_a2, ride_sharing_arcs_a2, ride_sharing_passengersa2, passengers_total_a2, len(current_route_plan_a2), "10:00"])
 
         cumulative_deviation_b2 = copy(cumulative_recalibration_b2)/beta
         cumulative_deviation_a2 = copy(cumulative_recalibration_a2)/beta
@@ -128,9 +127,11 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             if disruption_type == 4:  # No disruption
                 continue
             elif disruption_type == 0:  # Disruption: new request
+
                 # Check if new request affects before 2 or after 2 route plan
                 before2 = disruption_updater.before2(
                     disruption_type, disruption_info, disruption_time)
+
                 current_route_plan = list(map(list, current_route_plan_b2)) if before2 else list(
                     map(list, current_route_plan_a2))
                 current_route_plan, vehicle_clocks, artificial_depot = disruption_updater.update_route_plan(
@@ -215,6 +216,17 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                     delayed = (True, disruption_info[0], node_idx)
                     delay_deltas.append(current_objective)
 
+            passengers_total = measures.cpt_calc(
+                filtered_away, passengers_total, processed_nodes)
+            ride_sharing_passengers, ride_sharing_arcs, processed_nodes = measures.ride_sharing(
+                filtered_away, ride_sharing_passengers, ride_sharing_arcs, processed_nodes)
+
+            if len(simulator.disruptions_stack) == 0:
+                passengers_total = measures.cpt_calc(
+                    current_route_plan, passengers_total, processed_nodes)
+                ride_sharing_passengers, ride_sharing_arcs, processed_nodes = measures.ride_sharing(
+                    current_route_plan, ride_sharing_passengers, ride_sharing_arcs, processed_nodes)
+
             if not rejection:
                 # Heuristic
                 criterion = SimulatedAnnealing(cooling_rate)
@@ -249,22 +261,25 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             _, current_travel_time, current_deviation = new_request_updater.norm_objective(
                 current_route_plan, [], False, filtered_size)
 
-            ride_time_objective = copy(
-                cumulative_travel_time) + copy(current_travel_time)
+            ride_time_objective_b2 = copy(
+                cumulative_travel_time_b2) + copy(current_travel_time_b2)
+            ride_time_objective_a2 = copy(
+                cumulative_travel_time_a2) + copy(current_travel_time_a2)
+            deviation_objective_b2 = copy(
+                cumulative_deviation_b2) + copy(current_deviation_b2)
+            deviation_objective_a2 = copy(
+                cumulative_deviation_a2) + copy(current_deviation_a2)
 
-            deviation_objective = copy(
-                cumulative_deviation) + copy(current_deviation)
+            ride_sharing_b2 = ride_sharing_passengers_b2 / \
+                ride_sharing_arcs_b2 if ride_sharing_arcs_b2 > 0 else 0
+            ride_sharing_a2 = ride_sharing_passengers_a2 / \
+                ride_sharing_arcs_a2 if ride_sharing_arcs_a2 > 0 else 0
 
-            ride_sharing = ride_sharing_passengers / \
-                ride_sharing_arcs if ride_sharing_arcs > 0 else 0
-            cost_per_trip_filtered = dict(
-                filter(lambda elem: elem[1][0] > 0, cost_per_trip.items()))
-            if len(cost_per_trip_filtered) > 0:
-                cpt = sum(elem[1][0]/8
-                          for elem in cost_per_trip_filtered.items())/len(cost_per_trip_filtered)
             introduced_vehicles = len(current_route_plan)
-            df_run.append([run, str(disruption_type), total_objective.total_seconds(), (datetime.now() - start_time).total_seconds(), cumulative_rejected, rejected_objective.total_seconds(),
-                          deviation_objective.total_seconds(), ride_time_objective.total_seconds(), ride_sharing, cpt, introduced_vehicles, str(simulator.sim_clock)])
+            df_run_b2.append([run, "Before2", str(disruption_type), total_objective.total_seconds(), (datetime.now() - start_time).total_seconds(), cumulative_rejected, rejected_objective.total_seconds(),
+                              deviation_objective.total_seconds(), ride_time_objective.total_seconds(), ride_sharing, ride_sharing_arcs, ride_sharing_passengers, passengers_total, introduced_vehicles, str(simulator.sim_clock)])
+            df_run_a2.append([run, "After2", str(disruption_type), total_objective.total_seconds(), (datetime.now() - start_time).total_seconds(), cumulative_rejected, rejected_objective.total_seconds(),
+                              deviation_objective.total_seconds(), ride_time_objective.total_seconds(), ride_sharing, ride_sharing_arcs, ride_sharing_passengers, passengers_total, introduced_vehicles, str(simulator.sim_clock)])
 
         print("End simulation")
         print("Rejected rids", rejected)
@@ -281,6 +296,11 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         print("File name: ", filename)
         print("Line number: ", line_number)
 
+    df_total_run.append(pd.DataFrame(df_run_b2, columns=[
+        "Run", "Before2/After2", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Ride Sharing Arcs", "Ride Sharing Passengers", "Total Served Passengers", "Introduced Vehicles", "Sim_Clock"]))
+    df_total_run.append(pd.DataFrame(df_run_a2, columns=[
+        "Run", "Before2/After2", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Ride Sharing Arcs", "Ride Sharing Passengers", "Total Served Passengers", "Introduced Vehicles", "Sim_Clock"]))
+    df_run = pd.concat(df_total_run)
     return df_run
 
 
@@ -321,15 +341,10 @@ if __name__ == "__main__":
 
     print("Test instance:", test_instance)
 
-    df_runs = []
     # for run in range(runs):
     df_run = main(
         test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby, breakpoint_hour_date)
-    df_runs.append(pd.DataFrame(df_run, columns=[
-        "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Cost Per Trip", "Introduced Vehicles", "Sim_Clock"]))
-
-    df_track_run = pd.concat(df_runs)
-    df_track_run.to_csv(
+    df_run.to_csv(
         config("run_path") + "Before2_After2" + "Run:" + str(run) + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
@@ -339,7 +354,6 @@ if __name__ == "__main__":
 - For initial: Check if requested pickup time is before or after 14:
     - current route plan is updated accordingly
     - introduced vehicles and vehicle sets must be updated
-    - ALNS only on before 14 route plan
 
 - For reopt: Check if disruption time is after or before 14: 
     - for cancel, no show & delay: affected route plan according to where to node lies
@@ -348,7 +362,6 @@ if __name__ == "__main__":
     - introduced vehicles and vehicle sets must be updated
     - global sets (might) need to be updated (only if depot is added) 
     - two sets of vehicle clocks and sim clocks
-    - ALNS alternating on the two according to if disruption time is before or after
     - Simulator must know where to find the disrupted node
 
 - Implement two different V params
