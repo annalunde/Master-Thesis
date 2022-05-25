@@ -17,13 +17,13 @@ from measures import Measures
 import argparse
 
 
-def main(test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby):
+def main(test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby, breakpoint_hour_date):
     constructor, simulator = None, None
 
     try:
         # TRACKING
         start_time = datetime.now()
-        df_run = []
+        df_run, df_cancel, df_req_runtime = [], [], []
         passengers_total, ride_sharing_passengers, ride_sharing_arcs, processed_nodes, ride_sharing = 0, 0, 0, set(), 0
 
         # CUMULATIVE OBJECTIVE
@@ -34,31 +34,26 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         # CONSTRUCTION OF INITIAL SOLUTION
         df = pd.read_csv(config(test_instance))
         constructor = ConstructionHeuristic(
-            requests=df, vehicles=V+standby, alpha=alpha, beta=beta)
+            requests=df, vehicles=V+standby, vehicles_after_breakpoint=V_after_breakpoint, alpha=alpha, beta=beta, breakpoint_hour_date=breakpoint_hour_date)
         print("Constructing initial solution")
         initial_route_plan, initial_objective, initial_infeasible_set = constructor.construct_initial()
         measures = Measures()
 
         # IMPROVEMENT OF INITIAL SOLUTION
-        if not naive:
-            criterion = SimulatedAnnealing(cooling_rate)
+        criterion = SimulatedAnnealing(cooling_rate)
 
-            alns = ALNS(weights, reaction_factor, initial_route_plan, initial_objective, initial_infeasible_set, criterion,
-                        destruction_degree, constructor, rnd_state=rnd.RandomState())
+        alns = ALNS(weights, reaction_factor, initial_route_plan, initial_objective, initial_infeasible_set, criterion,
+                    destruction_degree, constructor, rnd_state=rnd.RandomState())
 
-            operators = Operators(alns, standby)
+        operators = Operators(alns, standby)
 
-            alns.set_operators(operators, repair_removed, destroy_removed)
+        alns.set_operators(operators, repair_removed, destroy_removed)
 
-            # Run ALNS
-            delayed = (False, None, None)
+        # Run ALNS
+        delayed = (False, None, None)
 
-            current_route_plan, current_objective, current_infeasible_set, _ = alns.iterate(
-                initial_iterations, initial_Z, None, None, None, delayed, False, run, adaptive)
-        else:
-            current_route_plan = copy(initial_route_plan)
-            current_objective = initial_objective
-            current_infeasible_set = copy(initial_infeasible_set)
+        current_route_plan, current_objective, current_infeasible_set, _ = alns.iterate(
+            initial_iterations, initial_Z, None, None, None, delayed, False, run, adaptive)
 
         if current_infeasible_set:
             cumulative_rejected = len(current_infeasible_set)
@@ -94,8 +89,9 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             test_instance_date, "%Y-%m-%d %H:%M:%S")
         simulator = Simulator(sim_clock)
         new_request_updater = NewRequestUpdater(
-            constructor, standby)
-        disruption_updater = DisruptionUpdater(new_request_updater)
+            constructor, standby, breakpoint_hour_date, V_after_breakpoint)
+        disruption_updater = DisruptionUpdater(
+            new_request_updater)
         rejected = []
         print("Length of disruption stack", len(simulator.disruptions_stack))
         while len(simulator.disruptions_stack) > 0:
@@ -109,7 +105,6 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
             # use correct data path
             disruption_type, disruption_time, disruption_info = simulator.get_disruption(
                 current_route_plan, config("data_simulator_path"))
-
             # updates before heuristic
             disrupt = (False, None)
             if disruption_type == 4:  # No disruption
@@ -235,14 +230,16 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
 
             ride_time_objective = copy(
                 cumulative_travel_time) + copy(current_travel_time)
+
             deviation_objective = copy(
                 cumulative_deviation) + copy(current_deviation)
 
             ride_sharing = ride_sharing_passengers / \
                 ride_sharing_arcs if ride_sharing_arcs > 0 else 0
 
+            introduced_vehicles = len(current_route_plan)
             df_run.append([run, str(disruption_type), total_objective.total_seconds(), (datetime.now() - start_time).total_seconds(), cumulative_rejected, rejected_objective.total_seconds(),
-                          deviation_objective.total_seconds(), ride_time_objective.total_seconds(), ride_sharing, ride_sharing_arcs, ride_sharing_passengers, passengers_total, len(current_route_plan), str(simulator.sim_clock)])
+                          deviation_objective.total_seconds(), ride_time_objective.total_seconds(), ride_sharing, ride_sharing_arcs, ride_sharing_passengers, passengers_total, introduced_vehicles, str(simulator.sim_clock)])
 
         print("End simulation")
         print("Rejected rids", rejected)
@@ -287,45 +284,39 @@ if __name__ == "__main__":
     test_instance_date = test_instance_d[0:4] + "-" + \
         test_instance_d[4:6] + "-" + \
         test_instance_d[6:8] + " 10:00:00"
+    breakpoint_hour_date = test_instance_d[0:4] + "-" + \
+        test_instance_d[4:6] + "-" + \
+        test_instance_d[6:8] + breakpoint_hour
 
     naive = False
     adaptive = True
     repair_removed = None
     destroy_removed = [0, 2]
-    #runs = 5
-    standby_vehicles = [2]
+    standby = 0
 
     print(f"Running with standby {standby_vehicles[0]}")
     print("Test instance:", test_instance)
     print("Naive:", naive)
     print("Adaptive:", adaptive)
 
-    for standby in standby_vehicles:
-        df_runs = []
-        # for run in range(runs):
-        df_run = main(
-            test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby)
-        df_runs.append(pd.DataFrame(df_run, columns=[
-            "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Ride Sharing Arcs", "Ride Sharing Passengers", "Total Served Passengers", "Introduced Vehicles", "Sim_Clock"]))
+    df_runs, df_requests_runs, df_cancel_runs = [], [], []
+    df_run, df_cancel, df_req_runtime = main(
+        test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby, breakpoint_hour_date)
+    df_runs.append(pd.DataFrame(df_run, columns=[
+        "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Ride Sharing Arcs", "Ride Sharing Passengers", "Total Served Passengers", "Introduced Vehicles", "Sim_Clock"]))
 
-        df_track_run = pd.concat(df_runs)
-        df_track_run.to_csv(
-            config("run_path") + branch + "Extra_Vehicles" + str(standby) + "Run:" + str(run) + test_instance + "analysis" + ".csv")
+    df_track_run = pd.concat(df_runs)
+    df_track_run.to_csv(
+        config("run_path") + "Breakpoint:" + str(breakpoint_hour) + "_V:" + str(V) + "_V_afterbreak:" + str(V_after_breakpoint) + "_Run:" + str(run) + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
+
 """
-NOTE:
-    - Add index to removed repair operator:
-        - None = none removed 
-        - 0 = greedy_repair
-        - 1 = regret_2_repair
-        - 2 = regret_3_repair
-    - Add index to removed destroy operator:
-        - None = none removed
-        - 0 = random_removal
-        - 1 = time_related_removal
-        - 2 = distance_related_removal
-        - 3 = related_removal
-        - 4 = worst_deviation_removal
+- For initial & reopt: Check if requested pickup time is before or after breakpoint:
+    - if after breakpoint:
+        - can only add it to vehicles after breakpoint set
+    - else: as usual
+
+- Implement two different V params
 """

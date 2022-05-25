@@ -11,7 +11,7 @@ pd.options.mode.chained_assignment = None
 
 
 class NewRequestUpdater:
-    def __init__(self, constructor, standby):
+    def __init__(self, constructor, standby, breakpoint_hour_date, V_after_breakpoint):
         self.vehicles = [i for i in range(V+standby)]
         self.introduced_vehicles = set()
         self.requests = constructor.requests.copy(deep=False)
@@ -21,13 +21,14 @@ class NewRequestUpdater:
         self.T_ij = np.array(constructor.T_ij, copy=True)
         self.infeasible_set = copy(constructor.infeasible_set)
         self.re_opt_repair_generator = ReOptRepairGenerator(
-            self, False, standby)
+            self, False, standby, V_after_breakpoint)
         self.preprocessed = copy(constructor.preprocessed)
         self.alpha = constructor.alpha
         self.beta = constructor.beta
         self.gamma = constructor.gamma
         self.middle = []
         self.obj_processed_nodes = []
+        self.breakpoint_hour_date = breakpoint_hour_date
 
     def set_parameters(self, new_request):
         updated_new_request = self.compute_pickup_time(new_request)
@@ -84,13 +85,14 @@ class NewRequestUpdater:
         request = self.requests.iloc[-1]
         request["Requested Pickup Time"] = request["Requested Pickup Time"] + \
             i*U_D
+        after_breakpoint = request['Requested Pickup Time'] >= self.breakpoint_hour_date
 
         self.re_opt_repair_generator.greedy = True
         route_plan, new_objective, infeasible_set, vehicle_clocks = self.re_opt_repair_generator.generate_insertions(
             route_plan=route_plan, request=request, rid=rid, infeasible_set=infeasible_set, initial_route_plan=None,
             index_removed=None, sim_clock=sim_clock, vehicle_clocks=vehicle_clocks,
             objectives=False, delayed=(False, None, None), still_delayed_nodes=[],
-            prev_objective=current_objective)
+            prev_objective=current_objective, after_breakpoint=after_breakpoint)
 
         rejection = False if (rid, request) not in infeasible_set else True
         infeasible_set = [] if rejection else infeasible_set

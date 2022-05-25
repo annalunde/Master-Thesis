@@ -11,8 +11,9 @@ pd.options.mode.chained_assignment = None
 
 
 class ConstructionHeuristic:
-    def __init__(self, requests, vehicles, alpha, beta):
+    def __init__(self, requests, vehicles, vehicles_after_breakpoint, alpha, beta, breakpint_hour_date):
         self.vehicles = [i for i in range(vehicles)]
+        self.vehicles_after_breakpoint = vehicles_after_breakpoint
         self.n = len(requests.index)
         self.num_nodes_and_depots = vehicles + 2 * self.n
         self.temp_requests = self.compute_pickup_time(requests)
@@ -95,9 +96,10 @@ class ConstructionHeuristic:
         for i in range(unassigned_requests.shape[0]):
             # while not unassigned_requests.empty:
             request = unassigned_requests.iloc[i]
+            after_breakpoint = request['Requested Pickup Time'] >= self.breakpoint_hour_date
 
             route_plan, new_objective = self.insertion_generator.generate_insertions(
-                route_plan=route_plan, request=request, rid=rid, prev_objective=prev_objective)
+                route_plan=route_plan, request=request, rid=rid, prev_objective=prev_objective, after_breakpoint=after_breakpoint)
 
             # update current objective
             self.current_objective = new_objective

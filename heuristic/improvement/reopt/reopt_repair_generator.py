@@ -7,20 +7,22 @@ NOTE: we only try to add it after the first node that is closest in time
 
 
 class ReOptRepairGenerator:
-    def __init__(self, heuristic, greedy, standby):
+    def __init__(self, heuristic, greedy, standby, after_breakpoint_vehicles):
         self.heuristic = heuristic
         self.introduced_vehicles = copy(
             self.heuristic.introduced_vehicles)
         self.vehicles = copy(self.heuristic.vehicles)
         self.greedy = greedy
         self.V = V+standby
+        self.V_afterbreakpoint = after_breakpoint_vehicles
 
-    def generate_insertions(self, route_plan, request, rid, infeasible_set, initial_route_plan, index_removed, sim_clock, objectives, delayed, still_delayed_nodes, vehicle_clocks, prev_objective):
+    def generate_insertions(self, route_plan, request, rid, infeasible_set, initial_route_plan, index_removed, sim_clock, objectives, delayed, still_delayed_nodes, vehicle_clocks, prev_objective, after_breakpoint):
         possible_insertions = {}  # dict: delta objective --> route plan
         self.introduced_vehicles = set([i for i in range(len(route_plan))])
         self.vehicles = [i for i in range(len(route_plan), self.V)]
-
-        for introduced_vehicle in self.introduced_vehicles:
+        vehicle_set = set([i for i in range(self.V_afterbreakpoint)]
+                          ) if after_breakpoint else self.introduced_vehicles
+        for introduced_vehicle in vehicle_set:
             # generate all possible insertions
             if len(route_plan[introduced_vehicle]) == 1 and route_plan[introduced_vehicle][0][0] == 0:
                 # it is trivial to add the new request
