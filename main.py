@@ -33,6 +33,9 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
 
         # CONSTRUCTION OF INITIAL SOLUTION
         df = pd.read_csv(config(test_instance))
+        breakpoint_hour_date = pd.to_datetime(
+            breakpoint_hour_date, format="%Y-%m-%d %H:%M:%S"
+        )
         constructor = ConstructionHeuristic(
             requests=df, vehicles=V+standby, vehicles_after_breakpoint=V_after_breakpoint, alpha=alpha, beta=beta, breakpoint_hour_date=breakpoint_hour_date)
         print("Constructing initial solution")
@@ -45,7 +48,8 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         alns = ALNS(weights, reaction_factor, initial_route_plan, initial_objective, initial_infeasible_set, criterion,
                     destruction_degree, constructor, rnd_state=rnd.RandomState())
 
-        operators = Operators(alns, standby)
+        operators = Operators(
+            alns, standby, V_after_breakpoint, breakpoint_hour_date)
 
         alns.set_operators(operators, repair_removed, destroy_removed)
 
@@ -146,15 +150,6 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                             cumulative_rejected -= 1
                             break
                 current_infeasible_set = []
-                df_req_runtime.append([rid, disruption_time,
-                                       disruption_info.iloc[0]['Requested Pickup Time'],
-                                       disruption_info.iloc[0]['Requested Dropoff Time'],
-                                       disruption_info.iloc[0]['Wheelchair'],
-                                       disruption_info.iloc[0]['Number of Passengers'],
-                                       disruption_info.iloc[0]['Origin Lat'],
-                                       disruption_info.iloc[0]['Origin Lng'],
-                                       disruption_info.iloc[0]['Destination Lat'],
-                                       disruption_info.iloc[0]['Destination Lng']])
 
             else:
                 removed_time = None
@@ -186,12 +181,9 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                     index_removed[0] = (
                         None, None, None) if artificial_depot or disruption_type == 3 else index_removed[0]
                     disrupt = (True, index_removed)
-                    if disruption_type == 2:
-                        df_cancel.append(
-                            [disruption_time, disruption_info[3], disruption_info[4], str(removed_time)])
                 elif disruption_type == 1:  # Disruption: delay
-                    node_idx = next(i for i, (node, *_) in enumerate(current_route_plan[disruption_info[0]]) if
-                                    node == disruption_info[3])
+                    node_idx = next(i for i, (node, *_) in enumerate(
+                        current_route_plan[disruption_info[0]]) if node == disruption_info[3])
                     delayed = (True, disruption_info[0], node_idx)
                     delay_deltas.append(current_objective)
 
@@ -215,7 +207,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                             destruction_degree, new_request_updater, rnd_state=rnd.RandomState())
 
                 operators = ReOptOperators(
-                    alns, disruption_time, vehicle_clocks, standby)
+                    alns, disruption_time, vehicle_clocks, standby, V_after_breakpoint, breakpoint_hour_date)
 
                 alns.set_operators(operators, repair_removed, destroy_removed)
 
@@ -269,7 +261,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         print("File name: ", filename)
         print("Line number: ", line_number)
 
-    return df_run, df_cancel, df_req_runtime
+    return df_run
 
 
 if __name__ == "__main__":
@@ -279,6 +271,7 @@ if __name__ == "__main__":
     cProfile.run('main()', 'profiling/restats')
     profile.display()
     """
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--run', type=int)
     parser.add_argument('--branch', type=str)
@@ -311,8 +304,8 @@ if __name__ == "__main__":
     print("Naive:", naive)
     print("Adaptive:", adaptive)
 
-    df_runs, df_requests_runs, df_cancel_runs = [], [], []
-    df_run, df_cancel, df_req_runtime = main(
+    df_runs = []
+    df_run = main(
         test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby, breakpoint_hour_date)
     df_runs.append(pd.DataFrame(df_run, columns=[
         "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Ride Sharing Arcs", "Ride Sharing Passengers", "Total Served Passengers", "Introduced Vehicles", "Sim_Clock"]))

@@ -8,19 +8,22 @@ NOTE: we only try to add it after the first node that is closest in time
 
 
 class RepairGenerator:
-    def __init__(self, heuristic, standby):
+    def __init__(self, heuristic, standby, vehicles_after_breakpoint):
         self.heuristic = heuristic
         self.introduced_vehicles = copy(
             self.heuristic.introduced_vehicles)
         self.vehicles = copy(self.heuristic.vehicles)
         self.V = V + standby
+        self.vehicles_after_breakpoint = vehicles_after_breakpoint
 
-    def generate_insertions(self, route_plan, request, rid, infeasible_set, initial_route_plan, index_removed, objectives, prev_objective):
+    def generate_insertions(self, route_plan, request, rid, infeasible_set, initial_route_plan, index_removed, objectives, prev_objective, after_breakpoint):
         possible_insertions = {}  # dict: delta objective --> route plan
         self.introduced_vehicles = set([i for i in range(len(route_plan))])
         self.vehicles = [i for i in range(len(route_plan), self.V)]
+        vehicles_set = set([i for i in self.introduced_vehicles if i <
+                            self.vehicles_after_breakpoint]) if after_breakpoint else self.introduced_vehicles
 
-        for introduced_vehicle in self.introduced_vehicles:
+        for introduced_vehicle in vehicles_set:
             # generate all possible insertions
             if len(route_plan[introduced_vehicle]) == 1:
                 # it is trivial to add the new request
@@ -372,17 +375,36 @@ class RepairGenerator:
         # check if no possible insertions have been made and introduce a new vehicle
         if not len(possible_insertions):
             if self.vehicles:
-                temp_route_plan = list(map(list, route_plan))
-                new_vehicle = self.vehicles.pop(0)
-                temp_route_plan.append([])
-                self.introduced_vehicles.add(new_vehicle)
-                temp_route_plan[new_vehicle] = self.add_initial_nodes(
-                    request=request, introduced_vehicle=new_vehicle, rid=rid, vehicle_route=temp_route_plan[new_vehicle], depot=False)
+                if after_breakpoint:
+                    if self.vehicles[0] < self.vehicles_after_breakpoint:
+                        temp_route_plan = list(map(list, route_plan))
+                        new_vehicle = self.vehicles.pop(0)
+                        temp_route_plan.append([])
+                        self.introduced_vehicles.add(new_vehicle)
+                        temp_route_plan[new_vehicle] = self.add_initial_nodes(
+                            request=request, introduced_vehicle=new_vehicle, rid=rid, vehicle_route=temp_route_plan[new_vehicle], depot=False)
 
-                # calculate change in objective
-                change_objective = self.heuristic.new_objective(
-                    temp_route_plan, infeasible_set)
-                possible_insertions[change_objective] = temp_route_plan
+                        # calculate change in objective
+                        change_objective = self.heuristic.new_objective(
+                            temp_route_plan, infeasible_set)
+                        possible_insertions[change_objective] = temp_route_plan
+
+                    # if no new vehicles available, append the request in an infeasible set
+                    else:
+                        if (rid, request) not in infeasible_set:
+                            infeasible_set.append((rid, request))
+                else:
+                    temp_route_plan = list(map(list, route_plan))
+                    new_vehicle = self.vehicles.pop(0)
+                    temp_route_plan.append([])
+                    self.introduced_vehicles.add(new_vehicle)
+                    temp_route_plan[new_vehicle] = self.add_initial_nodes(
+                        request=request, introduced_vehicle=new_vehicle, rid=rid, vehicle_route=temp_route_plan[new_vehicle], depot=False)
+
+                    # calculate change in objective
+                    change_objective = self.heuristic.new_objective(
+                        temp_route_plan, infeasible_set)
+                    possible_insertions[change_objective] = temp_route_plan
 
             # if no new vehicles available, append the request in an infeasible set
             else:

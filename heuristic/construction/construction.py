@@ -11,9 +11,10 @@ pd.options.mode.chained_assignment = None
 
 
 class ConstructionHeuristic:
-    def __init__(self, requests, vehicles, vehicles_after_breakpoint, alpha, beta, breakpint_hour_date):
+    def __init__(self, requests, vehicles, vehicles_after_breakpoint, alpha, beta, breakpoint_hour_date):
         self.vehicles = [i for i in range(vehicles)]
         self.vehicles_after_breakpoint = vehicles_after_breakpoint
+        self.breakpoint_hour_date = breakpoint_hour_date
         self.n = len(requests.index)
         self.num_nodes_and_depots = vehicles + 2 * self.n
         self.temp_requests = self.compute_pickup_time(requests)
