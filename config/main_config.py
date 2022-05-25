@@ -16,7 +16,6 @@ S_W = 5  # wheelchair
 R_F = 1.5
 
 # Number of vehicles
-V = 16
 V_before2 = 16
 V_after2 = 16
 
