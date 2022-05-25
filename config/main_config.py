@@ -15,10 +15,6 @@ S_W = 5  # wheelchair
 # Rush hour factor
 R_F = 1.5
 
-# Number of vehicles
-V = 18
-V_after_breakpoint = 16
-
 # Vehicle standard seats capacity
 P = 15
 
@@ -55,6 +51,11 @@ N_R = 0
 # Number of iterations in ALNS
 initial_iterations = 100
 reopt_iterations = 100
+
+# Number of vehicles
+V = 18
+V_after_breakpoint = 10
+
 
 # Weight of ride time in objective function
 alpha = 2
