@@ -53,7 +53,7 @@ initial_iterations = 100
 reopt_iterations = 100
 
 # Number of vehicles
-V = 18
+V = 16
 V_after_breakpoint = 10
 
 
