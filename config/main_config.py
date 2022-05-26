@@ -83,7 +83,7 @@ N_U_reopt = 0.3
 # Destruction degree
 destruction_degree = 0.4
 
-breakpoint_hour = " 14:00:00"
+breakpoint_hour = " 13:45:00"
 
 # Running data
 # "comp_instance_1_20220110", "comp_instance_2_20211007","comp_instance_3_20211215"
