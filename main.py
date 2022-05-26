@@ -305,6 +305,7 @@ if __name__ == "__main__":
     print("Adaptive:", adaptive)
     print("V: ", V)
     print("V after breakpoint", V_after_breakpoint)
+    print("Breakpoint:", breakpoint_hour)
 
     df_runs = []
     df_run = main(
