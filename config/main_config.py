@@ -54,7 +54,7 @@ reopt_iterations = 100
 
 # Number of vehicles
 V = 18
-V_after_breakpoint = 14
+V_after_breakpoint = 12
 
 
 # Weight of ride time in objective function
