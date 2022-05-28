@@ -11,7 +11,7 @@ do
         echo "Starting run $run on instance $test_instance on branch $1"
         #git checkout $branch
         #sleep 5
-        python main.py --run $run --test_instance $test_instance --branch $1 &
+        python main2.py --run $run --test_instance $test_instance --branch $1 &
         #sleep 5
         echo "Finished initializing run $run on instance $test_instance on branch $1"
 
