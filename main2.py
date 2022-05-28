@@ -117,7 +117,7 @@ if __name__ == "__main__":
     print(f'Replaced to argument instance {args.test_instance}')
 
     start_time = datetime.now()
-
+    tracking = []
     total_objective, rejected, rejected_objective, deviation_objective, ride_time_objective = main(
         test_instance, "2021-05-10 10:00:00")
     tracking.append([run, total_objective.total_seconds(),
