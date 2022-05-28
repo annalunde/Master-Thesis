@@ -5,8 +5,6 @@ from datetime import datetime, timedelta
 CONSTANT PARAMETERS
 '''
 
-# Allowed excess ride time
-F = 1
 
 # Estimated time to serve a node
 S_P = 2  # standard seats
@@ -47,6 +45,8 @@ P_S_R = timedelta(minutes=0)  # penalized soft time windows
 CHANGEABLE PARAMETERS
 '''
 
+# Allowed excess ride time
+F = 0.25
 
 # Number of tries for + 15 minutes for a rejected request:
 N_R = 0

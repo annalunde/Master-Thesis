@@ -15,6 +15,7 @@ import sys
 from decouple import config
 import pandas as pd
 from copy import copy
+import argparse
 
 
 def main(test_instance, test_instance_date):
@@ -73,7 +74,7 @@ def main(test_instance, test_instance_date):
 
         total_objective = constructor.total_objective(current_objective, cumulative_objective,
                                                       cumulative_recalibration)
-        return total_objective, cumulative_rejected, rejected_objective, deviation_objective, ride_time_objective
+        return total_objective.tota, cumulative_rejected, rejected_objective, deviation_objective, ride_time_objective
 
     except Exception as e:
         print("ERROR:", e)
@@ -102,21 +103,28 @@ if __name__ == "__main__":
                 test_instance_d[4:6] + "-" + \
                 test_instance_d[6:8] + " 10:00:00"
     """
-    runs = 10
-    print("Batch:", N_U_init)
+    print("F:", F)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--run', type=int)
+    parser.add_argument('--branch', type=str)
+    parser.add_argument('--instance', type=str)
+    args = parser.parse_args()
 
-    for test_instance in test_instances:
-        tracking = []
-        for run in range(runs):
-            start_time = datetime.now()
+    run = args.run
+    branch = args.branch
+    print(f'Config says instance {test_instance}')
+    test_instance = args.instance
+    print(f'Replaced to argument instance {args.instance}')
 
-            total_objective, rejected, rejected_objective, deviation_objective, ride_time_objective = main(
-                test_instance, "2021-05-10 10:00:00")
-            tracking.append([run, total_objective.total_seconds(),
-                             (datetime.now() - start_time).total_seconds(), rejected, rejected_objective, deviation_objective.total_seconds(), ride_time_objective.total_seconds()])
+    start_time = datetime.now()
 
-        df_tracking = pd.DataFrame(
-            tracking, columns=["Run", "Current Objective", "Solution Time", "Rejected", "Norm Rejected Objective", "Norm Deviation Objective", "Norm Ride Time Objective"])
-        df_tracking.to_csv(config("tuning_path") + "param_tuning_batch_" + str(N_U_init) +
-                           "_" + test_instance + ".csv")  # Path:  param_tuning_iterations_instance
+    total_objective, rejected, rejected_objective, deviation_objective, ride_time_objective = main(
+        test_instance, "2021-05-10 10:00:00")
+    tracking.append([run, total_objective.total_seconds(),
+                     (datetime.now() - start_time).total_seconds(), rejected, rejected_objective, deviation_objective.total_seconds(), ride_time_objective.total_seconds()])
+
+    df_tracking = pd.DataFrame(
+        tracking, columns=["Run", "Current Objective", "Solution Time", "Rejected", "Norm Rejected Objective", "Norm Deviation Objective", "Norm Ride Time Objective"])
+    df_tracking.to_csv(config("tuning_path") + "param_tuning_F_" + str(F) + "Run_" + str(run) +
+                       "_" + test_instance + ".csv")  # Path:  param_tuning_iterations_instance
     print("DONE WITH ALL RUNS")
