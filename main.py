@@ -311,7 +311,6 @@ if __name__ == "__main__":
     print("Naive:", naive)
     print("Adaptive:", adaptive)
     print("F used:", str(F))
-    print("SEMI NAIVE")
 
     df_runs, df_requests_runs, df_cancel_runs = [], [], []
     df_run, df_cancel, df_req_runtime = main(
@@ -319,9 +318,25 @@ if __name__ == "__main__":
     df_runs.append(pd.DataFrame(df_run, columns=[
         "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Ride Sharing Arcs", "Ride Sharing Passengers", "Total Served Passengers", "Introduced Vehicles", "Sim_Clock"]))
 
-    df_track_run = pd.concat(df_runs)
-    df_track_run.to_csv(
-        config("run_path") + "Semi_Naive_" + "F_Value_" + str(F) + "_Run:" + str(run) + test_instance + "analysis" + ".csv")
+    if run == 0:
+        df_requests_runs.append(pd.DataFrame(df_req_runtime, columns=[
+            "Rid", "Request Creation Time", "Requested Pickup Time", "Requested Dropoff Time", "Wheelchair",
+            "Number of Passengers", "Origin Lat", "Origin Lng", "Destination Lat", "Destination Lng"]))
+
+        df_cancel_runs.append(pd.DataFrame(df_cancel, columns=[
+            "Cancelation Time", "pickup rid", "dropoff rid", "removed time"]))
+
+        df_track_req_runtime = pd.concat(df_requests_runs)
+        df_track_req_runtime.to_csv(
+            config("run_path") + "Naive" + str(naive) + test_instance + "runtime_reqs" + ".csv")
+
+        df_cancel_total = pd.concat(df_cancel_runs)
+        df_cancel_total.to_csv(
+            config("run_path") + "Naive" + str(naive) + test_instance + "cancel_info" + ".csv")
+
+    #df_track_run = pd.concat(df_runs)
+    # df_track_run.to_csv(
+    #    config("run_path") + "Heuristic" + + "_Run:" + str(run) + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
