@@ -13,6 +13,7 @@ from heuristic.improvement.simulated_annealing import SimulatedAnnealing
 from simulation.simulator import Simulator
 from heuristic.improvement.reopt.disruption_updater import DisruptionUpdater
 from heuristic.improvement.reopt.new_request_updater import NewRequestUpdater
+import argparse
 
 
 def main(test_instance, test_instance_date, run, repair_removed, destroy_removed):
@@ -251,6 +252,17 @@ if __name__ == "__main__":
     cProfile.run('main()', 'profiling/restats')
     profile.display()
     """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--run', type=int)
+    parser.add_argument('--branch', type=str)
+    parser.add_argument('--instance', type=str)
+    args = parser.parse_args()
+
+    run = args.run
+    branch = args.branch
+    print(f'Config says instance {test_instance}')
+    test_instance = args.instance
+    print(f'Replaced to argument instance {args.instance}')
 
     # Generate test instance datetime from filename
     test_instance_d = test_instance.split(
@@ -260,35 +272,33 @@ if __name__ == "__main__":
         test_instance_d[6:8] + " 10:00:00"
 
     repair_removed = None
-    destroy_removed = [1, 3, 4]
-    runs = 5
+    destroy_removed = None  # [1, 3, 4]
 
     print("Test instance:", test_instance)
     print("Removed:", destroy_removed)
 
     df_requests_runs, df_runtime_runs, df_operators_runs = [], [], []
-    for run in range(4, runs):
-        print("Run: ", run)
-        df_operators, df_runtime, df_req_runtime = main(
-            test_instance, test_instance_date, run, repair_removed, destroy_removed)
-        df_requests_runs.append(pd.DataFrame(df_req_runtime, columns=[
-            "Run", "Request", "Response Time"]))
-        df_runtime_runs.append(pd.DataFrame(df_runtime, columns=[
-            "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective"]))
-        df_operators_runs.append(pd.DataFrame(df_operators, columns=[
-            "Run", "Initial", "Iteration", "Destroy Operator", "Repair Operator", "Destroy Weight", "Repair Weight", "Update destroy weight score", "Update repair weight score", "Destroy Used", "Repair Used", "Runtime", "Updated this round", "Best Objective"]))
+    print("Run: ", run)
+    df_operators, df_runtime, df_req_runtime = main(
+        test_instance, test_instance_date, run, repair_removed, destroy_removed)
+    df_requests_runs.append(pd.DataFrame(df_req_runtime, columns=[
+        "Run", "Request", "Response Time"]))
+    df_runtime_runs.append(pd.DataFrame(df_runtime, columns=[
+        "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective"]))
+    df_operators_runs.append(pd.DataFrame(df_operators, columns=[
+        "Run", "Initial", "Iteration", "Destroy Operator", "Repair Operator", "Destroy Weight", "Repair Weight", "Update destroy weight score", "Update repair weight score", "Destroy Used", "Repair Used", "Runtime", "Updated this round", "Best Objective"]))
 
-        df_track_req_runtime = pd.concat(df_requests_runs)
-        df_track_req_runtime.to_csv(
-            config("run_path") + "impact_of_operators_" + "run:" + str(run) + "repair_removed:_" + str(repair_removed) + "destroy_removed:_" + str(destroy_removed) + test_instance + "runtime_reqs" + ".csv")
+    df_track_req_runtime = pd.concat(df_requests_runs)
+    df_track_req_runtime.to_csv(
+        config("run_path") + "impact_of_operators_" + "run:" + str(run) + "repair_removed:_" + str(repair_removed) + "destroy_removed:_" + str(destroy_removed) + test_instance + "runtime_reqs" + ".csv")
 
-        df_track_runtime = pd.concat(df_runtime_runs)
-        df_track_runtime.to_csv(config("run_path") + "impact_of_operators_" + "run:" + str(run) + "repair_removed:_" + str(repair_removed) + "destroy_removed:_" + str(destroy_removed) +
-                                test_instance + "computational_time" + ".csv")
+    df_track_runtime = pd.concat(df_runtime_runs)
+    df_track_runtime.to_csv(config("run_path") + "impact_of_operators_" + "run:" + str(run) + "repair_removed:_" + str(repair_removed) + "destroy_removed:_" + str(destroy_removed) +
+                            test_instance + "computational_time" + ".csv")
 
-        df_operators_total = pd.concat(df_operators_runs)
-        df_operators_total.to_csv(
-            config("run_path") + "impact_of_operators_" + "run:" + str(run) + "repair_removed:_" + str(repair_removed) + "destroy_removed:_" + str(destroy_removed) + test_instance + "impact_operators" + ".csv")
+    df_operators_total = pd.concat(df_operators_runs)
+    df_operators_total.to_csv(
+        config("run_path") + "impact_of_operators_" + "run:" + str(run) + "repair_removed:_" + str(repair_removed) + "destroy_removed:_" + str(destroy_removed) + test_instance + "impact_operators" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
