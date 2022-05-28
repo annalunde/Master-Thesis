@@ -311,6 +311,7 @@ if __name__ == "__main__":
     print("Naive:", naive)
     print("Adaptive:", adaptive)
     print("F used:", str(F))
+    print("SEMI NAIVE")
 
     df_runs, df_requests_runs, df_cancel_runs = [], [], []
     df_run, df_cancel, df_req_runtime = main(
