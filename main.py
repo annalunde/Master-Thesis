@@ -306,6 +306,7 @@ if __name__ == "__main__":
     print("Test instance:", test_instance)
     print("Naive:", naive)
     print("Adaptive:", adaptive)
+    print("F used:", str(F))
 
     df_runs, df_requests_runs, df_cancel_runs = [], [], []
     df_run, df_cancel, df_req_runtime = main(
@@ -315,7 +316,7 @@ if __name__ == "__main__":
 
     df_track_run = pd.concat(df_runs)
     df_track_run.to_csv(
-        config("run_path") + "Heuristic" + "Run:" + str(run) + test_instance + "analysis" + ".csv")
+        config("run_path") + "Heuristic_" + "F_Value_" + str(F) + "_Run:" + str(run) + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
