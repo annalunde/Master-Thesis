@@ -107,7 +107,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--run', type=int)
     parser.add_argument('--branch', type=str)
-    parser.add_argument('--instance', type=str)
+    parser.add_argument('--test_instance', type=str)
     args = parser.parse_args()
 
     run = args.run
