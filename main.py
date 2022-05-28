@@ -40,21 +40,25 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
         measures = Measures()
 
         # IMPROVEMENT OF INITIAL SOLUTION
-        # if not naive:
-        criterion = SimulatedAnnealing(cooling_rate)
+        if not naive:
+            criterion = SimulatedAnnealing(cooling_rate)
 
-        alns = ALNS(weights, reaction_factor, initial_route_plan, initial_objective, initial_infeasible_set, criterion,
-                    destruction_degree, constructor, rnd_state=rnd.RandomState())
+            alns = ALNS(weights, reaction_factor, initial_route_plan, initial_objective, initial_infeasible_set, criterion,
+                        destruction_degree, constructor, rnd_state=rnd.RandomState())
 
-        operators = Operators(alns, standby)
+            operators = Operators(alns, standby)
 
-        alns.set_operators(operators, repair_removed, destroy_removed)
+            alns.set_operators(operators, repair_removed, destroy_removed)
 
-        # Run ALNS
-        delayed = (False, None, None)
+            # Run ALNS
+            delayed = (False, None, None)
 
-        current_route_plan, current_objective, current_infeasible_set, _ = alns.iterate(
-            initial_iterations, initial_Z, None, None, None, delayed, False, run, adaptive)
+            current_route_plan, current_objective, current_infeasible_set, _ = alns.iterate(
+                initial_iterations, initial_Z, None, None, None, delayed, False, run, adaptive)
+        else:
+            current_route_plan = copy(initial_route_plan)
+            current_objective = initial_objective
+            current_infeasible_set = copy(initial_infeasible_set)
 
         if current_infeasible_set:
             cumulative_rejected = len(current_infeasible_set)
@@ -297,7 +301,7 @@ if __name__ == "__main__":
         test_instance_d[4:6] + "-" + \
         test_instance_d[6:8] + " 10:00:00"
 
-    naive = False
+    naive = True
     adaptive = True
     repair_removed = None
     destroy_removed = [0, 2]
@@ -316,7 +320,7 @@ if __name__ == "__main__":
 
     df_track_run = pd.concat(df_runs)
     df_track_run.to_csv(
-        config("run_path") + "Heuristic_" + "F_Value_" + str(F) + "_Run:" + str(run) + test_instance + "analysis" + ".csv")
+        config("run_path") + "Naive_" + "F_Value_" + str(F) + "_Run:" + str(run) + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
