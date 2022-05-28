@@ -113,8 +113,8 @@ if __name__ == "__main__":
     run = args.run
     branch = args.branch
     print(f'Config says instance {test_instance}')
-    test_instance = args.instance
-    print(f'Replaced to argument instance {args.instance}')
+    test_instance = args.test_instance
+    print(f'Replaced to argument instance {args.test_instance}')
 
     start_time = datetime.now()
 

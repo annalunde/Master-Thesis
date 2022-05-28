@@ -3,7 +3,7 @@ export cores=20
 export i=0
 export pids=""
 
-for instance in test_instance_small_1_20210703 test_instance_small_2_20210724 test_instance_small_3_20210918 test_instance_medium_1_20210706 test_instance_medium_2_20210830 test_instance_medium_3_20211015 test_instance_large_1_20211005 test_instance_large_2_20211014 test_instance_large_3_20220112
+for test_instance in test_instance_small_1_20210703 test_instance_small_2_20210724 test_instance_small_3_20210918 test_instance_medium_1_20210706 test_instance_medium_2_20210830 test_instance_medium_3_20211015 test_instance_large_1_20211005 test_instance_large_2_20211014 test_instance_large_3_20220112
 do
     for run in $(seq 10)
     do
