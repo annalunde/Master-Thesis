@@ -46,7 +46,7 @@ CHANGEABLE PARAMETERS
 '''
 
 # Allowed excess ride time
-F = 0.25
+F = 0.5
 
 # Number of tries for + 15 minutes for a rejected request:
 N_R = 0
