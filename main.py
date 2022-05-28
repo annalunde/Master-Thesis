@@ -301,7 +301,7 @@ if __name__ == "__main__":
         test_instance_d[4:6] + "-" + \
         test_instance_d[6:8] + " 10:00:00"
 
-    naive = True
+    naive = False
     adaptive = True
     repair_removed = None
     destroy_removed = [0, 2]
