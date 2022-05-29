@@ -508,7 +508,7 @@ class RepairGenerator:
                 activated_checks = True
                 break
 
-        if vehicle_route[0][0] == 0:
+        if vehicle_route[0][0] == 0 and len(vehicle_route) > 1:
             sn, start_time, sd, sp, sw, _ = vehicle_route[1]
             en, end_time, ed, ep, ew, _ = vehicle_route[0]
             if start_time <= end_time:
