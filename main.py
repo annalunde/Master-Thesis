@@ -236,7 +236,7 @@ if __name__ == "__main__":
     print("Test instance:", test_instance)
 
     repair_removed = None
-    destroy_removed = [0, 2]
+    destroy_removed = None  # [0, 2]
     #runs = 5
     df_requests_runs, df_runtime_runs, df_operators_runs = [], [], []
     # for run in range(runs):
@@ -259,7 +259,7 @@ if __name__ == "__main__":
 
     df_operators_total = pd.concat(df_operators_runs)
     df_operators_total.to_csv(
-        config("run_path") + "value_of_adapt" + "Run" + str(run) + test_instance + "impact_operators" + ".csv")
+        config("run_path") + "value_of_adapt_WO_removedOps" + "Run" + str(run) + test_instance + "impact_operators" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
