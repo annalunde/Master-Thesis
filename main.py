@@ -276,7 +276,7 @@ if __name__ == "__main__":
 
     print("Test instance:", test_instance)
     print("Removed:", destroy_removed)
-    print("Kjør")
+    print("Kjørros")
 
     df_requests_runs, df_runtime_runs, df_operators_runs = [], [], []
     print("Run: ", run)
