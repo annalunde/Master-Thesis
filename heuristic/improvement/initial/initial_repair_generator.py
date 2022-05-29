@@ -507,6 +507,20 @@ class RepairGenerator:
             if total_time < min_time.total_seconds():
                 activated_checks = True
                 break
+
+        if vehicle_route[0][0] == 0:
+            sn, start_time, sd, sp, sw, _ = vehicle_route[1]
+            en, end_time, ed, ep, ew, _ = vehicle_route[0]
+            total_time = (end_time - start_time).seconds
+            sn_mod = sn % int(sn)
+            start_id = int(
+                sn - 0.5 - 1 + self.heuristic.n if sn_mod else sn - 1)
+            end_id = 2*self.heuristic.n
+            min_time = self.heuristic.travel_time(
+                end_id, start_id, False)
+            if total_time < min_time.total_seconds() or start_time < end_time:
+                activated_checks = True
+
         return activated_checks
 
     def update_capacities(self, vehicle_route, start_id, dropoff_id, request, rid):
