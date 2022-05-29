@@ -318,7 +318,7 @@ if __name__ == "__main__":
     df_runs.append(pd.DataFrame(df_run, columns=[
         "Run", "Initial/Disruption", "Current Objective", "Solution Time", "Norm Rejected", "Gamma Rejected",  "Norm Deviation Objective", "Norm Ride Time Objective", "Ride Sharing", "Ride Sharing Arcs", "Ride Sharing Passengers", "Total Served Passengers", "Introduced Vehicles", "Sim_Clock"]))
 
-    if run == 0:
+    if run == 1:
         df_requests_runs.append(pd.DataFrame(df_req_runtime, columns=[
             "Rid", "Request Creation Time", "Requested Pickup Time", "Requested Dropoff Time", "Wheelchair",
             "Number of Passengers", "Origin Lat", "Origin Lng", "Destination Lat", "Destination Lng"]))
