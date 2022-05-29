@@ -574,6 +574,13 @@ class ReOptRepairGenerator:
             if total_time < min_time.total_seconds():
                 activated_checks = True
                 break
+
+        if vehicle_route[0][0] == 0 and len(vehicle_route) > 1:
+            sn, start_time, sd, sp, sw, _ = vehicle_route[1]
+            en, end_time, ed, ep, ew, _ = vehicle_route[0]
+            if start_time <= end_time:
+                activated_checks = True
+
         return activated_checks
 
     def update_capacities(self, vehicle_route, start_id, dropoff_id, request, rid):
