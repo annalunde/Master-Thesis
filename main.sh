@@ -5,7 +5,7 @@ export pids=""
 
 for instance in comp_instance_1_20220110 comp_instance_2_20211007 comp_instance_3_20211215
 do
-    for run in $(seq 7)
+    for run in $(seq 5)
     do
         # Checkout the branch and start a run in the background
         echo "Starting run $run on instance $instance on branch $1"

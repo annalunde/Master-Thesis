@@ -272,7 +272,7 @@ if __name__ == "__main__":
         test_instance_d[6:8] + " 10:00:00"
 
     repair_removed = None
-    destroy_removed = [1, 3, 4]
+    destroy_removed = None  # [1, 3, 4]
 
     print("Test instance:", test_instance)
     print("Removed:", destroy_removed)
