@@ -334,9 +334,9 @@ if __name__ == "__main__":
         df_cancel_total.to_csv(
             config("run_path") + "Naive" + str(naive) + test_instance + "cancel_info" + ".csv")
 
-    # df_track_run = pd.concat(df_runs)
-    # df_track_run.to_csv(
-    #    config("run_path") + "Heuristic" + + "_Run:" + str(run) + test_instance + "analysis" + ".csv")
+    df_track_run = pd.concat(df_runs)
+    df_track_run.to_csv(
+        config("run_path") + "Naive" + + "_Run:" + str(run) + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 
