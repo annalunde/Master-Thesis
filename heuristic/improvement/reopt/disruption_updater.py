@@ -76,8 +76,6 @@ class DisruptionUpdater:
 
         updated_vehicle_route = []
         for idx, i in enumerate(route_plan[disruption_info[0]][disruption_info[1]:]):
-            if i[0] == 0:
-                continue
             if idx == 0:
                 node = (i[0], i[1]+delay_duration, i[2] +
                         delay_duration, i[3], i[4], i[5])
