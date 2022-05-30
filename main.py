@@ -311,7 +311,7 @@ if __name__ == "__main__":
     print("Naive:", naive)
     print("Adaptive:", adaptive)
     print("F used:", str(F))
-
+    print("RUNNING SEMI")
     df_runs, df_requests_runs, df_cancel_runs = [], [], []
     df_run, df_cancel, df_req_runtime = main(
         test_instance, test_instance_date, run, repair_removed, destroy_removed, naive, adaptive, standby)
