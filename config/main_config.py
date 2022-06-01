@@ -6,7 +6,7 @@ CONSTANT PARAMETERS
 '''
 
 # Allowed excess ride time
-F = 0.5
+F = 1
 
 # Estimated time to serve a node
 S_P = 2  # standard seats
