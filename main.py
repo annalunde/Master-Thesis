@@ -309,7 +309,7 @@ if __name__ == "__main__":
     print("Test instance:", test_instance)
     print("Naive:", naive)
     print("Adaptive:", adaptive)
-    print("Testing semi naive with 1 hour deadline")
+    print("Testing semi naive with 2 hour deadline")
 
     df_runs = []
     # for run in range(runs):
@@ -320,7 +320,7 @@ if __name__ == "__main__":
 
     df_track_run = pd.concat(df_runs)
     df_track_run.to_csv(
-        config("run_path") + "Request_Disruptions_with_Semi:" + "Run" + str(run) + test_instance + "analysis" + ".csv")
+        config("run_path") + "Request_Disruptions_with_Semi_2hour:" + "Run" + str(run) + test_instance + "analysis" + ".csv")
 
     print("DONE WITH ALL RUNS")
 

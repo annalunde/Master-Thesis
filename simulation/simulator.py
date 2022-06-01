@@ -28,7 +28,7 @@ class Simulator:
         for index, row in df.iterrows():
             diff_time = row["Requested Pickup Time"] - \
                 row["Request Creation Time"]
-            if diff_time < timedelta(hours=1):
+            if diff_time < timedelta(hours=2):
                 if row["Requested Pickup Time"] - timedelta(hours=1) <= datetime(
                         self.sim_clock.year, self.sim_clock.month, self.sim_clock.day, 10, 0, 0):
                     # add to initial requests
