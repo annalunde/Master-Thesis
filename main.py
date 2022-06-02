@@ -255,7 +255,7 @@ def main(test_instance, test_instance_date, run, repair_removed, destroy_removed
                           deviation_objective.total_seconds(), ride_time_objective.total_seconds(), ride_sharing, ride_sharing_arcs, ride_sharing_passengers, passengers_total, len(current_route_plan), str(simulator.sim_clock)])
         """
         print("End simulation")
-        print("Rejected rids", rejected)
+        #print("Rejected rids", rejected)
 
     except Exception as e:
         print("ERROR:", e)
