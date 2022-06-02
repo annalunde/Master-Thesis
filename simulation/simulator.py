@@ -29,7 +29,7 @@ class Simulator:
             diff_time = row["Requested Pickup Time"] - \
                 row["Request Creation Time"]
             if diff_time < timedelta(hours=2):
-                if row["Requested Pickup Time"] - timedelta(hours=1) <= datetime(
+                if row["Requested Pickup Time"] - timedelta(hours=2) <= datetime(
                         self.sim_clock.year, self.sim_clock.month, self.sim_clock.day, 10, 0, 0):
                     # add to initial requests
                     initial_requests.append(row)
@@ -39,7 +39,7 @@ class Simulator:
                         "Rid", "Request Creation Time", "Requested Pickup Time", "Requested Dropoff Time", "Wheelchair",
                         "Number of Passengers", "Origin Lat", "Origin Lng", "Destination Lat", "Destination Lng"])
                     request_disruption_times.append(
-                        (0, row["Requested Pickup Time"] - timedelta(hours=1), df_new_request))
+                        (0, row["Requested Pickup Time"] - timedelta(hours=2), df_new_request))
             else:
                 df_new_request = pd.DataFrame([row], columns=[
                     "Rid", "Request Creation Time", "Requested Pickup Time", "Requested Dropoff Time", "Wheelchair",
