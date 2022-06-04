@@ -61,7 +61,7 @@ alpha_reopt = 1
 
 # Weight of deviation in objective function
 beta = 100
-beta_reopt = 1
+beta_reopt = 2
 
 # Start temperature control parameter
 initial_Z = 0.6

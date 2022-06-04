@@ -6,7 +6,7 @@ import numpy.random as rnd
 import traceback
 from heuristic.construction.construction import ConstructionHeuristic
 from heuristic.improvement.alns import ALNS
-from config.main_config import *
+from config.main_config2 import *
 from heuristic.improvement.initial.initial_operators import Operators
 from heuristic.improvement.reopt.reopt_operators import ReOptOperators
 from heuristic.improvement.simulated_annealing import SimulatedAnnealing

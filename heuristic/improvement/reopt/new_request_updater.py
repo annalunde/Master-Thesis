@@ -11,7 +11,7 @@ pd.options.mode.chained_assignment = None
 
 
 class NewRequestUpdater:
-    def __init__(self, constructor, standby):
+    def __init__(self, constructor, standby, alpha_reopt_input, beta_reopt_input):
         self.vehicles = [i for i in range(V+standby)]
         self.introduced_vehicles = set()
         self.requests = constructor.requests.copy(deep=False)
@@ -23,8 +23,8 @@ class NewRequestUpdater:
         self.re_opt_repair_generator = ReOptRepairGenerator(
             self, False, standby)
         self.preprocessed = copy(constructor.preprocessed)
-        self.alpha = constructor.alpha
-        self.beta = constructor.beta
+        self.alpha = alpha_reopt_input
+        self.beta = beta_reopt_input
         self.gamma = constructor.gamma
         self.middle = []
         self.obj_processed_nodes = []

@@ -57,11 +57,11 @@ reopt_iterations = 100
 
 # Weight of ride time in objective function
 alpha = 2
-alpha_reopt = 1
+alpha_reopt = 2
 
 # Weight of deviation in objective function
 beta = 100
-beta_reopt = 1
+beta_reopt = 100
 
 # Start temperature control parameter
 initial_Z = 0.6
